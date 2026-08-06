@@ -1,0 +1,108 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Kosugi Maru', ui-sans-serif, system-ui, sans-serif, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans',
+        'Noto Sans JP', Meiryo, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* ログイン画面の「流れる」アニメーション */
+    --animate-flow-drift: flow-drift 26s ease-in-out infinite alternate;
+    --animate-flow-drift-slow: flow-drift 38s ease-in-out infinite alternate;
+    --animate-flow-drift-reverse: flow-drift-reverse 30s ease-in-out infinite alternate;
+    --animate-flow-wave: flow-wave 28s linear infinite;
+    --animate-flow-wave-slow: flow-wave 44s linear infinite;
+    --animate-flow-wave-reverse: flow-wave-reverse 36s linear infinite;
+    --animate-flow-rise: flow-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+    /* ふわりと漂う光 */
+    @keyframes flow-drift {
+        from {
+            transform: translate3d(0, 0, 0) scale(1);
+        }
+        to {
+            transform: translate3d(6rem, -3rem, 0) scale(1.15);
+        }
+    }
+    @keyframes flow-drift-reverse {
+        from {
+            transform: translate3d(0, 0, 0) scale(1.1);
+        }
+        to {
+            transform: translate3d(-7rem, 2rem, 0) scale(0.95);
+        }
+    }
+
+    /* 横に流れ続ける波（同じ波を2枚並べて半分ずらすとループが途切れない） */
+    @keyframes flow-wave {
+        from {
+            transform: translate3d(0, 0, 0);
+        }
+        to {
+            transform: translate3d(-50%, 0, 0);
+        }
+    }
+    @keyframes flow-wave-reverse {
+        from {
+            transform: translate3d(-50%, 0, 0);
+        }
+        to {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    /* 波の上を流れていくもの（横移動・上下の揺れ・傾きを入れ子で組み合わせる） */
+    --animate-flow-float: flow-float 30s linear infinite;
+    --animate-flow-float-bob: flow-float-bob 6s ease-in-out infinite alternate;
+    --animate-flow-float-sway: flow-float-sway 7s ease-in-out infinite alternate;
+
+    @keyframes flow-float {
+        from {
+            transform: translate3d(-15vw, 0, 0);
+        }
+        to {
+            transform: translate3d(115vw, 0, 0);
+        }
+    }
+    @keyframes flow-float-bob {
+        from {
+            transform: translate3d(0, 0.7rem, 0);
+        }
+        to {
+            transform: translate3d(0, -0.7rem, 0);
+        }
+    }
+    @keyframes flow-float-sway {
+        from {
+            transform: rotate(-5deg);
+        }
+        to {
+            transform: rotate(5deg);
+        }
+    }
+
+    /* 表示時にすっと浮き上がる */
+    @keyframes flow-rise {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 1rem, 0);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+}
+
+/* アニメーションを控えめにする設定の場合は動かさない */
+@media (prefers-reduced-motion: reduce) {
+    [class*='animate-flow-'] {
+        animation: none !important;
+    }
+}
+
+/* Alpine の x-show 初期化前のちらつき防止 */
+[x-cloak] {
+    display: none !important;
+}
