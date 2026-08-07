@@ -14,13 +14,22 @@
 
         <p class="mb-4 text-xs text-slate-500">
             グループはプロジェクトをまとめるための名前です。所属は任意で、グループを削除しても
-            所属していたプロジェクトは「グループなし」として残ります。
+            所属していたプロジェクトは「グループなし」として残ります。<br>
+            左の持ち手をドラッグすると並べ替えられます。この順番でダッシュボードに表示されます。
         </p>
 
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <ul class="divide-y divide-slate-100">
+            {{-- x-data がない場所だと Alpine がディレクティブを初期化しないので、空でも置いておく --}}
+            <ul class="divide-y divide-slate-100" x-data
+                x-sortable="{ url: @js(route('project-groups.reorder')), handle: '[data-handle]' }">
                 @forelse ($groups as $group)
-                    <li class="flex items-center gap-3 px-5 py-4">
+                    <li data-id="{{ $group->id }}" class="flex items-center gap-3 px-5 py-4">
+                        <span data-handle aria-label="ドラッグして並べ替え"
+                              class="shrink-0 cursor-grab rounded p-1 text-slate-300 transition hover:bg-slate-100 hover:text-slate-500">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M7 5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM7 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM7 15a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM16 5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM16 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM16 15a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                            </svg>
+                        </span>
                         <span class="inline-block h-3 w-1 shrink-0 rounded-full bg-sky-500"></span>
                         <span class="min-w-0 flex-1 truncate text-sm text-slate-800">{{ $group->name }}</span>
 

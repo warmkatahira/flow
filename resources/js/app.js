@@ -25,6 +25,20 @@ const post = (url, body) =>
 const idsOf = (container, attribute) =>
     [...container.querySelectorAll(`[${attribute}]`)].map((element) => Number(element.getAttribute(attribute)));
 
+/**
+ * 1つの入れ物の中だけを並べ替える汎用版（グループ管理などで使う）
+ */
+Alpine.directive('sortable', (element, { expression }, { evaluate }) => {
+    const { url, attribute = 'data-id', handle = null } = evaluate(expression);
+
+    Sortable.create(element, {
+        animation: 150,
+        handle,
+        draggable: `[${attribute}]`,
+        onEnd: () => post(url, { ids: idsOf(element, attribute) }).catch(() => location.reload()),
+    });
+});
+
 Alpine.directive('board', (element, { expression }, { evaluate }) => {
     const { tasksUrl, listsUrl } = evaluate(expression);
 

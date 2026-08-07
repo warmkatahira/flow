@@ -24,7 +24,8 @@ Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
     // ダッシュボード（自分が参加しているプロジェクトの一覧）
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // プロジェクトをまとめるグループ（名前だけの入れ物。所属は任意）
+    // プロジェクトをまとめるグループ（名前と並び順だけの入れ物。所属は任意）
+    Route::post('project-groups/reorder', [ProjectGroupController::class, 'reorder'])->name('project-groups.reorder');
     Route::resource('project-groups', ProjectGroupController::class)->except('show');
 
     // プロジェクト（一覧はダッシュボードが兼ねる）

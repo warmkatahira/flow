@@ -149,8 +149,8 @@ class BoardTest extends TestCase
         $second = $this->listFor($project, '2つ目', 1);
 
         $this->actingAs($user)
-            ->post(route('lists.reorder', $project), ['ids' => [$second->id, $first->id]])
-            ->assertRedirect();
+            ->postJson(route('lists.reorder', $project), ['ids' => [$second->id, $first->id]])
+            ->assertNoContent();
 
         $this->assertSame(0, $second->fresh()->position);
         $this->assertSame(1, $first->fresh()->position);

@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\TaskList;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -69,7 +70,7 @@ class TaskListController extends Controller
     /**
      * リストの並び順を保存する
      */
-    public function reorder(Request $request, Project $project): RedirectResponse
+    public function reorder(Request $request, Project $project): Response
     {
         Gate::authorize('view', $project);
 
@@ -85,6 +86,6 @@ class TaskListController extends Controller
             $lists->get($id)?->update(['position' => $position]);
         }
 
-        return back();
+        return response()->noContent();
     }
 }

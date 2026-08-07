@@ -84,6 +84,39 @@ class ProjectGroupTest extends TestCase
         $this->assertNull($project->fresh()->group_id);
     }
 
+    public function test_グループを並べ替えられる(): void
+    {
+        $first = ProjectGroup::create(['name' => 'あ']);
+        $second = ProjectGroup::create(['name' => 'い']);
+
+        $this->actingAs(User::factory()->create())
+            ->postJson(route('project-groups.reorder'), ['ids' => [$second->id, $first->id]])
+            ->assertNoContent();
+
+        $this->assertSame(0, $second->fresh()->position);
+        $this->assertSame(1, $first->fresh()->position);
+    }
+
+    public function test_ダッシュボードのグループは並び順に従う(): void
+    {
+        $user = User::factory()->create();
+
+        // 名前順なら「あ」が先だが、並び順で「い」を先に持ってくる
+        $a = ProjectGroup::create(['name' => 'あグループ']);
+        $i = ProjectGroup::create(['name' => 'いグループ']);
+
+        Project::factory()->ownedBy($user)->create(['name' => 'あのプロジェクト', 'group_id' => $a->id]);
+        Project::factory()->ownedBy($user)->create(['name' => 'いのプロジェクト', 'group_id' => $i->id]);
+
+        $this->actingAs($user)
+            ->postJson(route('project-groups.reorder'), ['ids' => [$i->id, $a->id]])
+            ->assertNoContent();
+
+        $sections = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('sections');
+
+        $this->assertSame(['いグループ', 'あグループ'], $sections->keys()->all());
+    }
+
     public function test_ダッシュボードにグループ名が出る(): void
     {
         $user = User::factory()->create();

@@ -7,6 +7,9 @@ use App\Http\Requests\Project\StoreProjectGroupRequest;
 use App\Http\Requests\Project\UpdateProjectGroupRequest;
 use App\Models\ProjectGroup;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -23,7 +26,7 @@ class ProjectGroupController extends Controller
     public function index(): View
     {
         return view('project-groups.index', [
-            'groups' => ProjectGroup::orderBy('name')->get(),
+            'groups' => ProjectGroup::ordered()->get(),
         ]);
     }
 
@@ -40,7 +43,9 @@ class ProjectGroupController extends Controller
      */
     public function store(StoreProjectGroupRequest $request): RedirectResponse
     {
-        ProjectGroup::create($request->validated());
+        $group = ProjectGroup::make($request->validated());
+        $group->position = (int) ProjectGroup::max('position') + 1;
+        $group->save();
 
         return redirect()
             ->route('project-groups.index')
@@ -79,5 +84,32 @@ class ProjectGroupController extends Controller
         return redirect()
             ->route('project-groups.index')
             ->with('status', 'グループを削除しました。所属していたプロジェクトはグループなしになりました。');
+    }
+
+    /**
+     * 並び順を保存する（ドラッグ＆ドロップから呼ばれる）
+     */
+    public function reorder(Request $request): Response
+    {
+        $attributes = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $groups = ProjectGroup::whereKey($attributes['ids'])->get()->keyBy('id');
+
+        DB::transaction(function () use ($attributes, $groups) {
+            foreach ($attributes['ids'] as $position => $id) {
+                // position は fillable に載せていないので明示的に入れる
+                $group = $groups->get($id);
+
+                if ($group) {
+                    $group->position = $position;
+                    $group->save();
+                }
+            }
+        });
+
+        return response()->noContent();
     }
 }

@@ -21,10 +21,16 @@ class DashboardController extends Controller
             ->get();
 
         // グループごとにまとめる。未所属は最後に「グループなし」として置く。
+        // 並びはグループ管理で決めた順（position）。sortBy は安定なので、
+        // 同じグループの中はプロジェクト名順のまま残る。
         // groupBy の戻りは Eloquent Collection なので、キー操作のために toBase() しておく
-        $grouped = $projects->groupBy(fn (Project $project) => $project->group?->name ?? '')->toBase();
+        $grouped = $projects
+            ->sortBy(fn (Project $project) => $project->group?->position ?? PHP_INT_MAX)
+            ->groupBy(fn (Project $project) => $project->group?->name ?? '')
+            ->toBase();
+        // ここで名前順に並べ直すと position を上書きしてしまうので、順番は触らない
         $ungrouped = $grouped->pull('');
-        $sections = $grouped->sortKeys();
+        $sections = $grouped;
 
         if ($ungrouped) {
             $sections->put('', $ungrouped);
