@@ -43,7 +43,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('boards.index'));
+        $response->assertRedirect(route('dashboard'));
     }
 
     public function test_無効なユーザーはログインできない(): void
@@ -113,7 +113,7 @@ class AuthenticationTest extends TestCase
         RateLimiter::clear(strtolower($user->email).'|127.0.0.1');
     }
 
-    public function test_ログイン後はボード画面が表示できる(): void
+    public function test_ログイン後はダッシュボードが表示できる(): void
     {
         $user = User::factory()->create();
 

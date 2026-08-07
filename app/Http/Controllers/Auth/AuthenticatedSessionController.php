@@ -35,7 +35,7 @@ class AuthenticatedSessionController extends Controller
         // セッション固定攻撃対策
         $request->session()->regenerate();
 
-        return redirect()->intended(route('boards.index'));
+        return redirect()->intended(route('dashboard'));
     }
 
     /**

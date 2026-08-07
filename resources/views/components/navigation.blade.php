@@ -2,7 +2,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-14">
             <div class="flex items-center">
-                <a href="{{ route('boards.index') }}">
+                <a href="{{ route('dashboard') }}">
                     <x-application-logo class="h-7" />
                 </a>
             </div>
@@ -25,6 +25,11 @@
                         <p class="text-xs text-slate-500 break-all">{{ auth()->user()->email }}</p>
                         <p class="mt-1 text-xs text-slate-400">{{ auth()->user()->role->label() }}</p>
                     </div>
+
+                    <a href="{{ route('project-groups.index') }}"
+                       class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                        グループ管理
+                    </a>
 
                     {{-- ユーザー管理はシステム管理者のみ --}}
                     @can('manage-users')

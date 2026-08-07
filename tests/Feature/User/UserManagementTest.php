@@ -38,11 +38,11 @@ class UserManagementTest extends TestCase
     public function test_ユーザー管理のリンクはシステム管理者にだけ表示される(): void
     {
         $this->actingAs(User::factory()->systemAdmin()->create())
-            ->get(route('boards.index'))
+            ->get(route('dashboard'))
             ->assertSee('ユーザー管理');
 
         $this->actingAs(User::factory()->admin()->create())
-            ->get(route('boards.index'))
+            ->get(route('dashboard'))
             ->assertDontSee('ユーザー管理');
     }
 
