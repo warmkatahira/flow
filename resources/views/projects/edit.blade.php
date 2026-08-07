@@ -5,7 +5,7 @@
 
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="bg-white rounded-xl shadow-sm px-6 py-8">
-            <form method="POST" action="{{ route('projects.update', $project) }}"
+            <form autocomplete="off" method="POST" action="{{ route('projects.update', $project) }}"
                   enctype="multipart/form-data" class="space-y-6">
                 @method('PUT')
                 @include('projects.partials.form', ['submitLabel' => '更新する'])
@@ -17,7 +17,7 @@
             <p class="mt-1 text-xs text-rose-700">
                 削除すると参加者の割り当ても一緒に消えます。元に戻せません。
             </p>
-            <form method="POST" action="{{ route('projects.destroy', $project) }}" class="mt-3"
+            <form autocomplete="off" method="POST" action="{{ route('projects.destroy', $project) }}" class="mt-3"
                   onsubmit="return confirm('{{ $project->name }} を削除します。よろしいですか？');">
                 @csrf
                 @method('DELETE')

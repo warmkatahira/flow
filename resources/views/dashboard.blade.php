@@ -76,7 +76,7 @@
                         </svg>
 
                         {{-- ブラウザ標準のクリアボタンは自前のものと二重になるので消す --}}
-                        <input type="search" x-model="keyword" placeholder="プロジェクト名で検索"
+                        <input autocomplete="off" type="search" x-model="keyword" placeholder="プロジェクト名で検索"
                                aria-label="プロジェクト名で検索"
                                class="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-9 text-sm text-slate-800 shadow-xs focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none">
 

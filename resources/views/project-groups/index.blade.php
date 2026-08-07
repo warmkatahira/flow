@@ -36,7 +36,7 @@
                         <div class="flex shrink-0 items-center gap-3 text-sm">
                             <a href="{{ route('project-groups.edit', $group) }}" class="text-sky-600 hover:text-sky-800">編集</a>
 
-                            <form method="POST" action="{{ route('project-groups.destroy', $group) }}"
+                            <form autocomplete="off" method="POST" action="{{ route('project-groups.destroy', $group) }}"
                                   onsubmit="return confirm('{{ $group->name }} を削除します。所属しているプロジェクトはグループなしになります。よろしいですか？');">
                                 @csrf
                                 @method('DELETE')

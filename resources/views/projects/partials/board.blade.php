@@ -27,18 +27,18 @@
                 </div>
 
                 {{-- 名前と色の変更 --}}
-                <form method="POST" action="{{ route('lists.update', $list) }}" x-show="editing" x-cloak
+                <form autocomplete="off" method="POST" action="{{ route('lists.update', $list) }}" x-show="editing" x-cloak
                       class="space-y-2 rounded-t-xl bg-white p-3 ring-1 ring-slate-200">
                     @csrf
                     @method('PUT')
 
-                    <input type="text" name="name" value="{{ $list->name }}" required maxlength="255"
+                    <input autocomplete="off" type="text" name="name" value="{{ $list->name }}" required maxlength="255"
                            class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
 
                     <div class="flex flex-wrap gap-1.5">
                         @foreach ($colors as $color)
                             <label class="cursor-pointer">
-                                <input type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
+                                <input autocomplete="off" type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
                                        @checked($list->color === $color)>
                                 <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->swatchClass() }}"
                                       title="{{ $color->label() }}"></span>
@@ -53,7 +53,7 @@
                 </form>
 
                 {{-- 誤って押さないよう、削除は編集を開いたときだけ出す --}}
-                <form method="POST" action="{{ route('lists.destroy', $list) }}" x-show="editing" x-cloak
+                <form autocomplete="off" method="POST" action="{{ route('lists.destroy', $list) }}" x-show="editing" x-cloak
                       class="border-t border-slate-100 bg-white px-3 pb-3 pt-2"
                       onsubmit="return confirm('{{ $list->name }} を削除します。中のタスクも消えます。よろしいですか？');">
                     @csrf
@@ -69,9 +69,9 @@
                     ＋ タスクを追加
                 </button>
 
-                <form method="POST" action="{{ route('tasks.store', $list) }}" x-show="adding" x-cloak class="space-y-2">
+                <form autocomplete="off" method="POST" action="{{ route('tasks.store', $list) }}" x-show="adding" x-cloak class="space-y-2">
                     @csrf
-                    <input type="text" name="title" x-ref="title" required maxlength="255" placeholder="タスク名"
+                    <input autocomplete="off" type="text" name="title" x-ref="title" required maxlength="255" placeholder="タスク名"
                            class="block w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
                     <div class="flex items-center gap-2">
                         <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">追加</button>
@@ -99,10 +99,10 @@
                         </div>
 
                         <div x-show="editing" x-cloak class="space-y-2">
-                            <form method="POST" action="{{ route('tasks.update', $task) }}" class="space-y-2">
+                            <form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" class="space-y-2">
                                 @csrf
                                 @method('PUT')
-                                <input type="text" name="title" value="{{ $task->title }}" required maxlength="255"
+                                <input autocomplete="off" type="text" name="title" value="{{ $task->title }}" required maxlength="255"
                                        class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
                                 <div class="flex items-center gap-2">
                                     <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">保存</button>
@@ -110,7 +110,7 @@
                                 </div>
                             </form>
 
-                            <form method="POST" action="{{ route('tasks.destroy', $task) }}"
+                            <form autocomplete="off" method="POST" action="{{ route('tasks.destroy', $task) }}"
                                   onsubmit="return confirm('このタスクを削除します。よろしいですか？');">
                                 @csrf
                                 @method('DELETE')
@@ -131,16 +131,16 @@
             ＋ リストを追加
         </button>
 
-        <form method="POST" action="{{ route('lists.store', $project) }}" x-show="adding" x-cloak
+        <form autocomplete="off" method="POST" action="{{ route('lists.store', $project) }}" x-show="adding" x-cloak
               class="space-y-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
             @csrf
-            <input type="text" name="name" x-ref="name" required maxlength="255" placeholder="リスト名"
+            <input autocomplete="off" type="text" name="name" x-ref="name" required maxlength="255" placeholder="リスト名"
                    class="block w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
 
             <div class="flex flex-wrap gap-1.5">
                 @foreach ($colors as $color)
                     <label class="cursor-pointer">
-                        <input type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
+                        <input autocomplete="off" type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
                                @checked($loop->first)>
                         <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->swatchClass() }}"
                               title="{{ $color->label() }}"></span>

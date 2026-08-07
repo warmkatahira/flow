@@ -3,14 +3,14 @@
 
     <x-session-status :status="session('status')" />
 
-    <form method="POST" action="{{ route('login') }}" class="space-y-5">
+    <form autocomplete="off" method="POST" action="{{ route('login') }}" class="space-y-5">
         @csrf
 
         {{-- メールアドレス --}}
         <div>
             <x-input-label for="email" value="メールアドレス" :required="true" />
             <x-text-input id="email" name="email" type="email" :value="old('email', $defaultEmail)"
-                          required autofocus autocomplete="username" placeholder="you@example.com" />
+                          required autofocus placeholder="you@example.com" />
             <x-input-error :messages="$errors->get('email')" />
         </div>
 
@@ -18,7 +18,7 @@
         <div>
             <x-input-label for="password" value="パスワード" :required="true" />
             <x-text-input id="password" name="password" type="password" :value="$defaultPassword"
-                          required autocomplete="current-password" />
+                          required />
             <x-input-error :messages="$errors->get('password')" />
         </div>
 

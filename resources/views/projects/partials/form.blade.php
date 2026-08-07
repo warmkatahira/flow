@@ -41,7 +41,7 @@
         @endif
 
         <div class="flex-1">
-            <input id="icon" name="icon" type="file" accept="image/jpeg,image/png,image/webp"
+            <input autocomplete="off" id="icon" name="icon" type="file" accept="image/jpeg,image/png,image/webp"
                    class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-sky-700 hover:file:bg-sky-100">
             <p class="mt-1 text-xs text-slate-500">
                 JPEG / PNG / WebP、2MB まで。未設定のときはプロジェクト名の頭文字を表示します。
@@ -53,7 +53,7 @@
 
     @if ($project?->icon_path)
         <label class="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" name="remove_icon" value="1"
+            <input autocomplete="off" type="checkbox" name="remove_icon" value="1"
                    class="rounded border-slate-300 text-sky-600 focus:ring-sky-500/30">
             アイコン画像を削除する
         </label>
@@ -86,7 +86,7 @@
             @endphp
 
             <div class="flex items-center gap-3 px-4 py-3">
-                <input type="checkbox" id="member-{{ $user->id }}" name="members[]" value="{{ $user->id }}"
+                <input autocomplete="off" type="checkbox" id="member-{{ $user->id }}" name="members[]" value="{{ $user->id }}"
                        @checked($checked) @disabled($isCreator)
                        class="rounded border-slate-300 text-sky-600 focus:ring-sky-500/30 disabled:opacity-60">
 

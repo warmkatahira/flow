@@ -4,7 +4,7 @@
 <div>
     <x-input-label for="name" value="名前" :required="true" />
     <x-text-input id="name" name="name" type="text" :value="old('name', $user?->name)"
-                  required autofocus autocomplete="name" />
+                  required autofocus />
     <x-input-error :messages="$errors->get('name')" />
 </div>
 
@@ -12,7 +12,7 @@
 <div>
     <x-input-label for="email" value="メールアドレス（ログインID）" :required="true" />
     <x-text-input id="email" name="email" type="email" :value="old('email', $user?->email)"
-                  required autocomplete="username" placeholder="you@example.com" />
+                  required placeholder="you@example.com" />
     <x-input-error :messages="$errors->get('email')" />
 </div>
 
@@ -42,7 +42,7 @@
 <div>
     <x-input-label for="password" value="パスワード" :required="$user === null" />
     <x-text-input id="password" name="password" type="password"
-                  autocomplete="new-password" :required="$user === null" />
+                  :required="$user === null" />
     <x-input-error :messages="$errors->get('password')" />
     @if ($user)
         <p class="mt-1 text-xs text-slate-500">変更する場合のみ入力してください。</p>
@@ -55,7 +55,7 @@
 <div>
     <x-input-label for="password_confirmation" value="パスワード（確認）" :required="$user === null" />
     <x-text-input id="password_confirmation" name="password_confirmation" type="password"
-                  autocomplete="new-password" :required="$user === null" />
+                  :required="$user === null" />
     <x-input-error :messages="$errors->get('password_confirmation')" />
 </div>
 

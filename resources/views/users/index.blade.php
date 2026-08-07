@@ -49,7 +49,7 @@
                                     <a href="{{ route('users.edit', $user) }}" class="text-sky-600 hover:text-sky-800">編集</a>
 
                                     @unless (auth()->user()->is($user))
-                                        <form method="POST" action="{{ route('users.destroy', $user) }}"
+                                        <form autocomplete="off" method="POST" action="{{ route('users.destroy', $user) }}"
                                               onsubmit="return confirm('{{ $user->name }} を削除します。よろしいですか？');">
                                             @csrf
                                             @method('DELETE')
