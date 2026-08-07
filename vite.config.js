@@ -13,6 +13,11 @@ export default defineConfig({
                     weights: [400],
                     subsets: ['latin', 'japanese'],
                 }),
+                // ロゴの「Flow」だけに使う。日本語グリフは持っていない
+                bunny('Righteous', {
+                    weights: [400],
+                    subsets: ['latin'],
+                }),
             ],
         }),
         tailwindcss(),

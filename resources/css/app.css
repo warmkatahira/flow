@@ -7,6 +7,9 @@
     --font-sans: 'Kosugi Maru', ui-sans-serif, system-ui, sans-serif, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans',
         'Noto Sans JP', Meiryo, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
+    /* ロゴの「Flow」専用。日本語グリフを持たないので本文には使わない */
+    --font-logo: 'Righteous', var(--font-sans);
+
     /* ログイン画面の「流れる」アニメーション */
     --animate-flow-drift: flow-drift 26s ease-in-out infinite alternate;
     --animate-flow-drift-slow: flow-drift 38s ease-in-out infinite alternate;
@@ -79,6 +82,18 @@
         }
         to {
             transform: rotate(5deg);
+        }
+    }
+
+    /* ロゴマークの中を流れる波（1周期＝16ユーザー単位ぶん動かすと繋がる） */
+    --animate-flow-mark-wave: flow-mark-wave 7s linear infinite;
+
+    @keyframes flow-mark-wave {
+        from {
+            transform: translate3d(0, 0, 0);
+        }
+        to {
+            transform: translate3d(-16px, 0, 0);
         }
     }
 
