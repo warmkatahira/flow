@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ListColor;
 use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\ProjectGroup;
@@ -66,6 +67,46 @@ class ProjectSeeder extends Seeder
             $project->users()->sync(
                 array_map(fn (ProjectRole $role) => ['role' => $role->value], $participants),
             );
+
+            $this->seedBoard($project);
+        }
+    }
+
+    /**
+     * 動作確認用のカンバン（すでにリストがあるプロジェクトには入れない）
+     */
+    private function seedBoard(Project $project): void
+    {
+        if ($project->taskLists()->exists()) {
+            return;
+        }
+
+        $lists = [
+            ['ToDo リスト', ListColor::Sky, ['運賃振り分けに関するメモ', '8月の経理業務メモ', 'KINTAI の詳細', 'フロムアイズ改修']],
+            ['進行中', ListColor::Emerald, ['人事・総務・経理で調整する事項', 'CMS 構築']],
+            ['入れ替え待ち', ListColor::Amber, []],
+            ['完了', ListColor::Rose, []],
+        ];
+
+        $number = 0;
+
+        foreach ($lists as $position => [$name, $color, $titles]) {
+            $list = $project->taskLists()->create([
+                'name' => $name,
+                'color' => $color->value,
+                'position' => $position,
+            ]);
+
+            foreach ($titles as $taskPosition => $title) {
+                $task = $list->tasks()->make([
+                    'title' => $title,
+                    'position' => $taskPosition,
+                ]);
+
+                $task->project_id = $project->getKey();
+                $task->number = ++$number;
+                $task->save();
+            }
         }
     }
 }

@@ -1,4 +1,68 @@
 import Alpine from 'alpinejs';
+import Sortable from 'sortablejs';
+
+/**
+ * カンバンのドラッグ＆ドロップ
+ *
+ * 並べ替えた結果だけをサーバーへ送る。画面は Sortable が動かしたそのままにして、
+ * 保存に失敗したときだけ読み込み直す。
+ */
+const post = (url, body) =>
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+            Accept: 'application/json',
+        },
+        body: JSON.stringify(body),
+    }).then((response) => {
+        if (! response.ok) {
+            throw new Error(response.statusText);
+        }
+    });
+
+const idsOf = (container, attribute) =>
+    [...container.querySelectorAll(`[${attribute}]`)].map((element) => Number(element.getAttribute(attribute)));
+
+Alpine.directive('board', (element, { expression }, { evaluate }) => {
+    const { tasksUrl, listsUrl } = evaluate(expression);
+
+    // リストの並べ替え
+    Sortable.create(element, {
+        animation: 150,
+        handle: '[data-list-handle]',
+        draggable: '[data-list-id]',
+        onEnd: () => post(listsUrl, { ids: idsOf(element, 'data-list-id') }).catch(() => location.reload()),
+    });
+
+    // タスクの並べ替え（リストをまたいで動かせる）
+    element.querySelectorAll('[data-tasks]').forEach((container) => {
+        Sortable.create(container, {
+            animation: 150,
+            group: 'tasks',
+            draggable: '[data-task-id]',
+            onEnd: (event) => {
+                const target = event.to;
+
+                post(tasksUrl, {
+                    list_id: Number(target.getAttribute('data-tasks')),
+                    ids: idsOf(target, 'data-task-id'),
+                })
+                    .then(() => {
+                        // 移動元のリストも詰め直す
+                        if (event.from !== target) {
+                            return post(tasksUrl, {
+                                list_id: Number(event.from.getAttribute('data-tasks')),
+                                ids: idsOf(event.from, 'data-task-id'),
+                            });
+                        }
+                    })
+                    .catch(() => location.reload());
+            },
+        });
+    });
+});
 
 /**
  * プロジェクトのお気に入り

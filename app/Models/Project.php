@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable(['name', 'group_id', 'icon_path'])]
@@ -26,6 +27,35 @@ class Project extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(ProjectGroup::class, 'group_id');
+    }
+
+    /**
+     * カンバンのリスト（列）。1プロジェクト＝1ボードなので直下に持つ
+     *
+     * @return HasMany<TaskList, $this>
+     */
+    public function taskLists(): HasMany
+    {
+        return $this->hasMany(TaskList::class)->orderBy('position');
+    }
+
+    /**
+     * @return HasMany<Task, $this>
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    /**
+     * 次のタスク番号（プロジェクトごとの連番）
+     *
+     * 同時に作られても重複しないよう、呼ぶ側でトランザクション＋行ロックをかける。
+     * 万一すり抜けても tasks の (project_id, number) のユニーク制約で弾かれる。
+     */
+    public function nextTaskNumber(): int
+    {
+        return (int) $this->tasks()->max('number') + 1;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Project;
 
+use App\Enums\ListColor;
 use App\Enums\ProjectRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Project\StoreProjectRequest;
@@ -31,7 +32,11 @@ class ProjectController extends Controller
         Gate::authorize('view', $project);
 
         return view('projects.show', [
-            'project' => $project->load(['users' => fn ($query) => $query->orderBy('users.id')]),
+            'project' => $project->load([
+                'users' => fn ($query) => $query->orderBy('users.id'),
+                'taskLists.tasks',
+            ]),
+            'colors' => ListColor::cases(),
         ]);
     }
 
