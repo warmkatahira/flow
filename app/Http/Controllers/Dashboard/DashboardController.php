@@ -27,21 +27,20 @@ class DashboardController extends Controller
             ->get();
 
         $groups = $user->projectGroups()->ordered()->get();
-        $groupsById = $groups->keyBy('id');
 
-        // グループごとにまとめる。未所属は最後に「グループなし」として置く。
-        // 並びはグループ管理で決めた順（position）。sortBy は安定なので、
-        // 同じグループの中はプロジェクト名順のまま残る。
-        $grouped = $projects
-            ->sortBy(fn (Project $project) => $groupsById->get($project->pivot->group_id)?->position ?? PHP_INT_MAX)
-            ->groupBy(fn (Project $project) => $groupsById->get($project->pivot->group_id)?->name ?? '')
-            ->toBase();
+        $byGroupId = $projects->groupBy(fn (Project $project) => (string) ($project->pivot->group_id ?? ''))->toBase();
 
-        // ここで名前順に並べ直すと position を上書きしてしまうので、順番は触らない
-        $ungrouped = $grouped->pull('');
-        $sections = $grouped;
+        // セクションはグループ側を起点に組み立てる。
+        // プロジェクトを集約して作ると、まだ何も入れていないグループが消えてしまう。
+        // 並びはグループ管理で決めた順（position）で、中はプロジェクト名順のまま。
+        $sections = $groups->mapWithKeys(
+            fn ($group) => [$group->name => $byGroupId->get((string) $group->id, collect())],
+        )->toBase();
 
-        if ($ungrouped) {
+        // 未所属は最後に「グループなし」として置く（1件もなければ出さない）
+        $ungrouped = $byGroupId->get('', collect());
+
+        if ($ungrouped->isNotEmpty()) {
             $sections->put('', $ungrouped);
         }
 

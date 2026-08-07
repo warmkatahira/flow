@@ -147,7 +147,7 @@
                                         localStorage.setItem(this.storageKey, this.open ? '1' : '0');
                                     },
                                  }"
-                                 x-show="hitsIn(groupNames) > 0">
+                                 x-show="normalized() === '' || hitsIn(groupNames) > 0">
                             <button type="button" @click="toggle()"
                                     :aria-expanded="(open || normalized() !== '') ? 'true' : 'false'"
                                     class="flex w-full items-center gap-2 border-b border-slate-300/70 bg-slate-200/70 px-4 py-2.5 text-left text-sm font-bold transition hover:bg-slate-200 {{ $groupName === '' ? 'text-slate-500' : 'text-slate-700' }}">
@@ -167,13 +167,20 @@
                                 <span class="font-normal text-slate-400" x-text="hitsIn(groupNames) + '件'"></span>
                             </button>
 
-                            <div x-show="open || normalized() !== ''"
-                                 class="grid gap-4 bg-slate-50 px-4 py-4 sm:grid-cols-2 lg:grid-cols-3">
-                                @foreach ($groupProjects as $project)
-                                    <div x-show="matches(@js($project->name))">
-                                        <x-project-card :project="$project" :groups="$groups" class="h-full" />
+                            <div x-show="open || normalized() !== ''" class="bg-slate-50 px-4 py-4">
+                                @if ($groupProjects->isEmpty())
+                                    <p class="text-xs text-slate-400">
+                                        このグループにプロジェクトはありません。カードの ⋯ から入れられます。
+                                    </p>
+                                @else
+                                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                        @foreach ($groupProjects as $project)
+                                            <div x-show="matches(@js($project->name))">
+                                                <x-project-card :project="$project" :groups="$groups" class="h-full" />
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endforeach
+                                @endif
                             </div>
                         </section>
                     @endforeach

@@ -223,6 +223,19 @@ class ProjectGroupTest extends TestCase
         $this->assertSame(['いグループ', 'あグループ'], $sections->keys()->all());
     }
 
+    public function test_プロジェクトが入っていないグループもダッシュボードに出る(): void
+    {
+        $user = User::factory()->create();
+        $this->groupFor($user, 'まだ空のグループ');
+        Project::factory()->ownedBy($user)->create(['name' => 'どこにも入れていない']);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('まだ空のグループ')
+            ->assertSee('グループなし');
+    }
+
     public function test_ダッシュボードにグループ名が出る(): void
     {
         $user = User::factory()->create();
