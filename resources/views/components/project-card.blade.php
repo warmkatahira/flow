@@ -1,12 +1,14 @@
-@props(['project'])
+@props(['project', 'groups' => null])
 
 @php
-    $role = $project->roleOf(auth()->user());
+    $me = auth()->user();
+    $role = $project->roleOf($me);
+    $currentGroupId = $project->pivot->group_id ?? null;
 @endphp
 
 {{--
-    カード全体をリンクにしつつ、お気に入りの星だけは別に押せるようにする。
-    リンクを入れ子にできないので、擬似要素をカード全面に敷いて star を上に置く。
+    カード全体をリンクにしつつ、星とグループのメニューは別に押せるようにする。
+    リンクを入れ子にできないので、擬似要素をカード全面に敷いて上に重ねる。
 --}}
 <div {{ $attributes->merge(['class' => 'relative flex items-start gap-4 rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md']) }}>
     <x-project-icon :project="$project" />
@@ -27,5 +29,51 @@
         </div>
     </div>
 
-    <x-favorite-button :project="$project" class="relative z-10 -mr-1 -mt-1" />
+    <div class="relative z-10 flex shrink-0 items-center gap-0.5">
+        <x-favorite-button :project="$project" class="-mt-1" />
+
+        @if ($groups !== null)
+            {{-- グループの割り当て。自分のダッシュボードでの分類なので他の人には影響しない --}}
+            <div x-data="{ open: false }" class="relative -mt-1">
+                <button type="button" @click="open = ! open" :aria-expanded="open ? 'true' : 'false'"
+                        aria-label="グループを変更"
+                        class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM11.5 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM17 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                    </svg>
+                </button>
+
+                <div x-show="open" x-cloak @click.outside="open = false" x-transition
+                     class="absolute right-0 top-9 z-20 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                    <p class="px-3 py-1 text-[10px] font-bold text-slate-400">グループに入れる</p>
+
+                    <form autocomplete="off" method="POST" action="{{ route('projects.group.update', $project) }}">
+                        @csrf
+                        @method('PUT')
+
+                        <button type="submit" name="group_id" value=""
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-100 {{ $currentGroupId === null ? 'font-semibold text-sky-700' : 'text-slate-700' }}">
+                            <span class="w-3 text-xs">{{ $currentGroupId === null ? '✓' : '' }}</span>
+                            グループなし
+                        </button>
+
+                        @foreach ($groups as $group)
+                            <button type="submit" name="group_id" value="{{ $group->id }}"
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-100 {{ $currentGroupId === $group->id ? 'font-semibold text-sky-700' : 'text-slate-700' }}">
+                                <span class="w-3 text-xs">{{ $currentGroupId === $group->id ? '✓' : '' }}</span>
+                                <span class="min-w-0 truncate">{{ $group->name }}</span>
+                            </button>
+                        @endforeach
+                    </form>
+
+                    @if ($groups->isEmpty())
+                        <a href="{{ route('project-groups.create') }}"
+                           class="block border-t border-slate-100 px-3 py-1.5 text-sm text-sky-600 hover:bg-slate-100">
+                            グループを作成
+                        </a>
+                    @endif
+                </div>
+            </div>
+        @endif
+    </div>
 </div>

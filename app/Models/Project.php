@@ -8,26 +8,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'group_id', 'icon_path'])]
+#[Fillable(['name', 'icon_path'])]
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
-
-    /**
-     * 所属グループ（任意。未所属なら null）
-     *
-     * @return BelongsTo<ProjectGroup, $this>
-     */
-    public function group(): BelongsTo
-    {
-        return $this->belongsTo(ProjectGroup::class, 'group_id');
-    }
 
     /**
      * カンバンのリスト（列）。1プロジェクト＝1ボードなので直下に持つ
@@ -66,7 +55,7 @@ class Project extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)
-            ->withPivot('role', 'is_favorite')
+            ->withPivot('role', 'is_favorite', 'group_id')
             ->withTimestamps();
     }
 

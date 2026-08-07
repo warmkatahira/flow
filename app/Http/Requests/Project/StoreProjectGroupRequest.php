@@ -21,7 +21,7 @@ class StoreProjectGroupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('project_groups', 'name')],
+            'name' => ['required', 'string', 'max:255', Rule::unique('project_groups', 'name')->where('user_id', $this->user()->getKey())],
         ];
     }
 

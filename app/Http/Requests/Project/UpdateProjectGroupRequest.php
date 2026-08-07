@@ -22,7 +22,9 @@ class UpdateProjectGroupRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('project_groups', 'name')->ignore($this->route('project_group')),
+                Rule::unique('project_groups', 'name')
+                    ->where('user_id', $this->user()->getKey())
+                    ->ignore($this->route('project_group')),
             ],
         ];
     }

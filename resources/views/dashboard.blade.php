@@ -111,7 +111,7 @@
                         --}}
                         @foreach ($projects as $project)
                             <div x-show="$store.favorites.has({{ $project->id }}) && matches(@js($project->name))">
-                                <x-project-card :project="$project" class="h-full" />
+                                <x-project-card :project="$project" :groups="$groups" class="h-full" />
                             </div>
                         @endforeach
                     </div>
@@ -171,7 +171,7 @@
                                  class="grid gap-4 bg-slate-50 px-4 py-4 sm:grid-cols-2 lg:grid-cols-3">
                                 @foreach ($groupProjects as $project)
                                     <div x-show="matches(@js($project->name))">
-                                        <x-project-card :project="$project" class="h-full" />
+                                        <x-project-card :project="$project" :groups="$groups" class="h-full" />
                                     </div>
                                 @endforeach
                             </div>

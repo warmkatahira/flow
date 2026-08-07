@@ -19,18 +19,6 @@
     <x-input-error :messages="$errors->get('name')" />
 </div>
 
-{{-- グループ --}}
-<div>
-    <x-input-label for="group_id" value="グループ" />
-    <x-select-input id="group_id" name="group_id" :options="$groups" placeholder="グループなし"
-                    :selected="old('group_id', $project?->group_id)" />
-    <x-input-error :messages="$errors->get('group_id')" />
-    <p class="mt-1 text-xs text-slate-500">
-        任意です。ダッシュボードでグループごとにまとめて表示されます。
-        <a href="{{ route('project-groups.create') }}" class="text-sky-600 hover:text-sky-800">グループを作成</a>
-    </p>
-</div>
-
 {{-- アイコン画像 --}}
 <div>
     <x-input-label for="icon" value="アイコン画像" />

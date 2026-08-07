@@ -5,23 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * プロジェクトをまとめるグループ
  *
- * 持っているのは名前と並び順だけ。プロジェクト側の所属は任意で、
- * グループを削除してもプロジェクトは「グループなし」として残る。
+ * グループは作った人のもので、他の人からは見えない。
+ * 「どのプロジェクトをどのグループに入れるか」も人ごとなので、
+ * 所属は project_user.group_id が持つ。
  */
 #[Fillable(['name'])]
 class ProjectGroup extends Model
 {
     /**
-     * @return HasMany<Project, $this>
+     * @return BelongsTo<User, $this>
      */
-    public function projects(): HasMany
+    public function user(): BelongsTo
     {
-        return $this->hasMany(Project::class, 'group_id');
+        return $this->belongsTo(User::class);
     }
 
     /**

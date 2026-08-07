@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -42,8 +43,18 @@ class User extends Authenticatable
     public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class)
-            ->withPivot('role', 'is_favorite')
+            ->withPivot('role', 'is_favorite', 'group_id')
             ->withTimestamps();
+    }
+
+    /**
+     * 自分で作ったプロジェクトのグループ（他の人からは見えない）
+     *
+     * @return HasMany<ProjectGroup, $this>
+     */
+    public function projectGroups(): HasMany
+    {
+        return $this->hasMany(ProjectGroup::class);
     }
 
     /**

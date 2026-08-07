@@ -23,8 +23,6 @@ class UpdateProjectRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            // グループへの所属は任意
-            'group_id' => ['nullable', Rule::exists('project_groups', 'id')],
             'icon' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_icon' => ['nullable', 'boolean'],
             'members' => ['array'],

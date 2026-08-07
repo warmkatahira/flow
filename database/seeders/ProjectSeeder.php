@@ -32,9 +32,6 @@ class ProjectSeeder extends Seeder
             return;
         }
 
-        $groups = collect(['社内', '受託'])
-            ->mapWithKeys(fn (string $name) => [$name => ProjectGroup::firstOrCreate(['name' => $name])]);
-
         // 参加者の見え方を確かめられるように、あえて参加者の組み合わせを変えてある。
         // グループなしのプロジェクトも1つ混ぜてある
         $projects = [
@@ -59,14 +56,28 @@ class ProjectSeeder extends Seeder
         ];
 
         foreach ($projects as [$name, $groupName, $participants]) {
-            $project = Project::updateOrCreate(
-                ['name' => $name],
-                ['group_id' => $groupName ? $groups[$groupName]->id : null],
-            );
+            $project = Project::updateOrCreate(['name' => $name]);
 
             $project->users()->sync(
                 array_map(fn (ProjectRole $role) => ['role' => $role->value], $participants),
             );
+
+            // グループは個人のものなので、参加者それぞれの分を作って割り当てる
+            if ($groupName) {
+                foreach (array_keys($participants) as $userId) {
+                    $group = ProjectGroup::where('user_id', $userId)->where('name', $groupName)->first();
+
+                    if (! $group) {
+                        // user_id と position は fillable に載せていないので明示的に入れる
+                        $group = new ProjectGroup(['name' => $groupName]);
+                        $group->user_id = $userId;
+                        $group->position = $groupName === '社内' ? 0 : 1;
+                        $group->save();
+                    }
+
+                    $project->users()->updateExistingPivot($userId, ['group_id' => $group->id]);
+                }
+            }
 
             $this->seedBoard($project);
         }

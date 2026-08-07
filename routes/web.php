@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Project\ProjectFavoriteController;
+use App\Http\Controllers\Project\ProjectGroupAssignmentController;
 use App\Http\Controllers\Project\ProjectGroupController;
 use App\Http\Controllers\Project\TaskController;
 use App\Http\Controllers\Project\TaskListController;
@@ -31,6 +32,8 @@ Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
     // プロジェクト（一覧はダッシュボードが兼ねる）
     // 参加していないプロジェクトは ProjectPolicy で 404 になる
     Route::post('projects/{project}/favorite', ProjectFavoriteController::class)->name('projects.favorite');
+    // 自分のダッシュボードでの分類なので、参加者なら誰でも変えられる
+    Route::put('projects/{project}/group', ProjectGroupAssignmentController::class)->name('projects.group.update');
 
     // カンバン（1プロジェクト＝1ボード）。参加者なら誰でも操作できる
     Route::prefix('projects/{project}')->group(function () {

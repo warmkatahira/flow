@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Models\Project;
-use App\Models\ProjectGroup;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
@@ -50,7 +49,6 @@ class ProjectController extends Controller
         return view('projects.create', [
             'users' => $this->selectableUsers(),
             'roles' => ProjectRole::options(),
-            'groups' => $this->selectableGroups(),
         ]);
     }
 
@@ -61,7 +59,6 @@ class ProjectController extends Controller
     {
         $project = Project::create([
             'name' => $request->validated('name'),
-            'group_id' => $request->validated('group_id'),
             'icon_path' => $this->resolveIconPath($request),
         ]);
 
@@ -84,7 +81,6 @@ class ProjectController extends Controller
             'project' => $project->load('users'),
             'users' => $this->selectableUsers(),
             'roles' => ProjectRole::options(),
-            'groups' => $this->selectableGroups(),
         ]);
     }
 
@@ -95,7 +91,6 @@ class ProjectController extends Controller
     {
         $project->update([
             'name' => $request->validated('name'),
-            'group_id' => $request->validated('group_id'),
             'icon_path' => $this->resolveIconPath($request, $project),
         ]);
 
@@ -140,16 +135,6 @@ class ProjectController extends Controller
     private function selectableUsers(): Collection
     {
         return User::where('is_active', true)->orderBy('id')->get();
-    }
-
-    /**
-     * グループのプルダウン用 [id => 名前]
-     *
-     * @return array<int, string>
-     */
-    private function selectableGroups(): array
-    {
-        return ProjectGroup::orderBy('name')->pluck('name', 'id')->all();
     }
 
     /**

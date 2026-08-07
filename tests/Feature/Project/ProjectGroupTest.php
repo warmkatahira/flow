@@ -8,88 +8,195 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * グループは個人のもの
+ *
+ * 作った人にしか見えず、どのプロジェクトをどのグループに入れるかも人ごとに独立している。
+ */
 class ProjectGroupTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_グループを作成できる(): void
+    /**
+     * user_id と position は fillable に載せていないので明示的に入れる
+     */
+    private function groupFor(User $user, string $name, int $position = 0): ProjectGroup
     {
+        $group = new ProjectGroup(['name' => $name]);
+        $group->user_id = $user->getKey();
+        $group->position = $position;
+        $group->save();
+
+        return $group;
+    }
+
+    private function assignedGroupId(Project $project, User $user): ?int
+    {
+        return $project->users()->whereKey($user->getKey())->first()?->pivot->group_id;
+    }
+
+    public function test_グループは作った人のものになる(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('project-groups.store'), ['name' => '社内'])
+            ->assertRedirect(route('project-groups.index'));
+
+        $this->assertDatabaseHas('project_groups', ['name' => '社内', 'user_id' => $user->id]);
+    }
+
+    public function test_同じ名前でも人が違えば作れる(): void
+    {
+        $this->groupFor(User::factory()->create(), '社内');
+
         $this->actingAs(User::factory()->create())
             ->post(route('project-groups.store'), ['name' => '社内'])
             ->assertRedirect(route('project-groups.index'));
 
-        $this->assertDatabaseHas('project_groups', ['name' => '社内']);
+        $this->assertSame(2, ProjectGroup::where('name', '社内')->count());
     }
 
-    public function test_同じ名前のグループは作れない(): void
+    public function test_自分の中では同じ名前のグループは作れない(): void
     {
-        ProjectGroup::create(['name' => '社内']);
+        $user = User::factory()->create();
+        $this->groupFor($user, '社内');
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs($user)
             ->post(route('project-groups.store'), ['name' => '社内'])
             ->assertSessionHasErrors('name');
 
         $this->assertSame(1, ProjectGroup::count());
     }
 
-    public function test_グループの名前を変更できる(): void
+    public function test_グループ管理には自分のグループだけ出る(): void
     {
-        $group = ProjectGroup::create(['name' => '社内']);
+        $user = User::factory()->create();
+        $this->groupFor($user, '自分のグループ');
+        $this->groupFor(User::factory()->create(), '他人のグループ');
+
+        $this->actingAs($user)
+            ->get(route('project-groups.index'))
+            ->assertOk()
+            ->assertSee('自分のグループ')
+            ->assertDontSee('他人のグループ');
+    }
+
+    public function test_他人のグループは編集も削除もできない(): void
+    {
+        $group = $this->groupFor(User::factory()->create(), '他人のグループ');
+        $stranger = User::factory()->create();
+
+        $this->actingAs($stranger)->get(route('project-groups.edit', $group))->assertNotFound();
+        $this->actingAs($stranger)->put(route('project-groups.update', $group), ['name' => '乗っ取り'])->assertNotFound();
+        $this->actingAs($stranger)->delete(route('project-groups.destroy', $group))->assertNotFound();
+
+        $this->assertSame('他人のグループ', $group->fresh()->name);
+    }
+
+    public function test_他人のグループは並べ替えの対象にならない(): void
+    {
+        $group = $this->groupFor(User::factory()->create(), '他人のグループ', 5);
 
         $this->actingAs(User::factory()->create())
-            ->put(route('project-groups.update', $group), ['name' => '社内システム'])
-            ->assertRedirect(route('project-groups.index'));
+            ->postJson(route('project-groups.reorder'), ['ids' => [$group->id]])
+            ->assertNoContent();
 
-        $this->assertSame('社内システム', $group->fresh()->name);
+        $this->assertSame(5, $group->fresh()->position);
     }
 
-    public function test_プロジェクトはグループに属さなくてもよい(): void
+    public function test_プロジェクトは初めはグループなし(): void
     {
-        $creator = User::factory()->create();
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
 
-        $this->actingAs($creator)
-            ->post(route('projects.store'), ['name' => 'グループなしのプロジェクト'])
-            ->assertRedirect();
-
-        $this->assertNull(Project::firstWhere('name', 'グループなしのプロジェクト')->group_id);
+        $this->assertNull($this->assignedGroupId($project, $user));
     }
 
-    public function test_プロジェクトをグループに所属させられる(): void
+    public function test_プロジェクトを自分のグループに入れたり外したりできる(): void
     {
-        $creator = User::factory()->create();
-        $group = ProjectGroup::create(['name' => '受託']);
+        $user = User::factory()->create();
+        $group = $this->groupFor($user, '受託');
+        $project = Project::factory()->ownedBy($user)->create();
 
-        $this->actingAs($creator)
-            ->post(route('projects.store'), [
-                'name' => '所属ありのプロジェクト',
-                'group_id' => $group->id,
-            ])
+        $this->actingAs($user)
+            ->put(route('projects.group.update', $project), ['group_id' => $group->id])
             ->assertRedirect();
 
-        $this->assertSame($group->id, Project::firstWhere('name', '所属ありのプロジェクト')->group_id);
+        $this->assertSame($group->id, $this->assignedGroupId($project, $user));
+
+        $this->actingAs($user)
+            ->put(route('projects.group.update', $project), ['group_id' => ''])
+            ->assertRedirect();
+
+        $this->assertNull($this->assignedGroupId($project, $user));
+    }
+
+    public function test_他人のグループには入れられない(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $foreign = $this->groupFor(User::factory()->create(), '他人のグループ');
+
+        $this->actingAs($user)
+            ->put(route('projects.group.update', $project), ['group_id' => $foreign->id])
+            ->assertRedirect();
+
+        // 黙って「グループなし」に倒れる
+        $this->assertNull($this->assignedGroupId($project, $user));
+    }
+
+    public function test_参加していないプロジェクトはグループに入れられない(): void
+    {
+        $project = Project::factory()->ownedBy(User::factory()->create())->create();
+        $stranger = User::factory()->create();
+        $group = $this->groupFor($stranger, '受託');
+
+        $this->actingAs($stranger)
+            ->put(route('projects.group.update', $project), ['group_id' => $group->id])
+            ->assertNotFound();
+    }
+
+    public function test_割り当ては人ごとに独立している(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $project = Project::factory()->ownedBy($owner)->withMembers($member)->create();
+
+        $ownerGroup = $this->groupFor($owner, 'オーナーの分類');
+
+        $this->actingAs($owner)
+            ->put(route('projects.group.update', $project), ['group_id' => $ownerGroup->id])
+            ->assertRedirect();
+
+        $this->assertSame($ownerGroup->id, $this->assignedGroupId($project, $owner));
+        $this->assertNull($this->assignedGroupId($project, $member));
     }
 
     public function test_グループを削除してもプロジェクトは残りグループなしになる(): void
     {
-        $owner = User::factory()->create();
-        $group = ProjectGroup::create(['name' => '受託']);
-        $project = Project::factory()->ownedBy($owner)->create(['group_id' => $group->id]);
+        $user = User::factory()->create();
+        $group = $this->groupFor($user, '受託');
+        $project = Project::factory()->ownedBy($user)->create();
 
-        $this->actingAs($owner)
+        $this->actingAs($user)->put(route('projects.group.update', $project), ['group_id' => $group->id]);
+
+        $this->actingAs($user)
             ->delete(route('project-groups.destroy', $group))
             ->assertRedirect(route('project-groups.index'));
 
         $this->assertDatabaseMissing('project_groups', ['id' => $group->id]);
         $this->assertDatabaseHas('projects', ['id' => $project->id]);
-        $this->assertNull($project->fresh()->group_id);
+        $this->assertNull($this->assignedGroupId($project, $user));
     }
 
     public function test_グループを並べ替えられる(): void
     {
-        $first = ProjectGroup::create(['name' => 'あ']);
-        $second = ProjectGroup::create(['name' => 'い']);
+        $user = User::factory()->create();
+        $first = $this->groupFor($user, 'あ', 0);
+        $second = $this->groupFor($user, 'い', 1);
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs($user)
             ->postJson(route('project-groups.reorder'), ['ids' => [$second->id, $first->id]])
             ->assertNoContent();
 
@@ -102,15 +209,14 @@ class ProjectGroupTest extends TestCase
         $user = User::factory()->create();
 
         // 名前順なら「あ」が先だが、並び順で「い」を先に持ってくる
-        $a = ProjectGroup::create(['name' => 'あグループ']);
-        $i = ProjectGroup::create(['name' => 'いグループ']);
+        $a = $this->groupFor($user, 'あグループ', 1);
+        $i = $this->groupFor($user, 'いグループ', 0);
 
-        Project::factory()->ownedBy($user)->create(['name' => 'あのプロジェクト', 'group_id' => $a->id]);
-        Project::factory()->ownedBy($user)->create(['name' => 'いのプロジェクト', 'group_id' => $i->id]);
+        $projectA = Project::factory()->ownedBy($user)->create(['name' => 'あのプロジェクト']);
+        $projectI = Project::factory()->ownedBy($user)->create(['name' => 'いのプロジェクト']);
 
-        $this->actingAs($user)
-            ->postJson(route('project-groups.reorder'), ['ids' => [$i->id, $a->id]])
-            ->assertNoContent();
+        $this->actingAs($user)->put(route('projects.group.update', $projectA), ['group_id' => $a->id]);
+        $this->actingAs($user)->put(route('projects.group.update', $projectI), ['group_id' => $i->id]);
 
         $sections = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('sections');
 
@@ -120,10 +226,12 @@ class ProjectGroupTest extends TestCase
     public function test_ダッシュボードにグループ名が出る(): void
     {
         $user = User::factory()->create();
-        $group = ProjectGroup::create(['name' => '受託']);
+        $group = $this->groupFor($user, '受託');
 
-        Project::factory()->ownedBy($user)->create(['name' => '所属あり', 'group_id' => $group->id]);
+        $project = Project::factory()->ownedBy($user)->create(['name' => '所属あり']);
         Project::factory()->ownedBy($user)->create(['name' => '所属なし']);
+
+        $this->actingAs($user)->put(route('projects.group.update', $project), ['group_id' => $group->id]);
 
         $this->actingAs($user)
             ->get(route('dashboard'))
