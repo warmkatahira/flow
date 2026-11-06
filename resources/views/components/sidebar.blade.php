@@ -12,9 +12,20 @@
        aria-label="プロジェクトリスト"
        class="fixed inset-y-0 left-0 z-50 w-64 shrink-0 -translate-x-full overflow-hidden bg-slate-800 transition-[translate,width,visibility] duration-200 max-lg:invisible data-[open=true]:translate-x-0 max-lg:data-[open=true]:visible lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:sidebar-closed:invisible lg:sidebar-closed:w-0">
     <div class="flex h-full w-64 flex-col">
-        <a href="{{ route('dashboard') }}" class="flex h-14 shrink-0 items-center border-b border-slate-700 px-4">
-            <x-application-logo class="h-7" inverted />
-        </a>
+        <div class="flex h-14 shrink-0 items-center justify-between border-b border-slate-700 pl-4 pr-2">
+            <a href="{{ route('dashboard') }}">
+                <x-application-logo class="h-7" inverted />
+            </a>
+
+            <button type="button" @click="$store.sidebar.toggle()"
+                    aria-label="プロジェクトリストを閉じる" title="プロジェクトリストを閉じる"
+                    class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-700 hover:text-white">
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                          d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" />
+                </svg>
+            </button>
+        </div>
 
         <div data-sidebar-scroll class="flex-1 space-y-5 overflow-y-auto px-2 py-4 [scrollbar-width:thin]">
             <section>

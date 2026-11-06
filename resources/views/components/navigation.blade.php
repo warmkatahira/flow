@@ -18,8 +18,15 @@
         <div class="flex justify-between h-14">
             <div class="flex min-w-0 flex-1 items-center gap-4">
                 @if ($hasSidebar)
-                    <button type="button" @click="$store.sidebar.toggle()" aria-label="プロジェクトリストの表示を切り替える"
-                            class="shrink-0 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+                    {{-- 矢印は押すと動く向き。開いていれば左、畳んでいれば右 --}}
+                    <button type="button" @click="$store.sidebar.toggle()"
+                            aria-label="プロジェクトリストの開閉" title="プロジェクトリストの開閉"
+                            class="flex shrink-0 items-center rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+                        <svg class="h-4 w-4 rotate-180 transition-transform duration-200 lg:rotate-0 lg:sidebar-closed:rotate-180"
+                             viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" />
+                        </svg>
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" clip-rule="evenodd"
                                   d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10zm.75 4.5a.75.75 0 000 1.5h14.5a.75.75 0 000-1.5H2.75z" />

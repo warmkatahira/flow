@@ -52,11 +52,59 @@ Alpine.directive('sortable', (element, { expression }, { evaluate }) => {
     });
 });
 
+/**
+ * 何もないところを掴んで横へドラッグするとスクロールする（マウスだけ。タッチは元からできる）
+ *
+ * カードや見出しのドラッグは並べ替えに使うので、ここでは触らない。
+ */
+Alpine.directive('drag-scroll', (element) => {
+    const ignored = 'article, [data-list-handle], a, button, input, textarea, select, label, form';
+    let startX = 0;
+    let startScrollLeft = 0;
+
+    const overflows = () => element.scrollWidth > element.clientWidth;
+    const panning = () => 'panning' in element.dataset;
+    // スクロールバーの上も target はこの要素になる
+    const onScrollbar = (event) => event.clientY > element.getBoundingClientRect().top + element.clientHeight;
+
+    element.addEventListener('pointerdown', (event) => {
+        if (event.pointerType !== 'mouse' || event.button !== 0 || ! overflows()
+            || event.target.closest(ignored) || onScrollbar(event)) {
+            return;
+        }
+
+        startX = event.clientX;
+        startScrollLeft = element.scrollLeft;
+        element.dataset.panning = '';
+        element.style.cursor = 'grabbing';
+        element.style.userSelect = 'none';
+        element.setPointerCapture(event.pointerId);
+    });
+
+    element.addEventListener('pointermove', (event) => {
+        if (panning()) {
+            element.scrollLeft = startScrollLeft - (event.clientX - startX);
+
+            return;
+        }
+
+        element.style.cursor = overflows() && ! event.target.closest(ignored) && ! onScrollbar(event) ? 'grab' : '';
+    });
+
+    element.addEventListener('lostpointercapture', () => {
+        delete element.dataset.panning;
+        element.style.cursor = '';
+        element.style.userSelect = '';
+    });
+});
+
 Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
     const { tasksUrl, listsUrl, archiveUrl } = evaluate(expression);
     const archiveZone = document.querySelector('[data-archive-zone]');
     // Mac の Ctrl＋クリックは右クリック扱いになるので、Mac では Cmd で複数選択する
     const isMac = /Macintosh/.test(navigator.userAgent);
+    // ドラッグしたまま端へ寄せると横へ送る。Chrome 任せだとボードの端に届きにくいので Sortable に任せる
+    const autoScroll = { forceAutoScrollFallback: true, scrollSensitivity: 80 };
 
     const refreshCounts = () => element.querySelectorAll('[data-list-id]').forEach((list) => {
         list.querySelector('[data-list-count]').textContent = list.querySelectorAll('[data-task-id]').length;
@@ -68,6 +116,7 @@ Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
 
     // リストの並べ替え
     sortables.push(Sortable.create(element, {
+        ...autoScroll,
         animation: 150,
         handle: '[data-list-handle]',
         draggable: '[data-list-id]',
@@ -86,6 +135,7 @@ Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
     // タスクの並べ替え（リストをまたいで動かせる）。Ctrl（Mac は Cmd）を押しながらクリックすると複数選択できる
     element.querySelectorAll('[data-tasks]').forEach((container) => {
         sortables.push(Sortable.create(container, {
+            ...autoScroll,
             animation: 150,
             group: 'tasks',
             draggable: '[data-task-id]',
@@ -155,7 +205,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
 
     const isIdle = () => pendingWrites === 0
         && ! Sortable.dragged
-        && ! board.querySelector('.task-selected')
+        && ! board.querySelector('.task-selected, [data-panning]')
         && ! [...board.querySelectorAll('form')].some((form) => form.offsetParent !== null);
 
     const refresh = async () => {

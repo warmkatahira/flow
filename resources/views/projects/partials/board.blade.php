@@ -16,7 +16,9 @@
     <span class="pointer-events-none">ここにドロップしてアーカイブ</span>
 </div>
 
-<div class="flex items-start gap-4 overflow-x-auto pb-4"
+{{-- 掴んで横へ動かせる場所を増やすため、画面の下まで広げる --}}
+<div class="flex min-h-[calc(100vh-16rem)] items-start gap-4 overflow-x-auto pb-4"
+     x-drag-scroll
      x-board="{
         tasksUrl: @js(route('tasks.reorder', $project)),
         listsUrl: @js(route('lists.reorder', $project)),

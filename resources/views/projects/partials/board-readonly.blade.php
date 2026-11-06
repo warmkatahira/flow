@@ -1,5 +1,5 @@
 {{-- アーカイブ中のプロジェクトのボード。見るだけなので操作の UI は持たない --}}
-<div class="flex items-start gap-4 overflow-x-auto pb-4">
+<div class="flex min-h-[calc(100vh-16rem)] items-start gap-4 overflow-x-auto pb-4" x-drag-scroll>
     @forelse ($project->taskLists as $list)
         <section class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm ring-1 ring-slate-300/70">
             <div class="flex items-center gap-2 rounded-t-xl px-3 py-2 {{ $list->color->headerClass() }}">
