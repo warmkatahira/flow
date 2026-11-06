@@ -9,6 +9,7 @@
      :data-menu-open="menuOpen ? '' : null"
      @pointerdown.stop
      @click.outside="menuOpen = false"
+     @submit="menuOpen = false"
      @keydown.escape.window="menuOpen = false"
      @scroll.window.capture="menuOpen = false"
      @resize.window="menuOpen = false">

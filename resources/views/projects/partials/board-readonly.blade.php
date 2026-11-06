@@ -11,7 +11,9 @@
 
             <div class="min-h-8 flex-1 space-y-2 overflow-y-auto p-2 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
                 @foreach ($list->tasks as $task)
-                    <article class="flex items-start gap-2 rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
+                    <article data-status="{{ $task->status->value }}" data-due="{{ $task->ended_on?->format('Y-m-d') }}"
+                             data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
+                             class="flex items-start gap-2 rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
                         <div class="flex shrink-0 flex-col items-center gap-1">
                             <span class="text-[10px] font-medium leading-4 text-slate-400">#{{ $task->number }}</span>
                             <x-task-status-icon :status="$task->status" class="h-4 w-4" />

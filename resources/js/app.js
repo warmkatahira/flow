@@ -276,6 +276,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
 
             // 中の Alpine は差し替えを検知して自動で作り直される
             board.innerHTML = data.board;
+            Alpine.store('boardFilter').apply();
             archive.innerHTML = data.archive;
             archiveCount.textContent = data.archiveCount;
 
@@ -468,6 +469,168 @@ Alpine.data('boardMenu', () => ({
         });
     },
 }));
+
+/**
+ * アーカイブの確認
+ *
+ * 取り消し用のトーストが出るので、ドラッグでのアーカイブには出さない。
+ */
+Alpine.data('archiveConfirm', () => ({
+    kind: '',
+    name: '',
+    note: '',
+    form: null,
+
+    ask(event) {
+        const form = event.target;
+
+        if (! form.dataset.archiveConfirm) {
+            return;
+        }
+
+        event.preventDefault();
+
+        this.form = form;
+        this.kind = form.dataset.archiveConfirm;
+        this.name = form.dataset.name;
+        this.note = form.dataset.note ?? '';
+        this.$refs.dialog.showModal();
+    },
+
+    accept() {
+        // 確認している間に他の人の変更でボードが差し替わっていても送れるようにする
+        if (! this.form.isConnected) {
+            document.body.append(this.form);
+        }
+
+        // submit() は submit イベントを起こさないので、ここへ戻ってこない
+        this.form.submit();
+    },
+}));
+
+/**
+ * ボードの絞り込み
+ *
+ * カードに持たせた data-status / data-due / data-assignees を見て、画面の中で隠すだけ。
+ * 種類どうしは AND、同じ種類の中は OR。フォームの送信で読み込み直しても消えないよう、タブの間は覚えておく。
+ */
+const ymd = (date) => [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+].join('-');
+
+const daysFrom = (date, days) => {
+    const result = new Date(date);
+
+    result.setDate(result.getDate() + days);
+
+    return result;
+};
+
+Alpine.store('boardFilter', {
+    key: null,
+    me: null,
+    statuses: [],
+    due: null,
+    from: '',
+    to: '',
+    assignees: [],
+    mine: false,
+
+    get count() {
+        return this.statuses.length + this.assignees.length + (this.due ? 1 : 0);
+    },
+
+    load(projectId, me) {
+        this.key = `flow.filter.${projectId}`;
+        this.me = me;
+
+        try {
+            Object.assign(this, JSON.parse(sessionStorage.getItem(this.key) ?? '{}'));
+        } catch {
+            // 覚えていなければ絞り込みなし
+        }
+
+        this.apply();
+    },
+
+    changed() {
+        const { statuses, due, from, to, assignees, mine } = this;
+
+        remember(sessionStorage, this.key, JSON.stringify({ statuses, due, from, to, assignees, mine }));
+        this.apply();
+    },
+
+    toggle(field, value) {
+        this[field] = this[field].includes(value)
+            ? this[field].filter((current) => current !== value)
+            : [...this[field], value];
+        this.changed();
+    },
+
+    toggleMine() {
+        this.mine = ! this.mine;
+        this.changed();
+    },
+
+    pickDue(value) {
+        this.due = this.due === value ? null : value;
+        this.changed();
+    },
+
+    clear() {
+        Object.assign(this, { statuses: [], due: null, from: '', to: '', assignees: [], mine: false });
+        this.changed();
+    },
+
+    /** 締切日の範囲。[から, まで]。空なら上限・下限なし */
+    dueRange() {
+        const today = new Date();
+        const monday = daysFrom(today, -((today.getDay() + 6) % 7));
+
+        return {
+            past: ['', ymd(daysFrom(today, -1))],
+            today: [ymd(today), ymd(today)],
+            tomorrow: [ymd(daysFrom(today, 1)), ymd(daysFrom(today, 1))],
+            week: [ymd(monday), ymd(daysFrom(monday, 6))],
+            nextWeek: [ymd(daysFrom(monday, 7)), ymd(daysFrom(monday, 13))],
+            next14: [ymd(today), ymd(daysFrom(today, 14))],
+            custom: [this.from, this.to],
+        }[this.due];
+    },
+
+    matches(card, range) {
+        const { status, due, assignees } = card.dataset;
+        const ids = assignees ? assignees.split(',').map(Number) : [];
+
+        if (this.statuses.length > 0 && ! this.statuses.includes(status)) {
+            return false;
+        }
+
+        if (this.mine && ! ids.includes(this.me)) {
+            return false;
+        }
+
+        if (this.assignees.length > 0 && ! this.assignees.some((id) => (id === 0 ? ids.length === 0 : ids.includes(id)))) {
+            return false;
+        }
+
+        if (range && (range[0] || range[1])) {
+            return Boolean(due) && (! range[0] || due >= range[0]) && (! range[1] || due <= range[1]);
+        }
+
+        return true;
+    },
+
+    apply() {
+        const range = this.due ? this.dueRange() : null;
+
+        document.querySelectorAll('article[data-status]').forEach((card) => {
+            card.classList.toggle('hidden', ! this.matches(card, range));
+        });
+    },
+});
 
 /**
  * タスクの移動先を選ぶダイアログ

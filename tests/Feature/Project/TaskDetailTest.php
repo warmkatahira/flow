@@ -419,6 +419,18 @@ class TaskDetailTest extends TestCase
             ->assertSee('☑ 0/1');
     }
 
+    public function test_カードに絞り込み用の値が入る(): void
+    {
+        $this->task->update(['status' => 'doing', 'ended_on' => '2026-11-10']);
+        $this->task->assignees()->attach($this->user);
+
+        $this->actingAs($this->user)->get(route('projects.show', $this->project))
+            ->assertOk()
+            ->assertSee('data-status="doing"', false)
+            ->assertSee('data-due="2026-11-10"', false)
+            ->assertSee('data-assignees="'.$this->user->id.'"', false);
+    }
+
     public function test_リンクからタスクを開ける(): void
     {
         $this->actingAs($this->user)->get(route('projects.show', [$this->project, 'task' => $this->task->id]))

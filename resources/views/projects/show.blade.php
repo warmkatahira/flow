@@ -42,7 +42,10 @@
                     @endif
                 </nav>
 
-                <x-favorite-button :project="$project" />
+                <div class="flex shrink-0 items-center gap-2">
+                    @include('projects.partials.board-filter')
+                    <x-favorite-button :project="$project" />
+                </div>
             </div>
         </div>
 

@@ -53,5 +53,6 @@
     </div>
 
     <x-toast />
+    <x-archive-confirm />
 </body>
 </html>

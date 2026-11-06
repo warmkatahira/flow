@@ -58,7 +58,7 @@
                         <div class="my-1.5 border-t border-slate-100"></div>
 
                         <form autocomplete="off" method="POST" action="{{ route('lists.archive', $list) }}"
-                              onsubmit="return confirm(@js($list->name.' をアーカイブします。中のタスクも一緒にボードから消えます。よろしいですか？'));">
+                              data-archive-confirm="リスト" data-name="{{ $list->name }}" data-note="中のタスクも一緒にボードから消えます。">
                             @csrf
                             <x-board-menu-item type="submit">リストをアーカイブ</x-board-menu-item>
                         </form>
@@ -88,6 +88,8 @@
             <div data-tasks="{{ $list->id }}" class="min-h-8 flex-1 space-y-2 overflow-y-auto p-2 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
                 @foreach ($list->tasks as $task)
                     <article data-task-id="{{ $task->id }}" data-task-url="{{ route('tasks.show', $task) }}"
+                             data-status="{{ $task->status->value }}" data-due="{{ $task->ended_on?->format('Y-m-d') }}"
+                             data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              class="cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200 transition hover:ring-slate-300">
                         <div class="flex items-start gap-2">
                             <div class="flex shrink-0 flex-col items-center gap-1">
@@ -141,7 +143,8 @@
 
                                 <div class="my-1.5 border-t border-slate-100"></div>
 
-                                <form autocomplete="off" method="POST" action="{{ route('tasks.archive', $task) }}">
+                                <form autocomplete="off" method="POST" action="{{ route('tasks.archive', $task) }}"
+                                      data-archive-confirm="タスク" data-name="{{ $task->title }}">
                                     @csrf
                                     <x-board-menu-item type="submit">タスクをアーカイブ</x-board-menu-item>
                                 </form>
