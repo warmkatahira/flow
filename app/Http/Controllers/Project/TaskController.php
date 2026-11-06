@@ -31,7 +31,7 @@ class TaskController extends Controller
         ]);
 
         // 番号がぶつからないよう、プロジェクトの行をロックしてから採番する
-        DB::transaction(function () use ($project, $list, $attributes) {
+        DB::transaction(function () use ($request, $project, $list, $attributes) {
             $locked = Project::whereKey($project->getKey())->lockForUpdate()->firstOrFail();
 
             $task = $list->tasks()->make([
@@ -42,6 +42,7 @@ class TaskController extends Controller
             // 採番と所属はユーザー入力から入り込まないよう、fillable には載せずここで入れる
             $task->project_id = $locked->getKey();
             $task->number = $locked->nextTaskNumber();
+            $task->created_by = $request->user()->getKey();
             $task->save();
         });
 
@@ -51,28 +52,9 @@ class TaskController extends Controller
     }
 
     /**
-     * タスクを更新する
-     */
-    public function update(Request $request, Task $task): RedirectResponse
-    {
-        Gate::authorize('work', $task->project);
-
-        abort_unless($task->isOnBoard(), 404);
-
-        $task->update($request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:10000'],
-        ]));
-
-        BoardChanged::notify($task->project);
-
-        return back();
-    }
-
-    /**
      * タスクを複製してすぐ下に置く
      */
-    public function duplicate(Task $task): RedirectResponse
+    public function duplicate(Request $request, Task $task): RedirectResponse
     {
         $project = $task->project;
 
@@ -80,7 +62,7 @@ class TaskController extends Controller
 
         abort_unless($task->isOnBoard(), 404);
 
-        $copy = DB::transaction(function () use ($project, $task) {
+        $copy = DB::transaction(function () use ($request, $project, $task) {
             $locked = Project::whereKey($project->getKey())->lockForUpdate()->firstOrFail();
 
             $task->list->tasks()->where('position', '>', $task->position)->increment('position');
@@ -89,7 +71,10 @@ class TaskController extends Controller
             $copy->title = mb_substr($task->title, 0, 250).' のコピー';
             $copy->number = $locked->nextTaskNumber();
             $copy->position = $task->position + 1;
+            $copy->created_by = $request->user()->getKey();
             $copy->save();
+
+            $task->copyDetailsTo($copy);
 
             return $copy;
         });
@@ -128,6 +113,7 @@ class TaskController extends Controller
             if ($from->isNot($to)) {
                 $task->project_id = $to->getKey();
                 $task->number = $to->nextTaskNumber();
+                $task->keepAssigneesIn($to);
             }
 
             $task->task_list_id = $list->getKey();

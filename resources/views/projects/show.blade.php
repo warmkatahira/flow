@@ -66,6 +66,12 @@
             @unless ($project->isArchived())
                 @include('projects.partials.move-dialog')
                 @include('projects.partials.list-edit-dialog')
+                {{-- ?task= 付きのリンクで開いたら、そのタスクを開く --}}
+                @include('projects.partials.task-dialog', [
+                    'openUrl' => ($opened = $project->tasks()->active()->find(request()->integer('task'))) && $opened->isOnBoard()
+                        ? route('tasks.show', $opened)
+                        : null,
+                ])
             @endunless
 
             <div x-show="tab === 'board'" data-live-board class="flex flex-1 flex-col">

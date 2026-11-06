@@ -101,5 +101,10 @@ return [
         'role' => '権限',
         'is_active' => 'ステータス',
         'color' => '色',
+        'title' => 'タイトル',
+        'status' => 'ステータス',
+        'started_on' => '開始日',
+        'ended_on' => '終了日',
+        'body' => 'コメント',
     ],
 ];

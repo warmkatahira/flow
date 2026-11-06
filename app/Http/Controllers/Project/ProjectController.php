@@ -14,6 +14,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -81,7 +82,12 @@ class ProjectController extends Controller
             'project' => $project->load([
                 'users' => fn ($query) => $query->orderBy('users.id'),
                 'taskLists' => fn ($query) => $query->active(),
-                'taskLists.tasks' => fn ($query) => $query->active(),
+                'taskLists.tasks' => fn ($query) => $query->active()->withCount([
+                    'comments',
+                    'checklistItems',
+                    'checklistItems as done_checklist_items_count' => fn ($items) => $items->where('is_done', true),
+                ]),
+                'taskLists.tasks.assignees',
             ]),
             'archivedLists' => $project->taskLists()
                 ->archived()
@@ -159,6 +165,12 @@ class ProjectController extends Controller
             ->all();
 
         $project->users()->sync($this->participants($request) + $deleted);
+
+        // 参加者から外れた人は担当からも外す
+        DB::table('task_user')
+            ->whereIn('task_id', $project->tasks()->select('id'))
+            ->whereNotIn('user_id', $project->users()->withTrashed()->pluck('users.id'))
+            ->delete();
 
         BoardChanged::notify($project, reload: true);
 

@@ -114,6 +114,15 @@ Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
     const sortables = [];
     cleanup(() => sortables.forEach((sortable) => sortable.destroy()));
 
+    // カードを押したら開く。Ctrl（Mac は Cmd）は複数選択なので開かない
+    element.addEventListener('click', (event) => {
+        const card = event.target.closest('[data-task-id]');
+
+        if (card && ! event.ctrlKey && ! event.metaKey && ! event.target.closest('button, a, form, [role=menu]')) {
+            window.dispatchEvent(new CustomEvent('open-task', { detail: { url: card.dataset.taskUrl } }));
+        }
+    });
+
     // リストの並べ替え
     sortables.push(Sortable.create(element, {
         ...autoScroll,
@@ -255,6 +264,14 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
 
     const timer = setInterval(refresh, 500);
 
+    // 自分の変更は通知を待たずに取り直す（Reverb が止まっていても画面が古いままにならない）
+    const onRefresh = () => {
+        stale = true;
+        refresh();
+    };
+
+    window.addEventListener('board-refresh', onRefresh);
+
     window.Echo.private(channel).listen('.board.changed', ({ reload }) => {
         if (reload) {
             location.reload();
@@ -279,6 +296,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
 
     cleanup(() => {
         clearInterval(timer);
+        window.removeEventListener('board-refresh', onRefresh);
         connection.unbind('connected', onConnected);
         window.Echo.leave(channel);
     });
@@ -477,6 +495,144 @@ Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
     async pickList() {
         await this.$nextTick();
         this.targetListId = this.listOptions[0]?.id ?? null;
+    },
+}));
+
+/**
+ * コメントのメンション
+ *
+ * 文字カーソルの直前が「@文字列」のとき、一致する参加者を出す。選んだら「@名前 」に置き換える。
+ * 実際に誰へのメンションになるかはサーバーが本文から決める。
+ */
+Alpine.data('mentionBox', (members) => ({
+    candidates: [],
+    active: 0,
+    start: 0,
+
+    update() {
+        const { body } = this.$refs;
+        const match = body.value.slice(0, body.selectionStart).match(/[@＠]([^\s@＠]*)$/);
+
+        this.active = 0;
+        this.start = match?.index ?? 0;
+        this.candidates = match ? members.filter((member) => member.name.includes(match[1])) : [];
+    },
+
+    keydown(event) {
+        // 変換の確定の Enter は候補の決定にしない
+        if (this.candidates.length === 0 || event.isComposing) {
+            return;
+        }
+
+        const count = this.candidates.length;
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            this.active = (this.active + (event.key === 'ArrowDown' ? 1 : count - 1)) % count;
+        } else if (event.key === 'Enter' || event.key === 'Tab') {
+            this.choose(this.candidates[this.active]);
+        } else if (event.key === 'Escape') {
+            this.candidates = [];
+        } else {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+    },
+
+    choose(member) {
+        const { body } = this.$refs;
+        const before = `${body.value.slice(0, this.start)}@${member.name} `;
+
+        body.value = before + body.value.slice(body.selectionStart);
+        body.setSelectionRange(before.length, before.length);
+        this.candidates = [];
+    },
+}));
+
+/**
+ * タスクの詳細
+ *
+ * 中身はサーバーが組み立てる。data-task-form の送信は画面遷移させず、返ってきた中身で差し替える。
+ * 閉じたら、変更があればボードを取り直す。
+ */
+Alpine.data('taskDialog', (openUrl) => ({
+    error: '',
+    changed: false,
+
+    init() {
+        if (openUrl) {
+            this.open(openUrl);
+        }
+    },
+
+    async open(url) {
+        this.error = '';
+        this.$refs.body.innerHTML = '<p class="p-6 text-sm text-slate-400">読み込み中…</p>';
+        this.$refs.dialog.showModal();
+
+        const response = await fetch(url, { headers: { Accept: 'text/html' } });
+
+        // 他の人がアーカイブしたり動かしたりしたばかりのとき
+        if (! response.ok) {
+            this.close();
+
+            return;
+        }
+
+        this.$refs.body.innerHTML = await response.text();
+    },
+
+    close() {
+        this.$refs.dialog.close();
+    },
+
+    closed() {
+        if (this.changed) {
+            this.changed = false;
+            window.dispatchEvent(new CustomEvent('board-refresh'));
+        }
+    },
+
+    async submit(event) {
+        const form = event.target.closest('[data-task-form]');
+
+        if (! form || event.defaultPrevented) {
+            return;
+        }
+
+        event.preventDefault();
+        this.error = '';
+
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                Accept: 'application/json',
+            },
+            body: new FormData(form, event.submitter),
+        });
+
+        if (response.status === 422) {
+            const { errors } = await response.json();
+
+            this.error = Object.values(errors)[0][0];
+
+            return;
+        }
+
+        if (! response.ok) {
+            this.error = '保存できませんでした。画面を読み込み直してください。';
+
+            return;
+        }
+
+        this.changed = true;
+        this.$refs.body.innerHTML = await response.text();
+
+        if (form.dataset.refocus) {
+            this.$refs.body.querySelector(form.dataset.refocus)?.focus();
+        }
     },
 }));
 

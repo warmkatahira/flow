@@ -66,7 +66,7 @@ class TaskListController extends Controller
     /**
      * リストを中のタスクごと複製して、すぐ右に置く（アーカイブ済みのタスクは複製しない）
      */
-    public function duplicate(TaskList $list): RedirectResponse
+    public function duplicate(Request $request, TaskList $list): RedirectResponse
     {
         $project = $list->project;
 
@@ -74,7 +74,7 @@ class TaskListController extends Controller
 
         abort_if($list->isArchived(), 404);
 
-        $copy = DB::transaction(function () use ($project, $list) {
+        $copy = DB::transaction(function () use ($request, $project, $list) {
             $locked = Project::whereKey($project->getKey())->lockForUpdate()->firstOrFail();
 
             $project->taskLists()->where('position', '>', $list->position)->increment('position');
@@ -90,7 +90,10 @@ class TaskListController extends Controller
                 $taskCopy = $task->replicate();
                 $taskCopy->task_list_id = $copy->getKey();
                 $taskCopy->number = $number++;
+                $taskCopy->created_by = $request->user()->getKey();
                 $taskCopy->save();
+
+                $task->copyDetailsTo($taskCopy);
             }
 
             return $copy;
@@ -132,6 +135,7 @@ class TaskListController extends Controller
                 $task->project_id = $to->getKey();
                 $task->number = $number++;
                 $task->save();
+                $task->keepAssigneesIn($to);
             }
 
             $list->project_id = $to->getKey();

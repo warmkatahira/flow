@@ -92,15 +92,45 @@
             {{-- タスク --}}
             <div data-tasks="{{ $list->id }}" class="min-h-8 space-y-2 p-2">
                 @foreach ($list->tasks as $task)
-                    <article data-task-id="{{ $task->id }}"
-                             x-data="{ editing: false }"
-                             class="cursor-grab rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200 transition hover:ring-slate-300">
-                        <div x-show="! editing" class="flex items-start gap-2">
-                            <span class="mt-0.5 shrink-0 text-[10px] font-medium text-slate-400">#{{ $task->number }}</span>
-                            <p class="min-w-0 flex-1 text-sm text-slate-800">{{ $task->title }}</p>
+                    <article data-task-id="{{ $task->id }}" data-task-url="{{ route('tasks.show', $task) }}"
+                             class="cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200 transition hover:ring-slate-300">
+                        <div class="flex items-start gap-2">
+                            <div class="flex shrink-0 flex-col items-center gap-1">
+                                <span class="text-[10px] font-medium leading-4 text-slate-400">#{{ $task->number }}</span>
+                                <x-task-status-icon :status="$task->status" class="h-4 w-4" />
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <p class="break-words text-sm text-slate-800">{{ $task->title }}</p>
+
+                                @if ($task->started_on || $task->ended_on || $task->checklist_items_count || $task->comments_count || $task->assignees->isNotEmpty())
+                                    <div class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
+                                        @if ($task->started_on || $task->ended_on)
+                                            <span>{{ $task->started_on?->format('n/j') }}〜{{ $task->ended_on?->format('n/j') }}</span>
+                                        @endif
+                                        @if ($task->checklist_items_count)
+                                            <span title="チェックリスト">☑ {{ $task->done_checklist_items_count }}/{{ $task->checklist_items_count }}</span>
+                                        @endif
+                                        @if ($task->comments_count)
+                                            <span title="コメント">💬 {{ $task->comments_count }}</span>
+                                        @endif
+                                        @if ($task->assignees->isNotEmpty())
+                                            <span class="ml-auto flex -space-x-1.5">
+                                                @foreach ($task->assignees as $assignee)
+                                                    <x-user-avatar :user="$assignee" size="xxs" class="ring-2 ring-white" title="{{ $assignee->name }}" />
+                                                @endforeach
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
 
                             <x-board-menu title="タスクメニュー" button-class="p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-                                <x-board-menu-item @click="menuOpen = false; editing = true">タスクを開く</x-board-menu-item>
+                                <button type="button" role="menuitem"
+                                        @click="menuOpen = false; $dispatch('open-task', { url: @js(route('tasks.show', $task)) })"
+                                        class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
+                                    タスクを開く
+                                </button>
 
                                 <div class="my-1.5 border-t border-slate-100"></div>
 
@@ -121,19 +151,6 @@
                                     <x-board-menu-item type="submit">タスクをアーカイブ</x-board-menu-item>
                                 </form>
                             </x-board-menu>
-                        </div>
-
-                        <div x-show="editing" x-cloak class="space-y-2">
-                            <form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" class="space-y-2">
-                                @csrf
-                                @method('PUT')
-                                <input autocomplete="off" type="text" name="title" value="{{ $task->title }}" required maxlength="255"
-                                       class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
-                                <div class="flex items-center gap-2">
-                                    <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">保存</button>
-                                    <button type="button" @click="editing = false" class="text-xs text-slate-600 hover:text-slate-900">やめる</button>
-                                </div>
-                            </form>
                         </div>
                     </article>
                 @endforeach

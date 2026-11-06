@@ -12,7 +12,10 @@
             <div class="min-h-8 space-y-2 p-2">
                 @foreach ($list->tasks as $task)
                     <article class="flex items-start gap-2 rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
-                        <span class="mt-0.5 shrink-0 text-[10px] font-medium text-slate-400">#{{ $task->number }}</span>
+                        <div class="flex shrink-0 flex-col items-center gap-1">
+                            <span class="text-[10px] font-medium leading-4 text-slate-400">#{{ $task->number }}</span>
+                            <x-task-status-icon :status="$task->status" class="h-4 w-4" />
+                        </div>
                         <p class="min-w-0 flex-1 text-sm text-slate-800">{{ $task->title }}</p>
                     </article>
                 @endforeach

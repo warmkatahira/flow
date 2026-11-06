@@ -1,0 +1,78 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
+
+#[Fillable(['body'])]
+class TaskComment extends Model
+{
+    /**
+     * @return BelongsTo<Task, $this>
+     */
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class);
+    }
+
+    /**
+     * 投稿した人（削除済みのユーザーの投稿も名前を出す）
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    /**
+     * メンションされた人（削除済みのユーザーも表示には残す）
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function mentions(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'task_comment_mentions')->withTimestamps()->withTrashed();
+    }
+
+    /**
+     * 本文の「@名前」からメンションを決める
+     *
+     * 渡した人（プロジェクトの参加者）の名前だけを探すので、それ以外の人はメンションできない。
+     * 「@田中太郎」が「田中」へのメンションにならないよう、長い名前から探して取り除いていく。
+     *
+     * @param  Collection<int, User>  $participants
+     */
+    public function syncMentions(Collection $participants): void
+    {
+        $body = $this->body;
+        $ids = [];
+
+        foreach ($participants->groupBy('name')->sortByDesc(fn ($users, $name) => mb_strlen($name)) as $name => $users) {
+            if (str_contains($body, "@{$name}")) {
+                $ids = [...$ids, ...$users->modelKeys()];
+                $body = str_replace("@{$name}", '', $body);
+            }
+        }
+
+        $this->mentions()->sync($ids);
+    }
+
+    /**
+     * 本文を HTML にする。全体をエスケープしてから、メンションの部分だけ色を付ける
+     */
+    public function bodyHtml(): HtmlString
+    {
+        $tags = $this->mentions->mapWithKeys(fn (User $user) => [
+            e("@{$user->name}") => '<span class="rounded bg-sky-50 px-0.5 text-sky-600">'.e("@{$user->name}").'</span>',
+        ]);
+
+        // strtr は長い方から置き換えるので、名前が前方一致していても壊れない
+        return new HtmlString(strtr(e($this->body), $tags->all()));
+    }
+}

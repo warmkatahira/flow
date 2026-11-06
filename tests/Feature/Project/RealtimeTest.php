@@ -129,7 +129,7 @@ class RealtimeTest extends TestCase
 
         $this->actingAs($this->user)
             ->put(route('tasks.update', $this->task), ['title' => '保存される'])
-            ->assertRedirect();
+            ->assertOk();
 
         $this->assertSame('保存される', $this->task->fresh()->title);
     }

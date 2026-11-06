@@ -8,7 +8,10 @@ use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Project\ProjectFavoriteController;
 use App\Http\Controllers\Project\ProjectGroupAssignmentController;
 use App\Http\Controllers\Project\ProjectGroupController;
+use App\Http\Controllers\Project\TaskChecklistController;
+use App\Http\Controllers\Project\TaskCommentController;
 use App\Http\Controllers\Project\TaskController;
+use App\Http\Controllers\Project\TaskDetailController;
 use App\Http\Controllers\Project\TaskListController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\User\UserImportController;
@@ -68,7 +71,22 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     Route::post('lists/{list}/unarchive', [TaskListController::class, 'unarchive'])->name('lists.unarchive');
     Route::delete('lists/{list}', [TaskListController::class, 'destroy'])->name('lists.destroy');
     Route::post('lists/{list}/tasks', [TaskController::class, 'store'])->name('tasks.store');
-    Route::put('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+
+    // タスクの詳細。どれも詳細画面の中身を返す
+    Route::get('tasks/{task}', [TaskDetailController::class, 'show'])->name('tasks.show');
+    Route::put('tasks/{task}', [TaskDetailController::class, 'update'])->name('tasks.update');
+    Route::put('tasks/{task}/status', [TaskDetailController::class, 'status'])->name('tasks.status');
+    Route::put('tasks/{task}/period', [TaskDetailController::class, 'period'])->name('tasks.period');
+    Route::post('tasks/{task}/assignee', [TaskDetailController::class, 'assignee'])->name('tasks.assignee');
+    Route::post('tasks/{task}/checklists', [TaskChecklistController::class, 'store'])->name('tasks.checklists.store');
+    Route::put('checklists/{checklist}', [TaskChecklistController::class, 'update'])->name('checklists.update');
+    Route::delete('checklists/{checklist}', [TaskChecklistController::class, 'destroy'])->name('checklists.destroy');
+    Route::post('checklists/{checklist}/items', [TaskChecklistController::class, 'storeItem'])->name('checklists.items.store');
+    Route::post('checklist-items/{item}/toggle', [TaskChecklistController::class, 'toggleItem'])->name('checklist-items.toggle');
+    Route::delete('checklist-items/{item}', [TaskChecklistController::class, 'destroyItem'])->name('checklist-items.destroy');
+    Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
+    Route::delete('comments/{comment}', [TaskCommentController::class, 'destroy'])->name('comments.destroy');
+
     Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
     Route::post('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
     Route::post('tasks/{task}/archive', [TaskController::class, 'archive'])->name('tasks.archive');
