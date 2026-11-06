@@ -107,7 +107,7 @@ class UserController extends Controller
 
         return redirect()
             ->route('users.index')
-            ->with('status', 'ユーザーを削除しました。');
+            ->with('toast', ['message' => '削除しました', 'url' => route('users.restore', $user)]);
     }
 
     /**

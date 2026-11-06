@@ -89,7 +89,7 @@ class ProjectGroupController extends Controller
 
         return redirect()
             ->route('project-groups.index')
-            ->with('status', 'グループを削除しました。入れていたプロジェクトはグループなしになりました。');
+            ->with('toast', ['message' => '削除しました']);
     }
 
     /**

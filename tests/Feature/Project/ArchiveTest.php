@@ -333,7 +333,7 @@ class ArchiveTest extends TestCase
             ->postJson(route('tasks.archive-many', $project), ['ids' => [$first->id, $second->id]])
             ->assertOk()
             ->assertJson(['archived' => 2])
-            ->assertSessionHas('status', '2件のタスクをアーカイブしました。');
+            ->assertSessionHas('toast.message', '2件のタスクをアーカイブしました');
 
         $this->assertTrue($first->fresh()->isArchived());
         $this->assertTrue($second->fresh()->isArchived());
@@ -371,5 +371,95 @@ class ArchiveTest extends TestCase
             ->assertForbidden();
 
         $this->assertFalse($task->fresh()->isArchived());
+    }
+
+    public function test_アーカイブの取り消しはタスクを元の位置に戻す(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $list = $this->listFor($project);
+        $first = $this->taskIn($list, $user, '1件目');
+        $second = $this->taskIn($list, $user, '2件目');
+        $second->position = 5;
+        $second->save();
+        $first->position = 2;
+        $first->save();
+
+        $this->actingAs($user)->post(route('tasks.archive', $first))
+            ->assertSessionHas('toast.url', route('tasks.unarchive', $first));
+
+        $this->actingAs($user)->post(route('tasks.unarchive', $first), ['undo' => 1])
+            ->assertSessionMissing('status');
+
+        $first->refresh();
+        $this->assertFalse($first->isArchived());
+        $this->assertSame(2, $first->position);
+    }
+
+    public function test_アーカイブの取り消しはリストを元の位置に戻す(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $list = $this->listFor($project);
+        $list->position = 3;
+        $list->save();
+        $last = $this->listFor($project);
+        $last->position = 9;
+        $last->save();
+
+        $this->actingAs($user)->post(route('lists.archive', $list))
+            ->assertSessionHas('toast.url', route('lists.unarchive', $list));
+
+        $this->actingAs($user)->post(route('lists.unarchive', $list), ['undo' => 1]);
+
+        $list->refresh();
+        $this->assertFalse($list->isArchived());
+        $this->assertSame(3, $list->position);
+    }
+
+    public function test_まとめてアーカイブしたタスクを取り消せる(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $list = $this->listFor($project);
+        $first = $this->taskIn($list, $user, '1件目');
+        $second = $this->taskIn($list, $user, '2件目');
+        $other = $this->taskIn($list, $user, '前からアーカイブ済み');
+        $other->archive();
+
+        $this->actingAs($user)
+            ->postJson(route('tasks.archive-many', $project), ['ids' => [$first->id, $second->id]])
+            ->assertSessionHas('toast.ids', [$first->id, $second->id]);
+
+        $this->actingAs($user)->post(route('tasks.unarchive-many', $project), ['ids' => [$first->id, $second->id]]);
+
+        $this->assertFalse($first->fresh()->isArchived());
+        $this->assertFalse($second->fresh()->isArchived());
+        $this->assertTrue($other->fresh()->isArchived());
+    }
+
+    public function test_他のプロジェクトのタスクはまとめて取り消せない(): void
+    {
+        $user = User::factory()->create();
+        $mine = Project::factory()->ownedBy($user)->create();
+        $other = Project::factory()->ownedBy($user)->create();
+        $task = $this->taskIn($this->listFor($other), $user, '別のプロジェクト');
+        $task->archive();
+
+        $this->actingAs($user)->post(route('tasks.unarchive-many', $mine), ['ids' => [$task->id]]);
+
+        $this->assertTrue($task->fresh()->isArchived());
+    }
+
+    public function test_完全な削除は取り消しを出さない(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $task = $this->taskIn($this->listFor($project), $user, 'タスク');
+        $task->archive();
+
+        $this->actingAs($user)->from(route('projects.show', $project))
+            ->delete(route('tasks.destroy', $task))
+            ->assertSessionHas('toast', ['message' => '削除しました']);
     }
 }

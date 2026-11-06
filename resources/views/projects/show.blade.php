@@ -5,7 +5,7 @@
     $isOwner = $project->roleOf($me) === ProjectRole::Owner;
 @endphp
 
-<x-layouts.app :title="$project->name" fill>
+<x-layouts.app :title="$project->name" fill sidebar>
     <x-slot:header>
         <div class="flex items-center justify-between gap-4">
             <div class="flex min-w-0 items-center gap-2">

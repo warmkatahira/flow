@@ -60,7 +60,7 @@
                         return this.all.filter((project) => this.$store.favorites.has(project.id) && this.matches(project.name)).length;
                     },
                  }"
->
+                 x-init="$store.favorites.ids = @js($favoriteIds)">
                 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <h2 class="text-sm font-bold text-slate-500">
                         参加しているプロジェクト

@@ -10,8 +10,14 @@
 
 {{-- ドラッグ中だけ出る。ここに落としたタスクをまとめてアーカイブする（resources/js/app.js の x-board） --}}
 <div data-archive-zone
-     class="hidden fixed bottom-6 left-1/2 z-40 max-h-20 w-80 -translate-x-1/2 overflow-hidden rounded-xl border-2 border-dashed border-amber-400 bg-amber-50 px-6 py-5 text-center text-sm font-semibold text-amber-800 shadow-lg has-[[data-task-id]]:bg-amber-200">
-    <span class="pointer-events-none">ここにドロップしてアーカイブ</span>
+     class="hidden fixed bottom-6 left-1/2 z-40 w-80 -translate-x-1/2 animate-flow-rise overflow-hidden rounded-2xl bg-slate-900/85 px-5 py-4 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-md transition-[background-color,scale] duration-200 has-[[data-task-id]]:scale-105 has-[[data-task-id]]:bg-sky-500 [&_[data-task-id]]:absolute [&_[data-task-id]]:opacity-0">
+    <span class="pointer-events-none flex items-center justify-center gap-2.5">
+        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M2 3a1 1 0 00-1 1v1a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1H2z" />
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 01-1.99 1.79H4.802a2 2 0 01-1.99-1.79L2 7.5zM7 11a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
+        </svg>
+        ここにドロップしてアーカイブ
+    </span>
 </div>
 
 {{-- 掴んで横へ動かせる場所を増やすため、画面の下まで広げる --}}

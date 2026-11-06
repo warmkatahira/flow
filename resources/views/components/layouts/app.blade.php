@@ -2,6 +2,8 @@
     'title' => null,
     // 中身を画面の下まで伸ばすとき
     'fill' => false,
+    // 左のプロジェクトリストを出すか（プロジェクトの画面だけ）
+    'sidebar' => false,
 ])
 
 <!DOCTYPE html>
@@ -28,14 +30,13 @@
 </head>
 <body class="font-sans antialiased bg-slate-100 text-slate-800">
     <div class="flex min-h-screen">
-        {{-- パスワードの変更が済むまでは他の画面へ行けないので出さない --}}
-        @unless (auth()->user()->must_change_password)
+        @if ($sidebar)
             <x-sidebar />
-        @endunless
+        @endif
 
         {{-- min-w-0 がないとボードの幅に引っ張られて、横スクロールがボードの中に収まらない --}}
         <div class="flex min-h-screen min-w-0 flex-1 flex-col">
-            <x-navigation />
+            <x-navigation :has-sidebar="$sidebar" />
 
             @isset($header)
                 <header class="bg-white border-b border-slate-200">
@@ -50,5 +51,7 @@
             </main>
         </div>
     </div>
+
+    <x-toast />
 </body>
 </html>

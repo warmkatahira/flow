@@ -1,6 +1,6 @@
-@php
-    $hasSidebar = ! auth()->user()->must_change_password;
+@props(['hasSidebar' => false])
 
+@php
     $tools = [
         ['label' => 'ダッシュボード', 'route' => 'dashboard', 'active' => 'dashboard'],
         ['label' => 'アーカイブ', 'route' => 'projects.archived', 'active' => 'projects.archived'],

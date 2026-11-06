@@ -23,42 +23,59 @@ class SidebarTest extends TestCase
         return $group;
     }
 
-    public function test_どの画面にも自分のプロジェクトが出る(): void
+    public function test_プロジェクトの画面に出る(): void
     {
         $user = User::factory()->create();
         $project = Project::factory()->ownedBy($user)->create(['name' => '自分の案件']);
 
-        $this->actingAs($user)->get(route('profile.edit'))
+        $this->actingAs($user)->get(route('projects.show', $project))
             ->assertOk()
-            ->assertSee('自分の案件')
-            ->assertSee(route('projects.show', $project));
+            ->assertSee('aria-label="プロジェクトリスト"', false);
+        $this->actingAs($user)->get(route('projects.edit', $project))
+            ->assertOk()
+            ->assertSee('aria-label="プロジェクトリスト"', false);
+    }
+
+    public function test_プロジェクトの画面以外には出ない(): void
+    {
+        $user = User::factory()->systemAdmin()->create();
+
+        foreach (['dashboard', 'profile.edit', 'projects.archived', 'project-groups.index', 'users.index'] as $route) {
+            $this->actingAs($user)->get(route($route))
+                ->assertOk()
+                ->assertDontSee('aria-label="プロジェクトリスト"', false)
+                ->assertDontSee('プロジェクトリストの開閉');
+        }
     }
 
     public function test_参加していないプロジェクトは出ない(): void
     {
         $admin = User::factory()->systemAdmin()->create();
+        $mine = Project::factory()->ownedBy($admin)->create();
         Project::factory()->ownedBy(User::factory()->create())->create(['name' => '他人の案件']);
 
-        $this->actingAs($admin)->get(route('profile.edit'))->assertDontSee('他人の案件');
+        $this->actingAs($admin)->get(route('projects.show', $mine))->assertDontSee('他人の案件');
     }
 
     public function test_アーカイブしたプロジェクトは出ない(): void
     {
         $user = User::factory()->create();
+        $mine = Project::factory()->ownedBy($user)->create();
         $project = Project::factory()->ownedBy($user)->create(['name' => '終わった案件']);
         $project->archived_at = now();
         $project->save();
 
-        $this->actingAs($user)->get(route('profile.edit'))->assertDontSee('終わった案件');
+        $this->actingAs($user)->get(route('projects.show', $mine))->assertDontSee('終わった案件');
     }
 
     public function test_他の人のグループは出ない(): void
     {
         $user = User::factory()->create();
+        $mine = Project::factory()->ownedBy($user)->create();
         $this->groupFor(User::factory()->create(), '他人のグループ');
         $this->groupFor($user, '自分のグループ');
 
-        $this->actingAs($user)->get(route('profile.edit'))
+        $this->actingAs($user)->get(route('projects.show', $mine))
             ->assertSee('自分のグループ')
             ->assertDontSee('他人のグループ');
     }
@@ -71,7 +88,7 @@ class SidebarTest extends TestCase
         Project::factory()->ownedBy($user)->create(['name' => '未所属の案件']);
         $grouped->users()->updateExistingPivot($user, ['group_id' => $group->id]);
 
-        $this->actingAs($user)->get(route('profile.edit'))
+        $this->actingAs($user)->get(route('projects.show', $grouped))
             ->assertSeeInOrder(['全プロジェクト', '営業', '営業の案件', 'グループなし', '未所属の案件']);
     }
 
@@ -82,7 +99,9 @@ class SidebarTest extends TestCase
         Project::factory()->ownedBy($user)->create();
         $favorite->users()->updateExistingPivot($user, ['is_favorite' => true]);
 
-        $this->actingAs($user)->get(route('profile.edit'))
+        $this->actingAs($user)->get(route('projects.show', $favorite))
+            ->assertSee('$store.favorites.ids = '.Js::from([$favorite->id]), false);
+        $this->actingAs($user)->get(route('dashboard'))
             ->assertSee('$store.favorites.ids = '.Js::from([$favorite->id]), false);
     }
 
@@ -108,17 +127,5 @@ class SidebarTest extends TestCase
 
         $this->assertMatchesRegularExpression('/title="開いている案件"\s+aria-current="page"/', $html);
         $this->assertDoesNotMatchRegularExpression('/title="別の案件"\s+aria-current="page"/', $html);
-    }
-
-    public function test_パスワードの変更が済むまでは出さない(): void
-    {
-        $user = User::factory()->create();
-        Project::factory()->ownedBy($user)->create(['name' => '自分の案件']);
-        $user->must_change_password = true;
-        $user->save();
-
-        $this->actingAs($user)->get(route('password.edit'))
-            ->assertOk()
-            ->assertDontSee('自分の案件');
     }
 }

@@ -157,7 +157,7 @@ class TaskController extends Controller
 
         BoardChanged::notify($task->project);
 
-        return back()->with('status', "#{$task->number} をアーカイブしました。");
+        return back()->with('toast', ['message' => 'アーカイブしました', 'url' => route('tasks.unarchive', $task)]);
     }
 
     /**
@@ -175,23 +175,54 @@ class TaskController extends Controller
         ]);
 
         // 他プロジェクトや、ボードに出ていないものを混ぜられても動かないようにする
-        $count = $project->tasks()
+        $ids = $project->tasks()
             ->active()
             ->whereKey($attributes['ids'])
             ->whereHas('list', fn ($query) => $query->active())
-            ->update(['archived_at' => now()]);
+            ->pluck('id');
+
+        $count = $project->tasks()->whereKey($ids)->update(['archived_at' => now()]);
 
         BoardChanged::notify($project);
 
-        session()->flash('status', "{$count}件のタスクをアーカイブしました。");
+        session()->flash('toast', [
+            'message' => "{$count}件のタスクをアーカイブしました",
+            'url' => route('tasks.unarchive-many', $project),
+            'ids' => $ids->all(),
+        ]);
 
         return response()->json(['archived' => $count]);
     }
 
     /**
-     * アーカイブしたタスクを元のリストの末尾に戻す
+     * まとめてアーカイブしたタスクを取り消す（元の位置に戻す）
      */
-    public function unarchive(Task $task): RedirectResponse
+    public function unarchiveMany(Request $request, Project $project): RedirectResponse
+    {
+        Gate::authorize('work', $project);
+
+        $attributes = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $project->tasks()
+            ->archived()
+            ->whereKey($attributes['ids'])
+            ->whereHas('list', fn ($query) => $query->active())
+            ->update(['archived_at' => null]);
+
+        BoardChanged::notify($project);
+
+        return back();
+    }
+
+    /**
+     * アーカイブしたタスクを元のリストの末尾に戻す
+     *
+     * アーカイブした直後の取り消し（undo）は元の位置に戻す。
+     */
+    public function unarchive(Request $request, Task $task): RedirectResponse
     {
         Gate::authorize('work', $task->project);
 
@@ -201,12 +232,17 @@ class TaskController extends Controller
             return back()->with('status', '先にリストを元に戻してください。');
         }
 
-        $task->position = (int) $task->list->tasks()->max('position') + 1;
+        $undo = $request->boolean('undo');
+
+        if (! $undo) {
+            $task->position = (int) $task->list->tasks()->max('position') + 1;
+        }
+
         $task->unarchive();
 
         BoardChanged::notify($task->project);
 
-        return back()->with('status', "#{$task->number} を元に戻しました。");
+        return $undo ? back() : back()->with('status', "#{$task->number} を元に戻しました。");
     }
 
     /**
@@ -222,7 +258,7 @@ class TaskController extends Controller
 
         BoardChanged::notify($task->project);
 
-        return back()->with('status', "#{$task->number} を完全に削除しました。");
+        return back()->with('toast', ['message' => '削除しました']);
     }
 
     /**

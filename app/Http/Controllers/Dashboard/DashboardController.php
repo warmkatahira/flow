@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -28,6 +29,11 @@ class DashboardController extends Controller
             'projects' => $projects,
             'sections' => $user->projectSections($projects, $groups),
             'groups' => $groups,
+            // 星の初期状態。以降の付け外しは画面側の store が持つ
+            'favoriteIds' => $projects
+                ->filter(fn (Project $project) => (bool) $project->pivot->is_favorite)
+                ->pluck('id')
+                ->values(),
         ]);
     }
 }

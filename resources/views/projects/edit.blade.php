@@ -1,4 +1,4 @@
-<x-layouts.app title="プロジェクト編集">
+<x-layouts.app title="プロジェクト編集" sidebar>
     <x-slot:header>
         <h1 class="text-lg font-bold text-slate-800">プロジェクト編集</h1>
     </x-slot:header>

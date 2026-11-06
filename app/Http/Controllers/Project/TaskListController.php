@@ -158,24 +158,31 @@ class TaskListController extends Controller
 
         BoardChanged::notify($list->project);
 
-        return back()->with('status', "{$list->name} をアーカイブしました。");
+        return back()->with('toast', ['message' => 'アーカイブしました', 'url' => route('lists.unarchive', $list)]);
     }
 
     /**
      * アーカイブしたリストをボードの末尾に戻す（中のタスクも一緒に戻る）
+     *
+     * アーカイブした直後の取り消し（undo）は元の位置に戻す。
      */
-    public function unarchive(TaskList $list): RedirectResponse
+    public function unarchive(Request $request, TaskList $list): RedirectResponse
     {
         Gate::authorize('work', $list->project);
 
         abort_unless($list->isArchived(), 404);
 
-        $list->position = (int) $list->project->taskLists()->max('position') + 1;
+        $undo = $request->boolean('undo');
+
+        if (! $undo) {
+            $list->position = (int) $list->project->taskLists()->max('position') + 1;
+        }
+
         $list->unarchive();
 
         BoardChanged::notify($list->project);
 
-        return back()->with('status', "{$list->name} を元に戻しました。");
+        return $undo ? back() : back()->with('status', "{$list->name} を元に戻しました。");
     }
 
     /**
@@ -191,7 +198,7 @@ class TaskListController extends Controller
 
         BoardChanged::notify($list->project);
 
-        return back()->with('status', "{$list->name} を完全に削除しました。");
+        return back()->with('toast', ['message' => '削除しました']);
     }
 
     /**

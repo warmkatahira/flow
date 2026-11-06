@@ -59,6 +59,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
         Route::post('lists/reorder', [TaskListController::class, 'reorder'])->name('lists.reorder');
         Route::post('tasks/reorder', [TaskController::class, 'reorder'])->name('tasks.reorder');
         Route::post('tasks/archive', [TaskController::class, 'archiveMany'])->name('tasks.archive-many');
+        Route::post('tasks/unarchive', [TaskController::class, 'unarchiveMany'])->name('tasks.unarchive-many');
     });
     Route::put('lists/{list}', [TaskListController::class, 'update'])->name('lists.update');
     Route::post('lists/{list}/duplicate', [TaskListController::class, 'duplicate'])->name('lists.duplicate');

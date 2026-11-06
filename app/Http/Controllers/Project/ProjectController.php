@@ -199,7 +199,7 @@ class ProjectController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('status', 'プロジェクトをアーカイブしました。');
+            ->with('toast', ['message' => 'アーカイブしました', 'url' => route('projects.unarchive', $project)]);
     }
 
     /**
@@ -236,7 +236,7 @@ class ProjectController extends Controller
 
         return redirect()
             ->route('projects.archived')
-            ->with('status', 'プロジェクトを完全に削除しました。');
+            ->with('toast', ['message' => '削除しました']);
     }
 
     /**
