@@ -176,7 +176,7 @@ class ArchiveTest extends TestCase
         $task->archive();
 
         $this->actingAs($user)
-            ->postJson(route('tasks.reorder', $project), ['list_id' => $doing->id, 'ids' => [$task->id]])
+            ->postJson(route('tasks.reorder', $project), ['list_id' => $doing->id, 'ids' => [$task->id], 'moved' => [$task->id]])
             ->assertOk();
 
         $this->assertSame($todo->id, $task->fresh()->task_list_id);

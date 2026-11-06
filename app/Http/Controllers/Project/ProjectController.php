@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Project;
 
 use App\Enums\ListColor;
 use App\Enums\ProjectRole;
+use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\UpdateProjectRequest;
@@ -11,6 +12,7 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -31,7 +33,34 @@ class ProjectController extends Controller
     {
         Gate::authorize('view', $project);
 
-        return view('projects.show', [
+        return view('projects.show', $this->boardData($project));
+    }
+
+    /**
+     * ボードとアーカイブの最新の中身を返す（他の人の変更を画面へ反映するときに取り直す）
+     */
+    public function board(Project $project): JsonResponse
+    {
+        Gate::authorize('view', $project);
+
+        $data = $this->boardData($project);
+        $board = $project->isArchived() ? 'projects.partials.board-readonly' : 'projects.partials.board';
+
+        return response()->json([
+            'board' => view($board, $data)->render(),
+            'archive' => view('projects.partials.archive', $data)->render(),
+            'archiveCount' => $data['archivedLists']->count() + $data['archivedTasks']->count(),
+        ]);
+    }
+
+    /**
+     * プロジェクトの画面に渡す内容
+     *
+     * @return array<string, mixed>
+     */
+    private function boardData(Project $project): array
+    {
+        return [
             'project' => $project->load([
                 'users' => fn ($query) => $query->orderBy('users.id'),
                 'taskLists' => fn ($query) => $query->active(),
@@ -50,7 +79,7 @@ class ProjectController extends Controller
                 ->with('list')
                 ->latest('archived_at')
                 ->get(),
-        ]);
+        ];
     }
 
     /**
@@ -115,6 +144,8 @@ class ProjectController extends Controller
 
         $project->users()->sync($this->participants($request) + $deleted);
 
+        BoardChanged::notify($project, reload: true);
+
         // 自分をオーナーから外した場合など、更新後に見えなくなることがある
         if (! $project->fresh()->hasParticipant($request->user())) {
             return redirect()
@@ -148,6 +179,8 @@ class ProjectController extends Controller
 
         $project->archive();
 
+        BoardChanged::notify($project, reload: true);
+
         return redirect()
             ->route('dashboard')
             ->with('status', 'プロジェクトをアーカイブしました。');
@@ -161,6 +194,8 @@ class ProjectController extends Controller
         Gate::authorize('archive', $project);
 
         $project->unarchive();
+
+        BoardChanged::notify($project, reload: true);
 
         return redirect()
             ->route('projects.show', $project)
@@ -180,6 +215,8 @@ class ProjectController extends Controller
 
         // 参加者・リスト・タスクは外部キーの cascade で一緒に消える
         $project->delete();
+
+        BoardChanged::notify($project, reload: true);
 
         return redirect()
             ->route('projects.archived')

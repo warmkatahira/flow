@@ -2,6 +2,12 @@
     カンバン本体。リストもタスクもドラッグで並べ替えられる（resources/js/app.js の x-board）。
     並べ替え以外の操作は素直にフォーム送信する。
 --}}
+@if ($project->taskLists->isEmpty())
+    <p class="mb-4 text-sm text-slate-500">
+        リストを追加してカンバンを作りましょう。ToDo / 進行中 / 完了 のように並べます。
+    </p>
+@endif
+
 <p class="mb-2 text-xs text-slate-500">Ctrl（Mac は ⌘）を押しながらクリックするとタスクを複数選択でき、まとめてドラッグできます。</p>
 
 {{-- ドラッグ中だけ出る。ここに落としたタスクをまとめてアーカイブする（resources/js/app.js の x-board） --}}
@@ -18,7 +24,7 @@
      }">
     @foreach ($project->taskLists as $list)
         <section data-list-id="{{ $list->id }}"
-                 class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-100 shadow-sm ring-1 ring-slate-200">
+                 class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm ring-1 ring-slate-300/70">
             {{-- 見出し --}}
             <div x-data="{ editing: false }">
                 <div data-list-handle

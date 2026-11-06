@@ -96,12 +96,40 @@ class BoardTest extends TestCase
             ->postJson(route('tasks.reorder', $project), [
                 'list_id' => $doing->id,
                 'ids' => [$task->id],
+                'moved' => [$task->id],
             ])
             ->assertOk();
 
         $task->refresh();
         $this->assertSame($doing->id, $task->task_list_id);
         $this->assertSame(0, $task->position);
+    }
+
+    public function test_古い画面から並べ替えても他の人が動かしたタスクは巻き戻らない(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $todo = $this->listFor($project, 'ToDo', 0);
+        $doing = $this->listFor($project, '進行中', 1);
+
+        $this->actingAs($user)->post(route('tasks.store', $todo), ['title' => '自分が動かす']);
+        $this->actingAs($user)->post(route('tasks.store', $todo), ['title' => '他の人が動かした']);
+        $mine = Task::firstWhere('title', '自分が動かす');
+        $theirs = Task::firstWhere('title', '他の人が動かした');
+
+        // 他の人が先に進行中へ動かしたが、自分の画面にはまだ ToDo に見えている
+        $theirs->update(['task_list_id' => $doing->id]);
+
+        $this->actingAs($user)
+            ->postJson(route('tasks.reorder', $project), [
+                'list_id' => $todo->id,
+                'ids' => [$theirs->id, $mine->id],
+                'moved' => [$mine->id],
+            ])
+            ->assertOk();
+
+        $this->assertSame($doing->id, $theirs->fresh()->task_list_id);
+        $this->assertSame($todo->id, $mine->fresh()->task_list_id);
     }
 
     public function test_他のプロジェクトのタスクは並べ替えで動かせない(): void
@@ -119,6 +147,7 @@ class BoardTest extends TestCase
             ->postJson(route('tasks.reorder', $project), [
                 'list_id' => $list->id,
                 'ids' => [$foreign->id],
+                'moved' => [$foreign->id],
             ])
             ->assertOk();
 

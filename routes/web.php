@@ -45,6 +45,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     // まずアーカイブし、完全な削除はアーカイブ済みのものだけできる
     // /projects/{project} に飲まれないよう resource より先に置く
     Route::get('projects/archived', [ProjectController::class, 'archived'])->name('projects.archived');
+    Route::get('projects/{project}/board', [ProjectController::class, 'board'])->name('projects.board');
     Route::post('projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
     Route::post('projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
     Route::post('projects/{project}/favorite', ProjectFavoriteController::class)->name('projects.favorite');

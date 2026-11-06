@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Project;
 
+use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
@@ -44,6 +45,8 @@ class TaskController extends Controller
             $task->save();
         });
 
+        BoardChanged::notify($project);
+
         return back();
     }
 
@@ -61,6 +64,8 @@ class TaskController extends Controller
             'description' => ['nullable', 'string', 'max:10000'],
         ]));
 
+        BoardChanged::notify($task->project);
+
         return back();
     }
 
@@ -74,6 +79,8 @@ class TaskController extends Controller
         abort_unless($task->isOnBoard(), 404);
 
         $task->archive();
+
+        BoardChanged::notify($task->project);
 
         return back()->with('status', "#{$task->number} をアーカイブしました。");
     }
@@ -99,6 +106,8 @@ class TaskController extends Controller
             ->whereHas('list', fn ($query) => $query->active())
             ->update(['archived_at' => now()]);
 
+        BoardChanged::notify($project);
+
         session()->flash('status', "{$count}件のタスクをアーカイブしました。");
 
         return response()->json(['archived' => $count]);
@@ -120,6 +129,8 @@ class TaskController extends Controller
         $task->position = (int) $task->list->tasks()->max('position') + 1;
         $task->unarchive();
 
+        BoardChanged::notify($task->project);
+
         return back()->with('status', "#{$task->number} を元に戻しました。");
     }
 
@@ -134,13 +145,17 @@ class TaskController extends Controller
 
         $task->delete();
 
+        BoardChanged::notify($task->project);
+
         return back()->with('status', "#{$task->number} を完全に削除しました。");
     }
 
     /**
      * ドラッグ＆ドロップの結果を保存する
      *
-     * 動かしたタスクの移動先リストと、そのリストの新しい並び順をまとめて受け取る。
+     * リストの新しい並び順（ids）と、そのうち本人が動かしたタスク（moved）を受け取る。
+     * 所属を変えるのは moved だけ。ids は送った人の画面の状態なので、他の人が別のリストへ
+     * 動かしたばかりのタスクが混ざっていることがあり、それを元へ戻してはいけない。
      */
     public function reorder(Request $request, Project $project): JsonResponse
     {
@@ -150,6 +165,8 @@ class TaskController extends Controller
             'list_id' => ['required', 'integer'],
             'ids' => ['required', 'array'],
             'ids.*' => ['integer'],
+            'moved' => ['array'],
+            'moved.*' => ['integer'],
         ]);
 
         // 他プロジェクトやアーカイブ済みのものを混ぜられても動かないようにする
@@ -158,12 +175,24 @@ class TaskController extends Controller
 
         DB::transaction(function () use ($attributes, $list, $tasks) {
             foreach ($attributes['ids'] as $position => $id) {
-                $tasks->get($id)?->update([
-                    'task_list_id' => $list->getKey(),
-                    'position' => $position,
-                ]);
+                $task = $tasks->get($id);
+
+                if ($task === null) {
+                    continue;
+                }
+
+                if (in_array($id, $attributes['moved'] ?? [], true)) {
+                    $task->task_list_id = $list->getKey();
+                } elseif ($task->task_list_id !== $list->getKey()) {
+                    continue;
+                }
+
+                $task->position = $position;
+                $task->save();
             }
         });
+
+        BoardChanged::notify($project);
 
         return response()->json(['ok' => true]);
     }

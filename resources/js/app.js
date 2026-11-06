@@ -1,6 +1,7 @@
 import collapse from '@alpinejs/collapse';
 import Alpine from 'alpinejs';
 import Sortable, { MultiDrag } from 'sortablejs';
+import './echo';
 
 Sortable.mount(new MultiDrag());
 
@@ -10,12 +11,18 @@ Sortable.mount(new MultiDrag());
  * 並べ替えた結果だけをサーバーへ送る。画面は Sortable が動かしたそのままにして、
  * 保存に失敗したときだけ読み込み直す。
  */
-const post = (url, body) =>
-    fetch(url, {
+let pendingWrites = 0;
+
+const post = (url, body) => {
+    pendingWrites += 1;
+
+    return fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+            // 自分の操作の通知が自分へ返ってこないようにする
+            'X-Socket-ID': window.Echo.socketId() ?? '',
             Accept: 'application/json',
         },
         body: JSON.stringify(body),
@@ -23,7 +30,10 @@ const post = (url, body) =>
         if (! response.ok) {
             throw new Error(response.statusText);
         }
+    }).finally(() => {
+        pendingWrites -= 1;
     });
+};
 
 const idsOf = (container, attribute) =>
     [...container.querySelectorAll(`[${attribute}]`)].map((element) => Number(element.getAttribute(attribute)));
@@ -42,7 +52,7 @@ Alpine.directive('sortable', (element, { expression }, { evaluate }) => {
     });
 });
 
-Alpine.directive('board', (element, { expression }, { evaluate }) => {
+Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
     const { tasksUrl, listsUrl, archiveUrl } = evaluate(expression);
     const archiveZone = document.querySelector('[data-archive-zone]');
     // Mac の Ctrl＋クリックは右クリック扱いになるので、Mac では Cmd で複数選択する
@@ -52,26 +62,30 @@ Alpine.directive('board', (element, { expression }, { evaluate }) => {
         list.querySelector('[data-list-count]').textContent = list.querySelectorAll('[data-task-id]').length;
     });
 
+    // 他の人の変更でボードが差し替わるときに外す
+    const sortables = [];
+    cleanup(() => sortables.forEach((sortable) => sortable.destroy()));
+
     // リストの並べ替え
-    Sortable.create(element, {
+    sortables.push(Sortable.create(element, {
         animation: 150,
         handle: '[data-list-handle]',
         draggable: '[data-list-id]',
         onEnd: () => post(listsUrl, { ids: idsOf(element, 'data-list-id') }).catch(() => location.reload()),
-    });
+    }));
 
     // ドラッグ中だけ出るアーカイブの受け皿。ここに落ちたタスクは下の onEnd で処理する
-    Sortable.create(archiveZone, {
+    sortables.push(Sortable.create(archiveZone, {
         group: 'tasks',
         sort: false,
         multiDrag: true,
         selectedClass: 'task-selected',
         draggable: '[data-task-id]',
-    });
+    }));
 
     // タスクの並べ替え（リストをまたいで動かせる）。Ctrl（Mac は Cmd）を押しながらクリックすると複数選択できる
     element.querySelectorAll('[data-tasks]').forEach((container) => {
-        Sortable.create(container, {
+        sortables.push(Sortable.create(container, {
             animation: 150,
             group: 'tasks',
             draggable: '[data-task-id]',
@@ -105,6 +119,7 @@ Alpine.directive('board', (element, { expression }, { evaluate }) => {
                 post(tasksUrl, {
                     list_id: Number(target.getAttribute('data-tasks')),
                     ids: idsOf(target, 'data-task-id'),
+                    moved: items.map((item) => Number(item.getAttribute('data-task-id'))),
                 })
                     .then(() => {
                         // 移動元のリストも詰め直す
@@ -117,7 +132,105 @@ Alpine.directive('board', (element, { expression }, { evaluate }) => {
                     })
                     .catch(() => location.reload());
             },
-        });
+        }));
+    });
+});
+
+/**
+ * 同じプロジェクトを見ている人の変更を、この画面へ反映する
+ *
+ * 通知には中身がないので、ボードをサーバーから取り直して差し替える。
+ * 差し替えると操作中のものが消えるので、ドラッグ・入力・複数選択の最中は待ち、
+ * 手が空いたところで反映する。自分の保存が終わる前に取り直すと古い状態へ戻るので、それも待つ。
+ */
+Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }) => {
+    const { projectId, boardUrl } = evaluate(expression);
+    const channel = `projects.${projectId}`;
+    const board = element.querySelector('[data-live-board]');
+    const archive = element.querySelector('[data-live-archive]');
+    const archiveCount = element.querySelector('[data-live-archive-count]');
+
+    let stale = false;
+    let fetching = false;
+
+    const isIdle = () => pendingWrites === 0
+        && ! Sortable.dragged
+        && ! board.querySelector('.task-selected')
+        && ! [...board.querySelectorAll('form')].some((form) => form.offsetParent !== null);
+
+    const refresh = async () => {
+        if (! stale || fetching || ! isIdle()) {
+            return;
+        }
+
+        stale = false;
+        fetching = true;
+
+        try {
+            const response = await fetch(boardUrl, { headers: { Accept: 'application/json' } });
+
+            if (! response.ok) {
+                location.reload();
+
+                return;
+            }
+
+            const data = await response.json();
+
+            // 取り直している間に操作が始まったら、今回は捨ててやり直す
+            if (! isIdle()) {
+                stale = true;
+
+                return;
+            }
+
+            const scrollLeft = board.querySelector('[x-board]')?.scrollLeft ?? 0;
+
+            // 中の Alpine は差し替えを検知して自動で作り直される
+            board.innerHTML = data.board;
+            archive.innerHTML = data.archive;
+            archiveCount.textContent = data.archiveCount;
+
+            const scroller = board.querySelector('[x-board]');
+
+            if (scroller) {
+                scroller.scrollLeft = scrollLeft;
+            }
+        } catch {
+            stale = true;
+        } finally {
+            fetching = false;
+        }
+    };
+
+    const timer = setInterval(refresh, 500);
+
+    window.Echo.private(channel).listen('.board.changed', ({ reload }) => {
+        if (reload) {
+            location.reload();
+
+            return;
+        }
+
+        stale = true;
+        refresh();
+    });
+
+    // 接続が切れていた間の通知は届かないので、つなぎ直したら取り直す
+    const { connection } = window.Echo.connector.pusher;
+    let connectedBefore = connection.state === 'connected';
+
+    const onConnected = () => {
+        stale = stale || connectedBefore;
+        connectedBefore = true;
+    };
+
+    connection.bind('connected', onConnected);
+
+    cleanup(() => {
+        clearInterval(timer);
+        connection.unbind('connected', onConnected);
+        window.Echo.leave(channel);
     });
 });
 
@@ -192,3 +305,10 @@ Alpine.data('issuedPasswords', (rows) => ({
 
 Alpine.plugin(collapse);
 Alpine.start();
+
+/**
+ * Echo exposes an expressive API for subscribing to channels and listening
+ * for events that are broadcast by Laravel. Echo and event broadcasting
+ * allow your team to quickly build robust real-time web applications.
+ */
+

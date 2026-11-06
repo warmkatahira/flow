@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Project;
 
 use App\Enums\ListColor;
+use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\TaskList;
@@ -37,6 +38,8 @@ class TaskListController extends Controller
             'position' => (int) $project->taskLists()->max('position') + 1,
         ]);
 
+        BoardChanged::notify($project);
+
         return back();
     }
 
@@ -54,6 +57,8 @@ class TaskListController extends Controller
             'color' => ['required', Rule::enum(ListColor::class)],
         ]));
 
+        BoardChanged::notify($list->project);
+
         return back();
     }
 
@@ -67,6 +72,8 @@ class TaskListController extends Controller
         abort_if($list->isArchived(), 404);
 
         $list->archive();
+
+        BoardChanged::notify($list->project);
 
         return back()->with('status', "{$list->name} をアーカイブしました。");
     }
@@ -83,6 +90,8 @@ class TaskListController extends Controller
         $list->position = (int) $list->project->taskLists()->max('position') + 1;
         $list->unarchive();
 
+        BoardChanged::notify($list->project);
+
         return back()->with('status', "{$list->name} を元に戻しました。");
     }
 
@@ -96,6 +105,8 @@ class TaskListController extends Controller
         abort_unless($list->isArchived(), 404);
 
         $list->delete();
+
+        BoardChanged::notify($list->project);
 
         return back()->with('status', "{$list->name} を完全に削除しました。");
     }
@@ -118,6 +129,8 @@ class TaskListController extends Controller
         foreach ($attributes['ids'] as $position => $id) {
             $lists->get($id)?->update(['position' => $position]);
         }
+
+        BoardChanged::notify($project);
 
         return response()->noContent();
     }

@@ -25,7 +25,8 @@
     </x-slot:header>
 
     {{-- プロジェクト内のタブ。ガントチャート・ファイルはこれから --}}
-    <div x-data="{ tab: 'board' }" class="flex-1">
+    <div x-data="{ tab: 'board' }" class="flex-1"
+         x-project-live="{ projectId: {{ $project->id }}, boardUrl: @js(route('projects.board', $project)) }">
         <div class="border-b border-slate-200 bg-white">
             <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <nav class="flex gap-1" aria-label="プロジェクトのタブ">
@@ -43,7 +44,7 @@
                             :class="tab === 'archive' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
                             class="border-b-2 px-4 py-3 text-sm font-semibold transition">
                         アーカイブ
-                        <span class="ml-0.5 font-normal text-slate-400">{{ $archivedLists->count() + $archivedTasks->count() }}</span>
+                        <span data-live-archive-count class="ml-0.5 font-normal text-slate-400">{{ $archivedLists->count() + $archivedTasks->count() }}</span>
                     </button>
                 </nav>
             </div>
@@ -66,22 +67,12 @@
             @endif
 
             {{-- ボード --}}
-            <div x-show="tab === 'board'">
-                @if ($project->isArchived())
-                    @include('projects.partials.board-readonly')
-                @else
-                    @if ($project->taskLists->isEmpty())
-                        <p class="mb-4 text-sm text-slate-500">
-                            リストを追加してカンバンを作りましょう。ToDo / 進行中 / 完了 のように並べます。
-                        </p>
-                    @endif
-
-                    @include('projects.partials.board')
-                @endif
+            <div x-show="tab === 'board'" data-live-board>
+                @include($project->isArchived() ? 'projects.partials.board-readonly' : 'projects.partials.board')
             </div>
 
             {{-- アーカイブ --}}
-            <div x-show="tab === 'archive'" x-cloak>
+            <div x-show="tab === 'archive'" x-cloak data-live-archive>
                 @include('projects.partials.archive')
             </div>
 
