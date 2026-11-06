@@ -1,10 +1,12 @@
 {{-- アーカイブ中のプロジェクトのボード。見るだけなので操作の UI は持たない --}}
 <div class="flex flex-1 items-start gap-4 overflow-x-auto pb-4" x-drag-scroll>
     @forelse ($project->taskLists as $list)
-        <section class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm ring-1 ring-slate-300/70">
-            <div class="flex items-center gap-2 rounded-t-xl px-3 py-2 {{ $list->color->headerClass() }}">
-                <span class="min-w-0 flex-1 truncate text-sm font-bold">{{ $list->name }}</span>
-                <span class="text-xs font-medium opacity-70">{{ $list->tasks->count() }}</span>
+        <section class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
+            <div class="h-2 rounded-t-xl {{ $list->color->colorClass() }}"></div>
+
+            <div class="flex items-center gap-1.5 px-3 pb-1 pt-2">
+                <span class="min-w-0 truncate text-sm font-bold text-slate-900">{{ $list->name }}</span>
+                <span class="shrink-0 text-sm font-semibold text-sky-600">{{ $list->tasks->count() }}</span>
             </div>
 
             <div class="min-h-8 space-y-2 p-2">

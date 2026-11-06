@@ -24,17 +24,18 @@
      }">
     @foreach ($project->taskLists as $list)
         <section data-list-id="{{ $list->id }}"
-                 class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm ring-1 ring-slate-300/70">
+                 class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
+            {{-- 上端の帯。見出しと同じくリストを掴める --}}
+            <div data-list-handle class="h-2 cursor-grab rounded-t-xl {{ $list->color->colorClass() }}"></div>
+
             {{-- 見出し --}}
             <div x-data="{ editing: false }">
-                <div data-list-handle
-                     class="flex cursor-grab items-center gap-2 rounded-t-xl px-3 py-2 {{ $list->color->headerClass() }}"
-                     x-show="! editing">
-                    <span class="min-w-0 flex-1 truncate text-sm font-bold">{{ $list->name }}</span>
-                    <span data-list-count class="text-xs font-medium opacity-70">{{ $list->tasks->count() }}</span>
+                <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2" x-show="! editing">
+                    <span class="min-w-0 truncate text-sm font-bold text-slate-900">{{ $list->name }}</span>
+                    <span data-list-count class="shrink-0 text-sm font-semibold text-sky-600">{{ $list->tasks->count() }}</span>
 
                     <button type="button" @click="editing = true" aria-label="リストを編集"
-                            class="rounded p-1 transition hover:bg-black/10">
+                            class="ml-auto shrink-0 rounded p-1 text-slate-700 transition hover:bg-black/10">
                         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM11.5 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM17 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
                         </svg>
@@ -43,7 +44,7 @@
 
                 {{-- 名前と色の変更 --}}
                 <form autocomplete="off" method="POST" action="{{ route('lists.update', $list) }}" x-show="editing" x-cloak
-                      class="space-y-2 rounded-t-xl bg-white p-3 ring-1 ring-slate-200">
+                      class="space-y-2 bg-white p-3 ring-1 ring-slate-200">
                     @csrf
                     @method('PUT')
 
@@ -55,7 +56,7 @@
                             <label class="cursor-pointer">
                                 <input autocomplete="off" type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
                                        @checked($list->color === $color)>
-                                <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->swatchClass() }}"
+                                <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->colorClass() }}"
                                       title="{{ $color->label() }}"></span>
                             </label>
                         @endforeach
@@ -79,7 +80,7 @@
             {{-- タスクを追加 --}}
             <div class="px-2 pt-2" x-data="{ adding: false }">
                 <button type="button" @click="adding = true; $nextTick(() => $refs.title.focus())" x-show="! adding"
-                        class="flex w-full items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-sky-700 transition hover:bg-sky-50">
+                        class="flex w-full items-center justify-center gap-1 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-sky-600 transition hover:bg-sky-50">
                     ＋ タスクを追加
                 </button>
 
@@ -154,7 +155,7 @@
                     <label class="cursor-pointer">
                         <input autocomplete="off" type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
                                @checked($loop->first)>
-                        <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->swatchClass() }}"
+                        <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->colorClass() }}"
                               title="{{ $color->label() }}"></span>
                     </label>
                 @endforeach
