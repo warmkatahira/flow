@@ -52,14 +52,14 @@
         <div class="p-3">
             <p class="mb-1 px-2 text-sm font-bold text-slate-600">締切日</p>
             @foreach ($dueOptions as $value => $label)
-                <button type="button" @click="$store.boardFilter.pickDue(@js($value))"
-                        :class="$store.boardFilter.due === @js($value) && 'bg-sky-50 text-sky-600'"
+                <button type="button" @click="$store.boardFilter.toggle('dues', @js($value))"
+                        :class="$store.boardFilter.dues.includes(@js($value)) && 'bg-sky-50 text-sky-600'"
                         class="{{ $checkClass }} text-slate-700">
                     {{ $label }}
                 </button>
             @endforeach
 
-            <div x-show="$store.boardFilter.due === 'custom'" x-cloak class="mt-1 space-y-1 px-2">
+            <div x-show="$store.boardFilter.dues.includes('custom')" x-cloak class="mt-1 space-y-1 px-2">
                 <input autocomplete="off" type="date" aria-label="締切日（から）" x-model="$store.boardFilter.from" @change="$store.boardFilter.changed()"
                        class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none">
                 <input autocomplete="off" type="date" aria-label="締切日（まで）" x-model="$store.boardFilter.to" @change="$store.boardFilter.changed()"

@@ -538,14 +538,14 @@ Alpine.store('boardFilter', {
     key: null,
     me: null,
     statuses: [],
-    due: null,
+    dues: [],
     from: '',
     to: '',
     assignees: [],
     mine: false,
 
     get count() {
-        return this.statuses.length + this.assignees.length + (this.due ? 1 : 0);
+        return this.statuses.length + this.assignees.length + this.dues.length;
     },
 
     load(projectId, me) {
@@ -562,9 +562,9 @@ Alpine.store('boardFilter', {
     },
 
     changed() {
-        const { statuses, due, from, to, assignees, mine } = this;
+        const { statuses, dues, from, to, assignees, mine } = this;
 
-        remember(sessionStorage, this.key, JSON.stringify({ statuses, due, from, to, assignees, mine }));
+        remember(sessionStorage, this.key, JSON.stringify({ statuses, dues, from, to, assignees, mine }));
         this.apply();
     },
 
@@ -580,22 +580,17 @@ Alpine.store('boardFilter', {
         this.changed();
     },
 
-    pickDue(value) {
-        this.due = this.due === value ? null : value;
-        this.changed();
-    },
-
     clear() {
-        Object.assign(this, { statuses: [], due: null, from: '', to: '', assignees: [], mine: false });
+        Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], mine: false });
         this.changed();
     },
 
-    /** 締切日の範囲。[から, まで]。空なら上限・下限なし */
-    dueRange() {
+    /** 選んだ締切日の範囲の一覧。[から, まで] で、空なら上限・下限なし。日付が未入力のカスタムは含めない */
+    dueRanges() {
         const today = new Date();
         const monday = daysFrom(today, -((today.getDay() + 6) % 7));
 
-        return {
+        const ranges = {
             past: ['', ymd(daysFrom(today, -1))],
             today: [ymd(today), ymd(today)],
             tomorrow: [ymd(daysFrom(today, 1)), ymd(daysFrom(today, 1))],
@@ -603,10 +598,12 @@ Alpine.store('boardFilter', {
             nextWeek: [ymd(daysFrom(monday, 7)), ymd(daysFrom(monday, 13))],
             next14: [ymd(today), ymd(daysFrom(today, 14))],
             custom: [this.from, this.to],
-        }[this.due];
+        };
+
+        return this.dues.map((due) => ranges[due]).filter(([from, to]) => from || to);
     },
 
-    matches(card, range) {
+    matches(card, ranges) {
         const { status, due, assignees } = card.dataset;
         const ids = assignees ? assignees.split(',').map(Number) : [];
 
@@ -622,18 +619,15 @@ Alpine.store('boardFilter', {
             return false;
         }
 
-        if (range && (range[0] || range[1])) {
-            return Boolean(due) && (! range[0] || due >= range[0]) && (! range[1] || due <= range[1]);
-        }
-
-        return true;
+        return ranges.length === 0
+            || (Boolean(due) && ranges.some(([from, to]) => (! from || due >= from) && (! to || due <= to)));
     },
 
     apply() {
-        const range = this.due ? this.dueRange() : null;
+        const ranges = this.dueRanges();
 
         document.querySelectorAll('article[data-status]').forEach((card) => {
-            card.classList.toggle('hidden', ! this.matches(card, range));
+            card.classList.toggle('hidden', ! this.matches(card, ranges));
         });
     },
 });
