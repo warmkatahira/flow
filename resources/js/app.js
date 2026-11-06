@@ -98,6 +98,34 @@ Alpine.directive('drag-scroll', (element) => {
     });
 });
 
+/**
+ * チェックリストの項目の並べ替え（同じタスクの枠をまたいで動かせる）
+ *
+ * 進捗が変わるので、保存したら詳細を取り直す。
+ */
+Alpine.directive('checklist-items', (element, { expression }, { cleanup }) => {
+    const sortable = Sortable.create(element, {
+        animation: 150,
+        group: `checklist-${expression}`,
+        handle: '[data-item-handle]',
+        draggable: '[data-item-id]',
+        onEnd: ({ item, from, to, oldIndex, newIndex }) => {
+            if (from === to && oldIndex === newIndex) {
+                return;
+            }
+
+            post(to.dataset.reorderUrl, {
+                ids: idsOf(to, 'data-item-id'),
+                moved: Number(item.getAttribute('data-item-id')),
+            })
+                .then(() => window.dispatchEvent(new CustomEvent('task-reload')))
+                .catch(() => location.reload());
+        },
+    });
+
+    cleanup(() => sortable.destroy());
+});
+
 Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
     const { tasksUrl, listsUrl, archiveUrl } = evaluate(expression);
     const archiveZone = document.querySelector('[data-archive-zone]');
@@ -557,6 +585,7 @@ Alpine.data('mentionBox', (members) => ({
  * 閉じたら、変更があればボードを取り直す。
  */
 Alpine.data('taskDialog', (openUrl) => ({
+    url: null,
     error: '',
     changed: false,
 
@@ -566,7 +595,17 @@ Alpine.data('taskDialog', (openUrl) => ({
         }
     },
 
+    async reload() {
+        const response = await fetch(this.url, { headers: { Accept: 'text/html' } });
+
+        if (response.ok) {
+            this.changed = true;
+            this.$refs.body.innerHTML = await response.text();
+        }
+    },
+
     async open(url) {
+        this.url = url;
         this.error = '';
         this.$refs.body.innerHTML = '<p class="p-6 text-sm text-slate-400">読み込み中…</p>';
         this.$refs.dialog.showModal();

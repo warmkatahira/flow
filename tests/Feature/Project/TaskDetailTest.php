@@ -223,6 +223,98 @@ class TaskDetailTest extends TestCase
         $this->assertModelExists($checklist);
     }
 
+    private function item(TaskChecklist $checklist, string $title): TaskChecklistItem
+    {
+        $this->actingAs($this->user)->post(route('checklists.items.store', $checklist), ['title' => $title]);
+
+        return TaskChecklistItem::firstWhere('title', $title);
+    }
+
+    public function test_チェックリストを並べ替えられる(): void
+    {
+        $first = $this->checklist('一つ目');
+        $second = $this->checklist('二つ目');
+
+        $this->actingAs($this->user)
+            ->postJson(route('tasks.checklists.reorder', $this->task), ['ids' => [$second->id, $first->id]])
+            ->assertNoContent();
+
+        $this->assertSame(['二つ目', '一つ目'], $this->task->checklists()->pluck('title')->all());
+    }
+
+    public function test_項目を並べ替えられる(): void
+    {
+        $checklist = $this->checklist();
+        $first = $this->item($checklist, '一');
+        $second = $this->item($checklist, '二');
+
+        $this->actingAs($this->user)
+            ->postJson(route('checklists.items.reorder', $checklist), ['ids' => [$second->id, $first->id], 'moved' => $second->id])
+            ->assertNoContent();
+
+        $this->assertSame(['二', '一'], $checklist->items()->pluck('title')->all());
+    }
+
+    public function test_項目を別の枠へ動かせる(): void
+    {
+        $from = $this->checklist('元');
+        $to = $this->checklist('先');
+        $moved = $this->item($from, '動かす');
+        $stay = $this->item($to, '先客');
+
+        $this->actingAs($this->user)
+            ->postJson(route('checklists.items.reorder', $to), ['ids' => [$moved->id, $stay->id], 'moved' => $moved->id])
+            ->assertNoContent();
+
+        $this->assertSame(['動かす', '先客'], $to->items()->pluck('title')->all());
+        $this->assertCount(0, $from->items);
+    }
+
+    public function test_moved以外の項目は枠を変えない(): void
+    {
+        $from = $this->checklist('元');
+        $to = $this->checklist('先');
+        $other = $this->item($from, '他の人が動かした');
+        $moved = $this->item($from, '動かす');
+
+        $this->actingAs($this->user)
+            ->postJson(route('checklists.items.reorder', $to), ['ids' => [$other->id, $moved->id], 'moved' => $moved->id])
+            ->assertNoContent();
+
+        $this->assertSame($from->id, $other->refresh()->task_checklist_id);
+        $this->assertSame($to->id, $moved->refresh()->task_checklist_id);
+    }
+
+    public function test_他のタスクの項目やチェックリストは動かせない(): void
+    {
+        $mine = $this->checklist('自分');
+        $this->actingAs($this->user)->post(route('tasks.store', $this->list), ['title' => '別のタスク']);
+        $other = Task::firstWhere('title', '別のタスク');
+        $this->actingAs($this->user)->post(route('tasks.checklists.store', $other), ['title' => '別の枠']);
+        $otherChecklist = TaskChecklist::firstWhere('title', '別の枠');
+        $otherItem = $this->item($otherChecklist, '別の項目');
+
+        $this->actingAs($this->user)
+            ->postJson(route('checklists.items.reorder', $mine), ['ids' => [$otherItem->id], 'moved' => $otherItem->id])
+            ->assertNoContent();
+        $this->actingAs($this->user)
+            ->postJson(route('tasks.checklists.reorder', $this->task), ['ids' => [$otherChecklist->id, $mine->id]])
+            ->assertNoContent();
+
+        $this->assertSame($otherChecklist->id, $otherItem->refresh()->task_checklist_id);
+        $this->assertSame($other->id, $otherChecklist->refresh()->task_id);
+        $this->assertSame(1, $otherChecklist->position);
+    }
+
+    public function test_参加していない人は並べ替えられない(): void
+    {
+        $checklist = $this->checklist();
+        $outsider = User::factory()->create();
+
+        $this->actingAs($outsider)->postJson(route('tasks.checklists.reorder', $this->task), ['ids' => [$checklist->id]])->assertNotFound();
+        $this->actingAs($outsider)->postJson(route('checklists.items.reorder', $checklist), ['ids' => [1]])->assertNotFound();
+    }
+
     public function test_コメントを投稿できる(): void
     {
         $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => '確認します'])

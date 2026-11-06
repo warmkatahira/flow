@@ -186,10 +186,18 @@
         </div>
     </div>
 
-    {{-- チェックリスト。1つごとに枠を作り、中に項目を並べる --}}
+    {{-- チェックリスト。1つごとに枠を作り、中に項目を並べる。どちらも取っ手のドラッグで動かせる --}}
+    <div class="space-y-3"
+         x-sortable="{ url: @js(route('tasks.checklists.reorder', $task)), attribute: 'data-checklist-id', handle: '[data-checklist-handle]' }">
     @foreach ($task->checklists as $checklist)
-        <section x-data="{ open: true, editing: false }" class="rounded-xl border border-slate-300 px-4 py-3">
+        <section data-checklist-id="{{ $checklist->id }}" x-data="{ open: true, editing: false }" class="rounded-xl border border-slate-300 bg-white px-4 py-3">
             <div class="flex items-center gap-2">
+                <span data-checklist-handle title="ドラッグで並べ替え" class="-ml-1.5 shrink-0 cursor-grab text-slate-300 hover:text-slate-500">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M7 4.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM7 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM5.5 17a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM16 4.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM14.5 11.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM16 15.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                    </svg>
+                </span>
+
                 <h3 x-show="! editing" @click="editing = true; $nextTick(() => $refs.name.select())"
                     class="min-w-0 flex-1 cursor-text break-words text-sm font-bold text-slate-800">{{ $checklist->title }}</h3>
 
@@ -229,9 +237,16 @@
             </div>
 
             <div x-show="open" x-collapse class="text-sm">
-                <ul class="mt-2">
+                <ul class="mt-2 min-h-2" data-reorder-url="{{ route('checklists.items.reorder', $checklist) }}"
+                    x-checklist-items="{{ $task->id }}">
                     @foreach ($checklist->items as $item)
-                        <li class="flex items-center gap-2 py-1.5">
+                        <li data-item-id="{{ $item->id }}" class="flex items-center gap-2 bg-white py-1.5">
+                            <span data-item-handle title="ドラッグで並べ替え" class="-ml-1.5 shrink-0 cursor-grab text-slate-300 hover:text-slate-500">
+                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path d="M7 4.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM7 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM5.5 17a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM16 4.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM14.5 11.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM16 15.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                </svg>
+                            </span>
+
                             <form data-task-form autocomplete="off" method="POST" action="{{ route('checklist-items.toggle', $item) }}" class="min-w-0 flex-1">
                                 @csrf
                                 <button type="submit" role="checkbox" aria-checked="{{ $item->is_done ? 'true' : 'false' }}"
@@ -265,7 +280,7 @@
                 <form data-task-form data-refocus="#checklist-item-{{ $checklist->id }}" autocomplete="off" method="POST"
                       action="{{ route('checklists.items.store', $checklist) }}" class="flex items-center gap-3 py-1.5">
                     @csrf
-                    <span class="h-5 w-5 shrink-0 rounded-md border border-slate-200"></span>
+                    <span class="ml-[18px] h-5 w-5 shrink-0 rounded-md border border-slate-200"></span>
                     <input autocomplete="off" id="checklist-item-{{ $checklist->id }}" type="text" name="title" required maxlength="255"
                            placeholder="アイテムを追加" aria-label="アイテムを追加"
                            class="block w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none">
@@ -273,6 +288,7 @@
             </div>
         </section>
     @endforeach
+    </div>
 </div>
 
 {{-- コメント --}}
