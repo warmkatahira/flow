@@ -105,6 +105,19 @@ class NotificationTest extends TestCase
         $this->assertSame(1, $this->member->unreadMentionCount());
     }
 
+    public function test_既読の通知にはバッジが付く(): void
+    {
+        $this->comment('@参加者 確認して');
+
+        $unread = $this->actingAs($this->member)->getJson(route('notifications.index'))->json('html');
+        $this->assertStringNotContainsString('既読', $unread);
+
+        $this->member->markMentionsRead();
+
+        $read = $this->actingAs($this->member)->getJson(route('notifications.index'))->json('html');
+        $this->assertStringContainsString('既読', $read);
+    }
+
     public function test_他の人宛ての通知は開けない(): void
     {
         $comment = $this->comment('@参加者 確認して');
