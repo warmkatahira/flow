@@ -68,6 +68,7 @@ class ProjectController extends Controller
             'board' => view($board, $data)->render(),
             'archive' => view('projects.partials.archive', $data)->render(),
             'archiveCount' => $data['archivedLists']->count() + $data['archivedTasks']->count(),
+            'filterLabels' => view('projects.partials.filter-labels', $data)->render(),
         ]);
     }
 
@@ -87,6 +88,8 @@ class ProjectController extends Controller
                     'checklistItems as done_checklist_items_count' => fn ($items) => $items->where('is_done', true),
                 ]),
                 'taskLists.tasks.assignees',
+                'taskLists.tasks.labels',
+                'labels',
             ]),
             'archivedLists' => $project->taskLists()
                 ->archived()

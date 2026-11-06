@@ -44,7 +44,7 @@
     </button>
 
     <div x-show="filterOpen" x-cloak
-         class="absolute right-0 top-full z-30 mt-2 grid w-[36rem] max-w-[calc(100vw-2rem)] grid-cols-3 divide-x divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-slate-200">
+         class="absolute right-0 top-full z-30 mt-2 grid w-[46rem] max-w-[calc(100vw-2rem)] grid-cols-4 divide-x divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-slate-200">
         <div class="p-3">
             <p class="mb-1 px-2 text-sm font-bold text-slate-600">ステータス</p>
             @foreach (TaskStatus::cases() as $status)
@@ -72,6 +72,14 @@
                        class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none">
                 <input autocomplete="off" type="date" aria-label="締切日（まで）" x-model="$store.boardFilter.to" @change="$store.boardFilter.changed()"
                        class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-sky-500 focus:outline-none">
+            </div>
+        </div>
+
+        <div class="p-3">
+            <p class="mb-1 px-2 text-sm font-bold text-slate-600">ラベル</p>
+            {{-- ラベルは増減するので、ボードと一緒に取り直す --}}
+            <div data-live-filter-labels class="max-h-60 overflow-y-auto [scrollbar-width:thin]">
+                @include('projects.partials.filter-labels')
             </div>
         </div>
 

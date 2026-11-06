@@ -237,6 +237,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
     const board = element.querySelector('[data-live-board]');
     const archive = element.querySelector('[data-live-archive]');
     const archiveCount = element.querySelector('[data-live-archive-count]');
+    const filterLabels = element.querySelector('[data-live-filter-labels]');
 
     let stale = false;
     let fetching = false;
@@ -279,6 +280,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
             Alpine.store('boardFilter').apply();
             archive.innerHTML = data.archive;
             archiveCount.textContent = data.archiveCount;
+            filterLabels.innerHTML = data.filterLabels;
 
             const scroller = board.querySelector('[x-board]');
 
@@ -536,7 +538,7 @@ Alpine.store('cardView', {
 /**
  * ボードの絞り込み
  *
- * カードに持たせた data-status / data-due / data-assignees を見て、画面の中で隠すだけ。
+ * カードに持たせた data-status / data-due / data-assignees / data-labels を見て、画面の中で隠すだけ。
  * 種類どうしは AND、同じ種類の中は OR。フォームの送信で読み込み直しても消えないよう、タブの間は覚えておく。
  */
 const ymd = (date) => [
@@ -561,10 +563,11 @@ Alpine.store('boardFilter', {
     from: '',
     to: '',
     assignees: [],
+    labels: [],
     mine: false,
 
     get count() {
-        return this.statuses.length + this.assignees.length + this.dues.length;
+        return this.statuses.length + this.assignees.length + this.dues.length + this.labels.length;
     },
 
     load(projectId, me) {
@@ -581,9 +584,9 @@ Alpine.store('boardFilter', {
     },
 
     changed() {
-        const { statuses, dues, from, to, assignees, mine } = this;
+        const { statuses, dues, from, to, assignees, labels, mine } = this;
 
-        remember(sessionStorage, this.key, JSON.stringify({ statuses, dues, from, to, assignees, mine }));
+        remember(sessionStorage, this.key, JSON.stringify({ statuses, dues, from, to, assignees, labels, mine }));
         this.apply();
     },
 
@@ -600,7 +603,7 @@ Alpine.store('boardFilter', {
     },
 
     clear() {
-        Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], mine: false });
+        Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], labels: [], mine: false });
         this.changed();
     },
 
@@ -623,8 +626,9 @@ Alpine.store('boardFilter', {
     },
 
     matches(card, ranges) {
-        const { status, due, assignees } = card.dataset;
+        const { status, due, assignees, labels } = card.dataset;
         const ids = assignees ? assignees.split(',').map(Number) : [];
+        const labelIds = labels ? labels.split(',').map(Number) : [];
 
         if (this.statuses.length > 0 && ! this.statuses.includes(status)) {
             return false;
@@ -635,6 +639,10 @@ Alpine.store('boardFilter', {
         }
 
         if (this.assignees.length > 0 && ! this.assignees.some((id) => (id === 0 ? ids.length === 0 : ids.includes(id)))) {
+            return false;
+        }
+
+        if (this.labels.length > 0 && ! this.labels.some((id) => (id === 0 ? labelIds.length === 0 : labelIds.includes(id)))) {
             return false;
         }
 
@@ -650,6 +658,69 @@ Alpine.store('boardFilter', {
         });
     },
 });
+
+/**
+ * タスクのラベルの選択
+ *
+ * 種類を追加・編集すると詳細画面ごと差し替わるので、選びかけの内容は外側の labelDraft に持ち、
+ * 差し替わったあとも開いたまま続けられるようにする。
+ */
+Alpine.data('labelPicker', (saved, max, urls, defaultColor) => ({
+    view: 'pick',
+    selected: [],
+    form: { action: '', method: 'POST', name: '', color: defaultColor, editing: false, destroy: '' },
+
+    get full() {
+        return this.selected.length >= max;
+    },
+
+    init() {
+        this.selected = this.labelDraft ?? [...saved];
+
+        if (this.labelDraft) {
+            this.$nextTick(() => this.$refs.labels.showModal());
+        }
+    },
+
+    open() {
+        this.selected = [...saved];
+        this.labelDraft = [...saved];
+        this.view = 'pick';
+        this.$refs.labels.showModal();
+    },
+
+    close() {
+        this.labelDraft = null;
+        this.$refs.labels.close();
+    },
+
+    toggle(id) {
+        if (this.selected.includes(id)) {
+            this.selected = this.selected.filter((current) => current !== id);
+        } else if (! this.full) {
+            this.selected = [...this.selected, id];
+        }
+
+        this.labelDraft = [...this.selected];
+    },
+
+    clear() {
+        this.selected = [];
+        this.labelDraft = [];
+    },
+
+    add() {
+        this.form = { action: urls.store, method: 'POST', name: '', color: defaultColor, editing: false, destroy: '' };
+        this.view = 'form';
+        this.$nextTick(() => this.$refs.labelName.focus());
+    },
+
+    edit({ name, color, url }) {
+        this.form = { action: url, method: 'PUT', name, color, editing: true, destroy: url };
+        this.view = 'form';
+        this.$nextTick(() => this.$refs.labelName.focus());
+    },
+}));
 
 /**
  * タスクのタイトルと説明の編集
@@ -908,6 +979,7 @@ Alpine.data('taskDialog', (openUrl) => ({
     url: null,
     error: '',
     changed: false,
+    labelDraft: null,
     pressedOutside: false,
 
     init() {
@@ -928,6 +1000,7 @@ Alpine.data('taskDialog', (openUrl) => ({
     async open(url) {
         this.url = url;
         this.error = '';
+        this.labelDraft = null;
         this.$refs.body.innerHTML = '<p class="p-6 text-sm text-slate-400">読み込み中…</p>';
         this.$refs.dialog.showModal();
 

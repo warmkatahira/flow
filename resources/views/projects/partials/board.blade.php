@@ -90,6 +90,7 @@
                     <article data-task-id="{{ $task->id }}" data-task-url="{{ route('tasks.show', $task) }}"
                              data-status="{{ $task->status->value }}" data-due="{{ $task->ended_on?->format('Y-m-d') }}"
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
+                             data-labels="{{ $task->labels->pluck('id')->join(',') }}"
                              class="cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200 transition hover:ring-slate-300">
                         <div class="flex items-start gap-2">
                             <div class="flex shrink-0 flex-col items-center gap-1">
@@ -99,6 +100,8 @@
 
                             <div class="min-w-0 flex-1">
                                 <p class="break-words text-sm text-slate-800">{{ $task->title }}</p>
+
+                                @include('projects.partials.task-label-bars')
 
                                 {{-- 詳細は「拡張する」で出す --}}
                                 @if ($task->description)

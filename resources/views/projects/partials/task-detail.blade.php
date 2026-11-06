@@ -212,6 +212,9 @@
         </form>
     </div>
 
+    {{-- ラベル --}}
+    @include('projects.partials.task-labels')
+
     {{-- チェックリスト --}}
     <div x-data="{ adding: false }" class="{{ $rowClass }}">
         <svg class="mt-0.5 h-5 w-5 shrink-0 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

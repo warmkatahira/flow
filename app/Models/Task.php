@@ -74,6 +74,14 @@ class Task extends Model
     }
 
     /**
+     * @return BelongsToMany<Label, $this>
+     */
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(Label::class)->withTimestamps()->orderBy('labels.position');
+    }
+
+    /**
      * @return HasMany<TaskChecklist, $this>
      */
     public function checklists(): HasMany
@@ -102,11 +110,12 @@ class Task extends Model
     }
 
     /**
-     * 複製先へ担当者とチェックリストを写す（コメントは写さない）
+     * 複製先へ担当者・ラベル・チェックリストを写す（コメントは写さない）
      */
     public function copyDetailsTo(self $copy): void
     {
         $copy->assignees()->sync($this->assignees()->pluck('users.id'));
+        $copy->labels()->sync($this->labels()->pluck('labels.id'));
 
         foreach ($this->checklists as $checklist) {
             $checklistCopy = $checklist->replicate();

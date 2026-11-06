@@ -32,6 +32,16 @@ class Project extends Model
     }
 
     /**
+     * タスクに付けられるラベルの種類
+     *
+     * @return HasMany<Label, $this>
+     */
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class)->orderBy('position');
+    }
+
+    /**
      * アーカイブ済みも含む（番号はアーカイブ済みのタスクとも重複させない）
      *
      * @return HasMany<Task, $this>
