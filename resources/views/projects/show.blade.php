@@ -6,55 +6,48 @@
 @endphp
 
 <x-layouts.app :title="$project->name" fill sidebar>
-    <x-slot:header>
-        <div class="flex items-center justify-between gap-4">
-            <div class="flex min-w-0 items-center gap-2">
-                <x-project-icon :project="$project" size="sm" />
-                <h1 class="truncate text-lg font-bold text-slate-800">{{ $project->name }}</h1>
-                <x-favorite-button :project="$project" />
-            </div>
-
-            @if ($isOwner && ! $project->isArchived())
-                <a href="{{ route('projects.edit', $project) }}"
-                   class="shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                    設定
-                </a>
-            @endif
-        </div>
-    </x-slot:header>
-
     {{-- プロジェクト内のタブ。ガントチャート・ファイルはこれから --}}
     <div x-data="{ tab: 'board' }" class="flex flex-1 flex-col"
          x-project-live="{ projectId: {{ $project->id }}, boardUrl: @js(route('projects.board', $project)) }">
         <div class="border-b border-slate-200 bg-white">
-            <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-                <nav class="flex gap-1" aria-label="プロジェクトのタブ">
+            {{-- プロジェクト名は左のリストにあるので、見出しは置かない --}}
+            <div class="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                <nav class="flex min-w-0 gap-1 overflow-x-auto [scrollbar-width:none]" aria-label="プロジェクトのタブ">
                     <button type="button" @click="tab = 'board'"
                             :class="tab === 'board' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
-                            class="border-b-2 px-4 py-3 text-sm font-semibold transition">
+                            class="shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition">
                         ボード
                     </button>
                     <button type="button" @click="tab = 'members'"
                             :class="tab === 'members' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
-                            class="border-b-2 px-4 py-3 text-sm font-semibold transition">
+                            class="shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition">
                         メンバー
                     </button>
                     <button type="button" @click="tab = 'archive'"
                             :class="tab === 'archive' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
-                            class="border-b-2 px-4 py-3 text-sm font-semibold transition">
+                            class="shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition">
                         アーカイブ
                         <span data-live-archive-count class="ml-0.5 font-normal text-slate-400">{{ $archivedLists->count() + $archivedTasks->count() }}</span>
                     </button>
+
+                    @if ($isOwner && ! $project->isArchived())
+                        <a href="{{ route('projects.edit', $project) }}"
+                           class="shrink-0 border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-800">
+                            設定
+                        </a>
+                    @endif
                 </nav>
+
+                <x-favorite-button :project="$project" />
             </div>
         </div>
 
-        <div class="flex flex-1 flex-col px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+        <div class="flex flex-1 flex-col px-4 sm:px-6 lg:px-8 pt-4 pb-2">
             <x-session-status :status="session('status')" />
 
             @if ($project->isArchived())
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
-                    <p>このプロジェクトは {{ $project->archived_at->format('Y/m/d') }} にアーカイブされました。読み取り専用です。</p>
+                    <p>{{ $project->name }} は {{ $project->archived_at->format('Y/m/d') }} にアーカイブされました。読み取り専用です。</p>
 
                     @if ($isOwner)
                         <form autocomplete="off" method="POST" action="{{ route('projects.unarchive', $project) }}">
