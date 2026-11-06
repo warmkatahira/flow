@@ -811,6 +811,42 @@ Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
 }));
 
 /**
+ * 通知のベル
+ *
+ * メンションされたら合図が届くので、件数を取り直す。
+ */
+Alpine.data('notifications', (initialCount, userId, url, readAllUrl) => ({
+    count: initialCount,
+    bellOpen: false,
+    html: '',
+
+    init() {
+        window.Echo.private(`users.${userId}`).listen('.mention.received', () => this.refresh());
+    },
+
+    async refresh() {
+        const response = await fetch(url, { headers: { Accept: 'application/json' } });
+
+        if (response.ok) {
+            Object.assign(this, await response.json());
+        }
+    },
+
+    toggle() {
+        this.bellOpen = ! this.bellOpen;
+
+        if (this.bellOpen) {
+            this.refresh();
+        }
+    },
+
+    async readAll() {
+        await post(readAllUrl, {});
+        await this.refresh();
+    },
+}));
+
+/**
  * コメントのメンション
  *
  * 文字カーソルの直前が「@文字列」のとき、一致する参加者を出す。選んだら「@名前 」に置き換える。
@@ -905,6 +941,9 @@ Alpine.data('taskDialog', (openUrl) => ({
         }
 
         this.$refs.body.innerHTML = await response.text();
+
+        // 開いたタスクの通知は既読になるので、ベルの件数を取り直す
+        window.dispatchEvent(new CustomEvent('notifications-refresh'));
     },
 
     close() {

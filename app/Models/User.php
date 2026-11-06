@@ -64,6 +64,41 @@ class User extends Authenticatable
     }
 
     /**
+     * 自分へのメンション（通知）
+     *
+     * 自分で自分をメンションしたものと、今は見られないタスクのものは出さない。
+     *
+     * @return BelongsToMany<TaskComment, $this>
+     */
+    public function mentionedComments(): BelongsToMany
+    {
+        return $this->belongsToMany(TaskComment::class, 'task_comment_mentions')
+            ->withPivot('read_at')
+            ->withTimestamps()
+            ->whereColumn('task_comments.user_id', '!=', 'task_comment_mentions.user_id')
+            ->whereHas('task', fn ($tasks) => $tasks->active()
+                ->whereHas('list', fn ($lists) => $lists->active())
+                ->whereHas('project', fn ($projects) => $projects->active()->visibleTo($this)));
+    }
+
+    public function unreadMentionCount(): int
+    {
+        return $this->mentionedComments()->wherePivotNull('read_at')->count();
+    }
+
+    /**
+     * 自分へのメンションを既読にする（タスクを渡すとそのタスクの分だけ）
+     */
+    public function markMentionsRead(?Task $task = null): void
+    {
+        $this->mentionedComments()->newPivotStatement()
+            ->where('user_id', $this->getKey())
+            ->whereNull('read_at')
+            ->when($task, fn ($query) => $query->whereIn('task_comment_id', $task->comments()->reorder()->select('id')))
+            ->update(['read_at' => now()]);
+    }
+
+    /**
      * プロジェクトを自分のグループごとに分ける（キーはグループ名）
      *
      * どのプロジェクトをどのグループに入れているかは project_user（人とプロジェクトの組）に

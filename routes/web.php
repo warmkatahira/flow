@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Profile\PasswordController;
 use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\Project\ProjectController;
@@ -31,6 +32,11 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
 
     // ダッシュボード（自分が参加しているプロジェクトの一覧）
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // 通知（自分へのメンション）
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('notifications/{comment}', [NotificationController::class, 'open'])->name('notifications.open');
 
     // 自分のプロフィール
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');

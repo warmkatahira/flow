@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Project;
 
+use App\Events\MentionReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
 use App\Models\Task;
@@ -25,6 +26,10 @@ class TaskCommentController extends Controller
         $comment->user_id = $request->user()->getKey();
         $comment->save();
         $comment->syncMentions($task->project->users);
+
+        foreach ($comment->mentions()->pluck('users.id')->reject(fn (int $id) => $id === $comment->user_id) as $userId) {
+            MentionReceived::notify($userId);
+        }
 
         return $this->changed($task);
     }

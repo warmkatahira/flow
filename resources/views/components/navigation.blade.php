@@ -53,6 +53,30 @@
             </div>
 
             <div class="flex shrink-0 items-center relative">
+                {{-- パスワードの変更が済むまでは他の画面へ行けないので出さない --}}
+                @unless (auth()->user()->must_change_password)
+                    <div x-data="notifications({{ auth()->user()->unreadMentionCount() }}, {{ auth()->id() }}, @js(route('notifications.index')), @js(route('notifications.read-all')))"
+                         class="relative mr-1" @notifications-refresh.window="refresh()" @click.outside="bellOpen = false" @keydown.escape.window="bellOpen = false">
+                        <button type="button" @click="toggle()" aria-label="通知" :aria-expanded="bellOpen ? 'true' : 'false'"
+                                class="relative block rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 1.887-.454 3.665-1.257 5.234a.75.75 0 00.515 1.076 32.91 32.91 0 003.256.508 3.5 3.5 0 006.972 0 32.903 32.903 0 003.256-.508.75.75 0 00.515-1.076A11.448 11.448 0 0116 8a6 6 0 00-6-6zM8.05 14.943a33.54 33.54 0 003.9 0 2 2 0 01-3.9 0z" />
+                            </svg>
+                            <span x-show="count > 0" x-cloak x-text="count > 99 ? '99+' : count" data-notification-badge
+                                  class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-none text-white"></span>
+                        </button>
+
+                        <div x-show="bellOpen" x-cloak x-transition
+                             class="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-200">
+                            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2">
+                                <p class="text-sm text-slate-700">通知</p>
+                                <button type="button" x-show="count > 0" @click="readAll()" class="text-xs text-sky-600 hover:text-sky-800">すべて既読</button>
+                            </div>
+                            <div class="max-h-96 overflow-y-auto [scrollbar-width:thin]" x-html="html"></div>
+                        </div>
+                    </div>
+                @endunless
+
                 <button type="button" @click="open = ! open"
                         class="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">
                     <x-user-avatar :user="auth()->user()" size="xs" />

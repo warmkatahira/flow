@@ -14,9 +14,14 @@ class TaskDetailController extends Controller
 {
     use RendersTaskDetail;
 
-    public function show(Task $task): View
+    /**
+     * 開いたら、このタスクの自分宛ての通知は見たことになる
+     */
+    public function show(Request $request, Task $task): View
     {
         $this->authorizeDetail($task);
+
+        $request->user()->markMentionsRead($task);
 
         return $this->detail($task);
     }
