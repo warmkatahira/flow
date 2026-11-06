@@ -633,6 +633,114 @@ Alpine.store('boardFilter', {
 });
 
 /**
+ * タスクのタイトルと説明の編集
+ *
+ * 保存ボタンはなく、フォーカスを外すと保存する。変えていなければ送らない。Esc で取り消す。
+ */
+Alpine.data('blurEdit', (saved) => ({
+    editing: false,
+
+    finish(input) {
+        const value = input.value.trim();
+
+        this.editing = false;
+
+        // 必須の項目を空にしたときは元に戻す
+        if (value === saved.trim() || (input.required && value === '')) {
+            input.value = saved;
+
+            return;
+        }
+
+        input.form.requestSubmit();
+    },
+
+    cancel(input) {
+        input.value = saved;
+        input.blur();
+    },
+}));
+
+/**
+ * タスクの期間のカレンダー
+ *
+ * 1回目に押した日が開始、2回目が終了。開始より前を押したら、その日を開始に選び直す。
+ * 両方決まっているときに押すと、最初から選び直す。
+ */
+Alpine.data('periodPicker', (savedStart, savedEnd) => {
+    const opened = new Date(`${savedStart ?? savedEnd ?? ymd(new Date())}T00:00:00`);
+
+    const monthOf = (year, month) => {
+        const first = new Date(year, month, 1);
+        const count = new Date(year, month + 1, 0).getDate();
+
+        return {
+            label: `${first.getFullYear()}年${first.getMonth() + 1}月`,
+            blanks: Array.from({ length: first.getDay() }, (_, index) => index),
+            days: Array.from({ length: count }, (_, index) => ({
+                number: index + 1,
+                date: ymd(new Date(year, month, index + 1)),
+            })),
+        };
+    };
+
+    return {
+        start: savedStart,
+        end: savedEnd,
+        hovered: null,
+        // テンプレートの x-for の month と名前がぶつからないようにする
+        shownYear: opened.getFullYear(),
+        shownMonth: opened.getMonth(),
+
+        get months() {
+            return [monthOf(this.shownYear, this.shownMonth), monthOf(this.shownYear, this.shownMonth + 1)];
+        },
+
+        get dirty() {
+            return this.start !== savedStart || this.end !== savedEnd;
+        },
+
+        shift(months) {
+            const moved = new Date(this.shownYear, this.shownMonth + months, 1);
+
+            this.shownYear = moved.getFullYear();
+            this.shownMonth = moved.getMonth();
+        },
+
+        pick(date) {
+            if (this.start && ! this.end && date >= this.start) {
+                this.end = date;
+            } else {
+                this.start = date;
+                this.end = null;
+            }
+        },
+
+        clear() {
+            this.start = null;
+            this.end = null;
+        },
+
+        dayClass(date) {
+            if (date === this.start || date === this.end) {
+                return 'bg-sky-500 text-white';
+            }
+
+            // 終了を選ぶ前は、マウスのある日までを選ぶ範囲として見せる
+            const last = this.end ?? (this.start ? this.hovered : null);
+
+            if (this.start && last && date > this.start && date < last) {
+                return 'bg-sky-100 text-sky-700';
+            }
+
+            return date === ymd(new Date())
+                ? 'text-slate-700 ring-1 ring-inset ring-sky-500 hover:bg-sky-50'
+                : 'text-slate-700 hover:bg-sky-50';
+        },
+    };
+});
+
+/**
  * タスクの移動先を選ぶダイアログ
  *
  * 他のプロジェクトへも動かせる。候補は他の人の変更があるので、開くたびに取り直す。
@@ -783,6 +891,15 @@ Alpine.data('taskDialog', (openUrl) => ({
         this.$refs.dialog.close();
     },
 
+    // 入力欄を閉じて高さが縮むと、枠の中を押しても dialog 自身のクリックになるので、位置で見分ける
+    backdrop({ clientX, clientY }) {
+        const { left, right, top, bottom } = this.$refs.dialog.getBoundingClientRect();
+
+        if (clientX < left || clientX > right || clientY < top || clientY > bottom) {
+            this.close();
+        }
+    },
+
     closed() {
         if (this.changed) {
             this.changed = false;
@@ -825,6 +942,11 @@ Alpine.data('taskDialog', (openUrl) => ({
 
         this.changed = true;
         this.$refs.body.innerHTML = await response.text();
+
+        // 閉じるボタンを押してフォーカスが外れたときは、保存が終わる前に閉じている
+        if (! this.$refs.dialog.open) {
+            this.closed();
+        }
 
         if (form.dataset.refocus) {
             this.$refs.body.querySelector(form.dataset.refocus)?.focus();

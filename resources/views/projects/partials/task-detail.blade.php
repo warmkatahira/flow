@@ -61,50 +61,44 @@
         </div>
     </div>
 
-    {{-- タイトル --}}
-    <div x-data="{ editing: false }" class="mt-1">
+    {{-- タイトル。フォーカスを外すと保存する（resources/js/app.js の blurEdit） --}}
+    <div x-data="blurEdit(@js($task->title))" class="mt-1">
         <h2 x-show="! editing" @click="editing = true; $nextTick(() => $refs.title.select())"
             class="cursor-text break-words text-xl font-bold text-slate-800">{{ $task->title }}</h2>
 
-        <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak class="space-y-2">
+        <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak>
             @csrf
             @method('PUT')
             <input autocomplete="off" type="text" name="title" x-ref="title" value="{{ $task->title }}" required maxlength="255" aria-label="タイトル"
+                   @blur="finish($el)" @keydown.enter.prevent="$el.blur()" @keydown.escape.prevent.stop="cancel($el)"
                    class="{{ $inputClass }}">
-            <div class="flex items-center gap-2">
-                <button type="submit" class="{{ $saveClass }}">保存</button>
-                <button type="button" @click="editing = false" class="{{ $cancelClass }}">やめる</button>
-            </div>
         </form>
     </div>
 
     {{-- 説明 --}}
-    <div x-data="{ editing: false }" class="mt-2">
+    <div x-data="blurEdit(@js($task->description ?? ''))" class="mt-2">
         <button type="button" x-show="! editing" @click="editing = true; $nextTick(() => $refs.description.focus())"
                 class="block w-full whitespace-pre-wrap break-words text-left text-sm {{ $task->description ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600' }}">{{ $task->description ?: '説明を編集' }}</button>
 
-        <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak class="space-y-2">
+        <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak>
             @csrf
             @method('PUT')
             <textarea name="description" x-ref="description" rows="4" maxlength="10000" aria-label="説明"
+                      @blur="finish($el)" @keydown.escape.prevent.stop="cancel($el)"
                       class="{{ $inputClass }}">{{ $task->description }}</textarea>
-            <div class="flex items-center gap-2">
-                <button type="submit" class="{{ $saveClass }}">保存</button>
-                <button type="button" @click="editing = false" class="{{ $cancelClass }}">やめる</button>
-            </div>
         </form>
     </div>
 </div>
 
 <div class="space-y-3 px-6 py-4">
     {{-- 期間 --}}
-    <div x-data="{ editing: false }" class="{{ $rowClass }}">
+    <div x-data="periodPicker(@js($task->started_on?->format('Y-m-d')), @js($task->ended_on?->format('Y-m-d')))" class="{{ $rowClass }}">
         <svg class="mt-0.5 h-5 w-5 shrink-0 text-sky-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" />
         </svg>
 
         <div class="min-w-0 flex-1">
-            <button type="button" x-show="! editing" @click="editing = true" class="text-left hover:text-slate-800 {{ $task->started_on || $task->ended_on ? 'text-slate-700' : '' }}">
+            <button type="button" @click="$refs.calendar.showModal()" class="text-left hover:text-slate-800 {{ $task->started_on || $task->ended_on ? 'text-slate-700' : '' }}">
                 @if ($task->started_on || $task->ended_on)
                     {{ $task->started_on?->format('Y/m/d') }} 〜 {{ $task->ended_on?->format('Y/m/d') }}
                 @else
@@ -112,19 +106,73 @@
                 @endif
             </button>
 
-            <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.period', $task) }}" x-show="editing" x-cloak class="space-y-2">
-                @csrf
-                @method('PUT')
-                <div class="flex flex-wrap items-center gap-2">
-                    <input autocomplete="off" type="date" name="started_on" value="{{ $task->started_on?->format('Y-m-d') }}" aria-label="開始日" class="{{ $inputClass }} w-40!">
-                    <span>〜</span>
-                    <input autocomplete="off" type="date" name="ended_on" value="{{ $task->ended_on?->format('Y-m-d') }}" aria-label="終了日" class="{{ $inputClass }} w-40!">
-                </div>
-                <div class="flex items-center gap-2">
-                    <button type="submit" class="{{ $saveClass }}">保存</button>
-                    <button type="button" @click="editing = false" class="{{ $cancelClass }}">やめる</button>
-                </div>
-            </form>
+            {{-- 1回目に押した日が開始、2回目に押した日が終了（resources/js/app.js の periodPicker） --}}
+            <dialog x-ref="calendar" @click.self="$refs.calendar.close()"
+                    class="m-auto max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-xl rounded-2xl bg-white shadow-xl outline-none backdrop:bg-slate-900/20">
+                <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.period', $task) }}" class="relative p-6">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="started_on" :value="start ?? ''">
+                    <input type="hidden" name="ended_on" :value="end ?? ''">
+
+                    <h3 class="text-center text-sm text-slate-700">期間の設定</h3>
+
+                    <button type="button" @click="$refs.calendar.close()" aria-label="閉じる"
+                            class="absolute right-3 top-3 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                        </svg>
+                    </button>
+
+                    <div class="mt-4 grid gap-6 sm:grid-cols-2" @mouseleave="hovered = null">
+                        <template x-for="(month, index) in months" :key="month.label">
+                            <div>
+                                <div class="flex items-center justify-between">
+                                    <button type="button" @click="shift(-1)" aria-label="前の月" :class="index === 0 ? '' : 'invisible'"
+                                            class="rounded-md bg-sky-50 p-1 text-sky-500 transition hover:bg-sky-100">
+                                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M12.5 4.5v11L6 10z" />
+                                        </svg>
+                                    </button>
+                                    <span class="text-sm text-slate-700" x-text="month.label"></span>
+                                    <button type="button" @click="shift(1)" aria-label="次の月" :class="index === months.length - 1 ? '' : 'invisible'"
+                                            class="rounded-md bg-sky-50 p-1 text-sky-500 transition hover:bg-sky-100">
+                                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M7.5 4.5v11L14 10z" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div class="mt-2 grid grid-cols-7 text-center text-xs text-slate-400">
+                                    @foreach (['日', '月', '火', '水', '木', '金', '土'] as $weekday)
+                                        <span class="py-1">{{ $weekday }}</span>
+                                    @endforeach
+                                </div>
+
+                                <div class="grid grid-cols-7 gap-y-0.5 text-center text-sm">
+                                    <template x-for="blank in month.blanks" :key="`blank-${blank}`"><span></span></template>
+                                    <template x-for="day in month.days" :key="day.date">
+                                        <button type="button" @click="pick(day.date)" @mouseenter="hovered = day.date"
+                                                :aria-pressed="[start, end].includes(day.date) ? 'true' : 'false'" :aria-label="day.date"
+                                                :class="dayClass(day.date)" class="h-8 rounded-md transition-colors" x-text="day.number"></button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="mt-5 flex justify-center gap-4">
+                        <button type="button" @click="clear()"
+                                class="w-36 rounded-lg bg-sky-50 py-2 text-sm text-sky-600 transition hover:bg-sky-100">
+                            クリア
+                        </button>
+                        <button type="submit" :disabled="! dirty"
+                                class="w-36 rounded-lg bg-sky-500 py-2 text-sm text-white transition hover:bg-sky-600 disabled:bg-slate-200 disabled:text-slate-400">
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </dialog>
         </div>
     </div>
 
