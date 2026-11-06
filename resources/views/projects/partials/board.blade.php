@@ -8,8 +8,6 @@
     </p>
 @endif
 
-<p class="mb-2 text-xs text-slate-500">Ctrl（Mac は ⌘）を押しながらクリックするとタスクを複数選択でき、まとめてドラッグできます。</p>
-
 {{-- ドラッグ中だけ出る。ここに落としたタスクをまとめてアーカイブする（resources/js/app.js の x-board） --}}
 <div data-archive-zone
      class="hidden fixed bottom-6 left-1/2 z-40 max-h-20 w-80 -translate-x-1/2 overflow-hidden rounded-xl border-2 border-dashed border-amber-400 bg-amber-50 px-6 py-5 text-center text-sm font-semibold text-amber-800 shadow-lg has-[[data-task-id]]:bg-amber-200">
