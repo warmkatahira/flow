@@ -205,7 +205,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
 
     const isIdle = () => pendingWrites === 0
         && ! Sortable.dragged
-        && ! board.querySelector('.task-selected, [data-panning]')
+        && ! board.querySelector('.task-selected, [data-panning], [data-menu-open]')
         && ! [...board.querySelectorAll('form')].some((form) => form.offsetParent !== null);
 
     const refresh = async () => {
@@ -396,6 +396,89 @@ window.addEventListener('pagehide', () => {
         remember(sessionStorage, 'flow.sidebar.scroll', String(tree.scrollTop));
     }
 });
+
+/**
+ * リストとタスクの ⋯ メニュー
+ *
+ * 押した場所の下に出す。画面の端で切れるときは内側へずらす。
+ */
+Alpine.data('boardMenu', () => ({
+    menuOpen: false,
+
+    toggle() {
+        this.menuOpen = ! this.menuOpen;
+
+        if (! this.menuOpen) {
+            return;
+        }
+
+        this.$nextTick(() => {
+            const { panel } = this.$refs;
+            const trigger = this.$refs.trigger.getBoundingClientRect();
+
+            panel.style.left = `${Math.max(8, trigger.right - panel.offsetWidth)}px`;
+            panel.style.top = `${Math.max(8, Math.min(trigger.bottom + 4, window.innerHeight - panel.offsetHeight - 8))}px`;
+        });
+    },
+}));
+
+/**
+ * リストとタスクの移動先を選ぶダイアログ
+ *
+ * 他のプロジェクトへも動かせる。候補は他の人の変更があるので、開くたびに取り直す。
+ */
+Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
+    kind: 'task',
+    name: '',
+    action: '',
+    listId: null,
+    projects: [],
+    projectId: null,
+    targetListId: null,
+    loading: false,
+
+    get projectOptions() {
+        return this.kind === 'list'
+            ? this.projects.filter((project) => project.id !== currentProjectId)
+            : this.projects;
+    },
+
+    get listOptions() {
+        const project = this.projects.find((candidate) => candidate.id === this.projectId);
+
+        return (project?.lists ?? []).filter((list) => list.id !== this.listId);
+    },
+
+    get canSubmit() {
+        return ! this.loading && (this.kind === 'list' ? Boolean(this.projectId) : Boolean(this.targetListId));
+    },
+
+    async open({ kind, name, action, listId = null }) {
+        Object.assign(this, { kind, name, action, listId, projects: [], projectId: null, targetListId: null, loading: true });
+        this.$refs.dialog.showModal();
+
+        const response = await fetch(targetsUrl, { headers: { Accept: 'application/json' } });
+
+        if (! response.ok) {
+            location.reload();
+
+            return;
+        }
+
+        this.projects = await response.json();
+        this.loading = false;
+
+        // 選択肢が描かれてからでないと select に値が入らない
+        await this.$nextTick();
+        this.projectId = kind === 'list' ? (this.projectOptions[0]?.id ?? null) : currentProjectId;
+        this.pickList();
+    },
+
+    async pickList() {
+        await this.$nextTick();
+        this.targetListId = this.listOptions[0]?.id ?? null;
+    },
+}));
 
 window.Alpine = Alpine;
 

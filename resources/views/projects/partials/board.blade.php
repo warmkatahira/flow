@@ -23,23 +23,41 @@
         archiveUrl: @js(route('tasks.archive-many', $project)),
      }">
     @foreach ($project->taskLists as $list)
-        <section data-list-id="{{ $list->id }}"
+        <section data-list-id="{{ $list->id }}" x-data="{ adding: false, editing: false }"
                  class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
             {{-- 上端の帯。見出しと同じくリストを掴める --}}
             <div data-list-handle class="h-2 cursor-grab rounded-t-xl" style="background-color: {{ $list->color }}"></div>
 
             {{-- 見出し --}}
-            <div x-data="{ editing: false }">
+            <div>
                 <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2" x-show="! editing">
                     <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
                     <span data-list-count class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
 
-                    <button type="button" @click="editing = true" aria-label="リストを編集"
-                            class="ml-auto shrink-0 rounded p-1 text-slate-700 transition hover:bg-black/10">
-                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM11.5 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM17 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                        </svg>
-                    </button>
+                    <x-board-menu title="リストメニュー" class="ml-auto" button-class="p-1 text-slate-700 hover:bg-black/10">
+                        <x-board-menu-item @click="menuOpen = false; adding = true; $nextTick(() => $refs.title.focus())">新規タスクを追加</x-board-menu-item>
+
+                        <div class="my-1.5 border-t border-slate-100"></div>
+
+                        <x-board-menu-item @click="menuOpen = false; editing = true">リストを編集</x-board-menu-item>
+                        <button type="button" role="menuitem"
+                                @click="menuOpen = false; $dispatch('open-move', { kind: 'list', name: @js($list->name), action: @js(route('lists.move', $list)) })"
+                                class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
+                            リストを移動
+                        </button>
+                        <form autocomplete="off" method="POST" action="{{ route('lists.duplicate', $list) }}">
+                            @csrf
+                            <x-board-menu-item type="submit">リストを複製</x-board-menu-item>
+                        </form>
+
+                        <div class="my-1.5 border-t border-slate-100"></div>
+
+                        <form autocomplete="off" method="POST" action="{{ route('lists.archive', $list) }}"
+                              onsubmit="return confirm(@js($list->name.' をアーカイブします。中のタスクも一緒にボードから消えます。よろしいですか？'));">
+                            @csrf
+                            <x-board-menu-item type="submit">リストをアーカイブ</x-board-menu-item>
+                        </form>
+                    </x-board-menu>
                 </div>
 
                 {{-- 名前と色の変更 --}}
@@ -58,18 +76,10 @@
                         <button type="button" @click="editing = false" class="text-xs text-slate-600 hover:text-slate-900">やめる</button>
                     </div>
                 </form>
-
-                {{-- 誤って押さないよう、アーカイブは編集を開いたときだけ出す --}}
-                <form autocomplete="off" method="POST" action="{{ route('lists.archive', $list) }}" x-show="editing" x-cloak
-                      class="border-t border-slate-100 bg-white px-3 pb-3 pt-2"
-                      onsubmit="return confirm(@js($list->name.' をアーカイブします。中のタスクも一緒にボードから消えます。よろしいですか？'));">
-                    @csrf
-                    <button type="submit" class="text-xs text-amber-700 hover:text-amber-900">リストをアーカイブ</button>
-                </form>
             </div>
 
             {{-- タスクを追加 --}}
-            <div class="px-2 pt-2" x-data="{ adding: false }">
+            <div class="px-2 pt-2">
                 <button type="button" @click="adding = true; $nextTick(() => $refs.title.focus())" x-show="! adding"
                         class="flex w-full items-center justify-center gap-1 rounded-lg bg-white px-3 py-1.5 text-sm text-sky-600 transition hover:bg-sky-50">
                     ＋ タスクを追加
@@ -96,12 +106,28 @@
                             <span class="mt-0.5 shrink-0 text-[10px] font-medium text-slate-400">#{{ $task->number }}</span>
                             <p class="min-w-0 flex-1 text-sm text-slate-800">{{ $task->title }}</p>
 
-                            <button type="button" @click="editing = true" aria-label="タスクを編集"
-                                    class="shrink-0 rounded p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM11.5 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM17 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
+                            <x-board-menu title="タスクメニュー" button-class="p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                                <x-board-menu-item @click="menuOpen = false; editing = true">タスクを開く</x-board-menu-item>
+
+                                <div class="my-1.5 border-t border-slate-100"></div>
+
+                                <form autocomplete="off" method="POST" action="{{ route('tasks.duplicate', $task) }}">
+                                    @csrf
+                                    <x-board-menu-item type="submit">タスクを複製</x-board-menu-item>
+                                </form>
+                                <button type="button" role="menuitem"
+                                        @click="menuOpen = false; $dispatch('open-move', { kind: 'task', name: @js($task->title), action: @js(route('tasks.move', $task)), listId: {{ $list->id }} })"
+                                        class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
+                                    タスクを移動
+                                </button>
+
+                                <div class="my-1.5 border-t border-slate-100"></div>
+
+                                <form autocomplete="off" method="POST" action="{{ route('tasks.archive', $task) }}">
+                                    @csrf
+                                    <x-board-menu-item type="submit">タスクをアーカイブ</x-board-menu-item>
+                                </form>
+                            </x-board-menu>
                         </div>
 
                         <div x-show="editing" x-cloak class="space-y-2">
@@ -114,11 +140,6 @@
                                     <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">保存</button>
                                     <button type="button" @click="editing = false" class="text-xs text-slate-600 hover:text-slate-900">やめる</button>
                                 </div>
-                            </form>
-
-                            <form autocomplete="off" method="POST" action="{{ route('tasks.archive', $task) }}">
-                                @csrf
-                                <button type="submit" class="text-xs text-amber-700 hover:text-amber-900">アーカイブ</button>
                             </form>
                         </div>
                     </article>

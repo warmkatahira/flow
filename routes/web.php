@@ -45,6 +45,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     // まずアーカイブし、完全な削除はアーカイブ済みのものだけできる
     // /projects/{project} に飲まれないよう resource より先に置く
     Route::get('projects/archived', [ProjectController::class, 'archived'])->name('projects.archived');
+    Route::get('projects/move-targets', [ProjectController::class, 'moveTargets'])->name('projects.move-targets');
     Route::get('projects/{project}/board', [ProjectController::class, 'board'])->name('projects.board');
     Route::post('projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
     Route::post('projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
@@ -60,11 +61,15 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
         Route::post('tasks/archive', [TaskController::class, 'archiveMany'])->name('tasks.archive-many');
     });
     Route::put('lists/{list}', [TaskListController::class, 'update'])->name('lists.update');
+    Route::post('lists/{list}/duplicate', [TaskListController::class, 'duplicate'])->name('lists.duplicate');
+    Route::post('lists/{list}/move', [TaskListController::class, 'move'])->name('lists.move');
     Route::post('lists/{list}/archive', [TaskListController::class, 'archive'])->name('lists.archive');
     Route::post('lists/{list}/unarchive', [TaskListController::class, 'unarchive'])->name('lists.unarchive');
     Route::delete('lists/{list}', [TaskListController::class, 'destroy'])->name('lists.destroy');
     Route::post('lists/{list}/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::put('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
+    Route::post('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
     Route::post('tasks/{task}/archive', [TaskController::class, 'archive'])->name('tasks.archive');
     Route::post('tasks/{task}/unarchive', [TaskController::class, 'unarchive'])->name('tasks.unarchive');
     Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');

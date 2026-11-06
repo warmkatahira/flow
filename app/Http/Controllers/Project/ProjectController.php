@@ -26,6 +26,24 @@ use Illuminate\View\View;
 class ProjectController extends Controller
 {
     /**
+     * リストとタスクの移動先の候補（自分が操作できるプロジェクトと、そのリスト）
+     */
+    public function moveTargets(Request $request): JsonResponse
+    {
+        $projects = $request->user()->projects()
+            ->active()
+            ->with(['taskLists' => fn ($query) => $query->active()])
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($projects->map(fn (Project $project) => [
+            'id' => $project->id,
+            'name' => $project->name,
+            'lists' => $project->taskLists->map->only('id', 'name')->values(),
+        ]));
+    }
+
+    /**
      * プロジェクトの詳細を表示する
      */
     public function show(Project $project): View

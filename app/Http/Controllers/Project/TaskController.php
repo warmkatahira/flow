@@ -70,6 +70,81 @@ class TaskController extends Controller
     }
 
     /**
+     * タスクを複製してすぐ下に置く
+     */
+    public function duplicate(Task $task): RedirectResponse
+    {
+        $project = $task->project;
+
+        Gate::authorize('work', $project);
+
+        abort_unless($task->isOnBoard(), 404);
+
+        $copy = DB::transaction(function () use ($project, $task) {
+            $locked = Project::whereKey($project->getKey())->lockForUpdate()->firstOrFail();
+
+            $task->list->tasks()->where('position', '>', $task->position)->increment('position');
+
+            $copy = $task->replicate();
+            $copy->title = mb_substr($task->title, 0, 250).' のコピー';
+            $copy->number = $locked->nextTaskNumber();
+            $copy->position = $task->position + 1;
+            $copy->save();
+
+            return $copy;
+        });
+
+        BoardChanged::notify($project);
+
+        return back()->with('status', "#{$copy->number} に複製しました。");
+    }
+
+    /**
+     * タスクを別のリストの末尾へ動かす（他のプロジェクトへも動かせる）
+     *
+     * 番号はプロジェクトごとの連番なので、プロジェクトをまたぐと振り直す。
+     */
+    public function move(Request $request, Task $task): RedirectResponse
+    {
+        $from = $task->project;
+
+        Gate::authorize('work', $from);
+
+        abort_unless($task->isOnBoard(), 404);
+
+        $attributes = $request->validate([
+            'list_id' => ['required', 'integer'],
+        ]);
+
+        $list = TaskList::active()->findOrFail($attributes['list_id']);
+        $to = $list->project;
+
+        Gate::authorize('work', $to);
+
+        DB::transaction(function () use ($task, $list, $from, $to) {
+            // 順番を揃えて、同時に逆向きへ動かしてもデッドロックしないようにする
+            Project::whereKey([$from->getKey(), $to->getKey()])->orderBy('id')->lockForUpdate()->get();
+
+            if ($from->isNot($to)) {
+                $task->project_id = $to->getKey();
+                $task->number = $to->nextTaskNumber();
+            }
+
+            $task->task_list_id = $list->getKey();
+            $task->position = (int) $list->tasks()->max('position') + 1;
+            $task->save();
+        });
+
+        BoardChanged::notify($from);
+
+        if ($from->isNot($to)) {
+            BoardChanged::notify($to);
+        }
+
+        return back()->with('status', "{$task->title} を {$list->name} へ移動しました。");
+    }
+
+    /**
      * タスクをアーカイブする
      */
     public function archive(Task $task): RedirectResponse
