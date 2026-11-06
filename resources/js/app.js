@@ -404,6 +404,7 @@ const remember = (storage, key, value) => {
 
 Alpine.store('sidebar', {
     drawer: false,
+    movingTimer: null,
 
     toggle() {
         if (! window.matchMedia('(min-width: 64rem)').matches) {
@@ -422,6 +423,11 @@ Alpine.store('sidebar', {
         }
 
         remember(localStorage, 'flow.sidebar.collapsed', collapsed ? '1' : '0');
+
+        // 右端の波は動いている間だけ出す
+        root.dataset.sidebarMoving = '';
+        clearTimeout(this.movingTimer);
+        this.movingTimer = setTimeout(() => delete root.dataset.sidebarMoving, 540);
     },
 });
 

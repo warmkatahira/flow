@@ -6,6 +6,41 @@
 /* 左のプロジェクトリストを畳んでいるとき（html の data-sidebar。resources/js/app.js が切り替える） */
 @custom-variant sidebar-closed (html[data-sidebar='closed'] &);
 
+/* プロジェクトリストの開閉中だけ出す右端の波。ロゴの波と同じ考えで、縦に流しながら引いていく */
+.sidebar-wave-edge {
+    position: absolute;
+    inset-block: 0;
+    left: calc(100% - 1px);
+    width: 1rem;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.sidebar-wave {
+    position: absolute;
+    inset: -2rem 0;
+    opacity: 0;
+    background: var(--color-slate-800);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='32'%3E%3Cpath d='M0 0h4C4 8 13 8 13 16S4 24 4 32H0z'/%3E%3C/svg%3E") repeat-y;
+}
+
+html[data-sidebar-moving] .sidebar-wave {
+    opacity: 1;
+    animation: sidebar-wave 520ms linear;
+}
+
+@keyframes sidebar-wave {
+    to {
+        translate: 0 2rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-wave-edge {
+        display: none;
+    }
+}
+
 /* カンバンで複数選択したタスク。Sortable に渡せるクラスは1つだけなのでまとめておく */
 .task-selected {
     @apply bg-sky-50 ring-2 ring-sky-500;

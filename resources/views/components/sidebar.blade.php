@@ -10,7 +10,11 @@
        :data-open="$store.sidebar.drawer"
        @keydown.escape.window="$store.sidebar.drawer = false"
        aria-label="プロジェクトリスト"
-       class="fixed inset-y-0 left-0 z-50 w-64 shrink-0 -translate-x-full overflow-hidden bg-slate-800 transition-[translate,width,visibility] duration-200 max-lg:invisible data-[open=true]:translate-x-0 max-lg:data-[open=true]:visible lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:sidebar-closed:invisible lg:sidebar-closed:w-0">
+       class="fixed inset-y-0 left-0 z-50 w-64 shrink-0 -translate-x-full bg-slate-800 transition-[translate,width,visibility] duration-200 max-lg:invisible data-[open=true]:translate-x-0 max-lg:data-[open=true]:visible lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:duration-[520ms] lg:ease-[cubic-bezier(.65,0,.35,1)] lg:sidebar-closed:invisible lg:sidebar-closed:w-0">
+    {{-- 開閉の間だけ右端を波打たせる（resources/css/app.css） --}}
+    <div class="sidebar-wave-edge" aria-hidden="true"><div class="sidebar-wave"></div></div>
+
+    <div class="h-full overflow-hidden">
     <div class="flex h-full w-64 flex-col">
         <a href="{{ route('dashboard') }}" class="flex h-14 shrink-0 items-center border-b border-slate-700 px-4">
             <x-application-logo class="h-7" inverted />
@@ -76,6 +80,7 @@
                 @endforelse
             </section>
         </div>
+    </div>
     </div>
 </aside>
 
