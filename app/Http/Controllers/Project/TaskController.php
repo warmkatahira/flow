@@ -21,7 +21,9 @@ class TaskController extends Controller
     {
         $project = $list->project;
 
-        Gate::authorize('view', $project);
+        Gate::authorize('work', $project);
+
+        abort_if($list->isArchived(), 404);
 
         $attributes = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -50,7 +52,9 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task): RedirectResponse
     {
-        Gate::authorize('view', $task->project);
+        Gate::authorize('work', $task->project);
+
+        abort_unless($task->isOnBoard(), 404);
 
         $task->update($request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -61,15 +65,76 @@ class TaskController extends Controller
     }
 
     /**
-     * タスクを削除する
+     * タスクをアーカイブする
+     */
+    public function archive(Task $task): RedirectResponse
+    {
+        Gate::authorize('work', $task->project);
+
+        abort_unless($task->isOnBoard(), 404);
+
+        $task->archive();
+
+        return back()->with('status', "#{$task->number} をアーカイブしました。");
+    }
+
+    /**
+     * 選んだタスクをまとめてアーカイブする
+     *
+     * 画面は読み込み直すので、結果はフラッシュメッセージで伝える。
+     */
+    public function archiveMany(Request $request, Project $project): JsonResponse
+    {
+        Gate::authorize('work', $project);
+
+        $attributes = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        // 他プロジェクトや、ボードに出ていないものを混ぜられても動かないようにする
+        $count = $project->tasks()
+            ->active()
+            ->whereKey($attributes['ids'])
+            ->whereHas('list', fn ($query) => $query->active())
+            ->update(['archived_at' => now()]);
+
+        session()->flash('status', "{$count}件のタスクをアーカイブしました。");
+
+        return response()->json(['archived' => $count]);
+    }
+
+    /**
+     * アーカイブしたタスクを元のリストの末尾に戻す
+     */
+    public function unarchive(Task $task): RedirectResponse
+    {
+        Gate::authorize('work', $task->project);
+
+        abort_unless($task->isArchived(), 404);
+
+        if ($task->list->isArchived()) {
+            return back()->with('status', '先にリストを元に戻してください。');
+        }
+
+        $task->position = (int) $task->list->tasks()->max('position') + 1;
+        $task->unarchive();
+
+        return back()->with('status', "#{$task->number} を元に戻しました。");
+    }
+
+    /**
+     * アーカイブ済みのタスクを完全に削除する
      */
     public function destroy(Task $task): RedirectResponse
     {
-        Gate::authorize('view', $task->project);
+        Gate::authorize('work', $task->project);
+
+        abort_unless($task->isArchived(), 404);
 
         $task->delete();
 
-        return back()->with('status', 'タスクを削除しました。');
+        return back()->with('status', "#{$task->number} を完全に削除しました。");
     }
 
     /**
@@ -79,7 +144,7 @@ class TaskController extends Controller
      */
     public function reorder(Request $request, Project $project): JsonResponse
     {
-        Gate::authorize('view', $project);
+        Gate::authorize('work', $project);
 
         $attributes = $request->validate([
             'list_id' => ['required', 'integer'],
@@ -87,9 +152,9 @@ class TaskController extends Controller
             'ids.*' => ['integer'],
         ]);
 
-        // 他プロジェクトのリストやタスクを混ぜられても動かないようにする
-        $list = $project->taskLists()->whereKey($attributes['list_id'])->firstOrFail();
-        $tasks = $project->tasks()->whereKey($attributes['ids'])->get()->keyBy('id');
+        // 他プロジェクトやアーカイブ済みのものを混ぜられても動かないようにする
+        $list = $project->taskLists()->active()->whereKey($attributes['list_id'])->firstOrFail();
+        $tasks = $project->tasks()->active()->whereKey($attributes['ids'])->get()->keyBy('id');
 
         DB::transaction(function () use ($attributes, $list, $tasks) {
             foreach ($attributes['ids'] as $position => $id) {

@@ -100,19 +100,6 @@ class ProjectManagementTest extends TestCase
         $this->assertSame(ProjectRole::Owner, $project->fresh()->roleOf($owner));
     }
 
-    public function test_オーナーはプロジェクトを削除でき参加者の割り当ても消える(): void
-    {
-        $owner = User::factory()->create();
-        $project = Project::factory()->ownedBy($owner)->create();
-
-        $this->actingAs($owner)
-            ->delete(route('projects.destroy', $project))
-            ->assertRedirect(route('dashboard'));
-
-        $this->assertDatabaseMissing('projects', ['id' => $project->id]);
-        $this->assertDatabaseMissing('project_user', ['project_id' => $project->id]);
-    }
-
     public function test_アイコン画像をアップロードできる(): void
     {
         Storage::fake('public');

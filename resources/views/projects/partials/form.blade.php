@@ -52,7 +52,7 @@
 <div>
     <x-input-label value="参加者" :required="true" />
     <p class="mb-2 text-xs text-slate-500">
-        オーナーだけがプロジェクトの編集・削除・参加者の変更をできます。
+        オーナーだけがプロジェクトの編集・アーカイブ・参加者の変更をできます。
     </p>
 
     <div class="divide-y divide-slate-100 rounded-lg border border-slate-200">

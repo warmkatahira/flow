@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Profile\PasswordController;
+use App\Http\Controllers\Profile\ProfileController;
 use App\Http\Controllers\Project\ProjectController;
 use App\Http\Controllers\Project\ProjectFavoriteController;
 use App\Http\Controllers\Project\ProjectGroupAssignmentController;
@@ -9,6 +11,8 @@ use App\Http\Controllers\Project\ProjectGroupController;
 use App\Http\Controllers\Project\TaskController;
 use App\Http\Controllers\Project\TaskListController;
 use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\User\UserImportController;
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
@@ -19,11 +23,18 @@ Route::middleware('guest')->group(function () {
 });
 
 // +-+-+-+-+-+-+-+- ログイン必須 +-+-+-+-+-+-+-+-
-Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
+Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::class])->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     // ダッシュボード（自分が参加しているプロジェクトの一覧）
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // 自分のプロフィール
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('profile/password', [PasswordController::class, 'edit'])->name('password.edit');
+    Route::put('profile/password', [PasswordController::class, 'update'])->name('password.update');
+    Route::put('profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+    Route::delete('profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
 
     // プロジェクトをまとめるグループ（名前と並び順だけの入れ物。所属は任意）
     Route::post('project-groups/reorder', [ProjectGroupController::class, 'reorder'])->name('project-groups.reorder');
@@ -31,6 +42,11 @@ Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
 
     // プロジェクト（一覧はダッシュボードが兼ねる）
     // 参加していないプロジェクトは ProjectPolicy で 404 になる
+    // まずアーカイブし、完全な削除はアーカイブ済みのものだけできる
+    // /projects/{project} に飲まれないよう resource より先に置く
+    Route::get('projects/archived', [ProjectController::class, 'archived'])->name('projects.archived');
+    Route::post('projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
+    Route::post('projects/{project}/unarchive', [ProjectController::class, 'unarchive'])->name('projects.unarchive');
     Route::post('projects/{project}/favorite', ProjectFavoriteController::class)->name('projects.favorite');
     // 自分のダッシュボードでの分類なので、参加者なら誰でも変えられる
     Route::put('projects/{project}/group', ProjectGroupAssignmentController::class)->name('projects.group.update');
@@ -40,17 +56,28 @@ Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
         Route::post('lists', [TaskListController::class, 'store'])->name('lists.store');
         Route::post('lists/reorder', [TaskListController::class, 'reorder'])->name('lists.reorder');
         Route::post('tasks/reorder', [TaskController::class, 'reorder'])->name('tasks.reorder');
+        Route::post('tasks/archive', [TaskController::class, 'archiveMany'])->name('tasks.archive-many');
     });
     Route::put('lists/{list}', [TaskListController::class, 'update'])->name('lists.update');
+    Route::post('lists/{list}/archive', [TaskListController::class, 'archive'])->name('lists.archive');
+    Route::post('lists/{list}/unarchive', [TaskListController::class, 'unarchive'])->name('lists.unarchive');
     Route::delete('lists/{list}', [TaskListController::class, 'destroy'])->name('lists.destroy');
     Route::post('lists/{list}/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::put('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+    Route::post('tasks/{task}/archive', [TaskController::class, 'archive'])->name('tasks.archive');
+    Route::post('tasks/{task}/unarchive', [TaskController::class, 'unarchive'])->name('tasks.unarchive');
     Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 
     Route::resource('projects', ProjectController::class)->except('index');
 
     // +-+-+-+-+-+-+-+- システム管理者のみ +-+-+-+-+-+-+-+-
     Route::middleware('can:manage-users')->group(function () {
+        Route::get('users/deleted', [UserController::class, 'deleted'])->name('users.deleted');
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.password.reset');
+        Route::post('users/{user}/restore', [UserController::class, 'restore'])->withTrashed()->name('users.restore');
+        Route::get('users/import', [UserImportController::class, 'create'])->name('users.import');
+        Route::post('users/import', [UserImportController::class, 'store'])->name('users.import.store');
+        Route::get('users/import/template', [UserImportController::class, 'template'])->name('users.import.template');
         Route::resource('users', UserController::class)->except('show');
     });
 });

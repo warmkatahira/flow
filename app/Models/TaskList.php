@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ListColor;
+use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'color', 'position'])]
 class TaskList extends Model
 {
+    use Archivable;
+
     /**
      * @return array<string, string>
      */

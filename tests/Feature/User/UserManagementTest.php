@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\User;
 
+use App\Enums\ProjectRole;
 use App\Enums\UserRole;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -61,8 +63,6 @@ class UserManagementTest extends TestCase
             ->post(route('users.store'), [
                 'name' => '新規ユーザー',
                 'email' => 'new@example.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'role' => UserRole::Admin->value,
                 'is_active' => 1,
             ]);
@@ -75,7 +75,7 @@ class UserManagementTest extends TestCase
         ]);
     }
 
-    public function test_パスワードを空にすると変更されない(): void
+    public function test_編集ではパスワードを変更できない(): void
     {
         $systemAdmin = User::factory()->systemAdmin()->create();
         $user = User::factory()->create();
@@ -85,8 +85,8 @@ class UserManagementTest extends TestCase
             ->put(route('users.update', $user), [
                 'name' => '名前変更',
                 'email' => $user->email,
-                'password' => '',
-                'password_confirmation' => '',
+                'password' => 'sent-by-hand',
+                'password_confirmation' => 'sent-by-hand',
                 'role' => UserRole::General->value,
                 'is_active' => 1,
             ])
@@ -167,6 +167,101 @@ class UserManagementTest extends TestCase
             ->delete(route('users.destroy', $user))
             ->assertRedirect(route('users.index'));
 
-        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+        $this->assertSoftDeleted($user);
+    }
+
+    public function test_削除しても参加とグループは残り元に戻せる(): void
+    {
+        $systemAdmin = User::factory()->systemAdmin()->create();
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $user->projectGroups()->create(['name' => '自分のグループ', 'position' => 1]);
+
+        $this->actingAs($systemAdmin)->delete(route('users.destroy', $user));
+
+        $this->assertDatabaseHas('project_user', ['project_id' => $project->id, 'user_id' => $user->id]);
+        $this->assertDatabaseHas('project_groups', ['user_id' => $user->id]);
+
+        $this->actingAs($systemAdmin)->get(route('users.index'))->assertDontSee($user->email);
+        $this->actingAs($systemAdmin)->get(route('users.deleted'))->assertSee($user->email);
+
+        $this->actingAs($systemAdmin)
+            ->post(route('users.restore', $user))
+            ->assertRedirect(route('users.deleted'));
+
+        $this->assertNotSoftDeleted($user);
+        $this->assertTrue($project->fresh()->hasParticipant($user));
+    }
+
+    public function test_削除したユーザーはログインできない(): void
+    {
+        $user = User::factory()->create(['password' => 'password']);
+        $user->delete();
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'password']);
+
+        $this->assertGuest();
+    }
+
+    public function test_削除済みユーザーのメールアドレスでは新規登録できない(): void
+    {
+        $user = User::factory()->create();
+        $user->delete();
+
+        $this->actingAs(User::factory()->systemAdmin()->create())
+            ->post(route('users.store'), [
+                'name' => '別の人',
+                'email' => $user->email,
+                'role' => 'general',
+                'is_active' => 1,
+            ])
+            ->assertSessionHasErrors('email');
+    }
+
+    public function test_システム管理者以外は削除済みの一覧も復元も使えない(): void
+    {
+        $general = User::factory()->create();
+        $deleted = User::factory()->create();
+        $deleted->delete();
+
+        $this->actingAs($general)->get(route('users.deleted'))->assertForbidden();
+        $this->actingAs($general)->post(route('users.restore', $deleted))->assertForbidden();
+
+        $this->assertSoftDeleted($deleted);
+    }
+
+    public function test_プロジェクトを更新しても削除済みユーザーの参加は外れない(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $project = Project::factory()->ownedBy($owner)->withMembers($member)->create();
+        $member->delete();
+
+        $this->actingAs($owner)
+            ->put(route('projects.update', $project), [
+                'name' => $project->name,
+                'members' => [$owner->id],
+                'roles' => [$owner->id => ProjectRole::Owner->value],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('project_user', ['project_id' => $project->id, 'user_id' => $member->id]);
+    }
+
+    public function test_ユーザー一覧にアイコンと最終ログイン日時が出る(): void
+    {
+        $systemAdmin = User::factory()->systemAdmin()->create();
+
+        $user = User::factory()->create();
+        $user->avatar_path = 'avatars/me.png';
+        $user->last_login_at = '2026-11-06 09:30:00';
+        $user->save();
+
+        $this->actingAs($systemAdmin)
+            ->get(route('users.index'))
+            ->assertOk()
+            ->assertSee($user->avatarUrl())
+            ->assertSee('2026/11/06 09:30')
+            ->assertSee('未ログイン');
     }
 }

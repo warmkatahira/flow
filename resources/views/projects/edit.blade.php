@@ -12,18 +12,17 @@
             </form>
         </div>
 
-        <div class="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-6 py-5">
-            <h2 class="text-sm font-bold text-rose-800">プロジェクトを削除</h2>
-            <p class="mt-1 text-xs text-rose-700">
-                削除すると参加者の割り当ても一緒に消えます。元に戻せません。
+        <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-6 py-5">
+            <h2 class="text-sm font-bold text-amber-800">プロジェクトをアーカイブ</h2>
+            <p class="mt-1 text-xs text-amber-700">
+                ダッシュボードに出なくなり、ボードは読み取り専用になります。データは残るので、いつでも元に戻せます。
             </p>
-            <form autocomplete="off" method="POST" action="{{ route('projects.destroy', $project) }}" class="mt-3"
-                  onsubmit="return confirm('{{ $project->name }} を削除します。よろしいですか？');">
+            <form autocomplete="off" method="POST" action="{{ route('projects.archive', $project) }}" class="mt-3"
+                  onsubmit="return confirm(@js($project->name.' をアーカイブします。よろしいですか？'));">
                 @csrf
-                @method('DELETE')
                 <button type="submit"
-                        class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">
-                    削除する
+                        class="inline-flex items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700">
+                    アーカイブする
                 </button>
             </form>
         </div>

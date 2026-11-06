@@ -38,26 +38,11 @@
     </p>
 </div>
 
-{{-- パスワード --}}
-<div>
-    <x-input-label for="password" value="パスワード" :required="$user === null" />
-    <x-text-input id="password" name="password" type="password"
-                  :required="$user === null" />
-    <x-input-error :messages="$errors->get('password')" />
-    @if ($user)
-        <p class="mt-1 text-xs text-slate-500">変更する場合のみ入力してください。</p>
-    @else
-        <p class="mt-1 text-xs text-slate-500">8文字以上で入力してください。</p>
-    @endif
-</div>
-
-{{-- パスワード（確認） --}}
-<div>
-    <x-input-label for="password_confirmation" value="パスワード（確認）" :required="$user === null" />
-    <x-text-input id="password_confirmation" name="password_confirmation" type="password"
-                  :required="$user === null" />
-    <x-input-error :messages="$errors->get('password_confirmation')" />
-</div>
+@unless ($user)
+    <p class="text-xs text-slate-500">
+        パスワードは自動で発行し、登録後に一度だけ表示します。本人は初回ログイン時に変更します。
+    </p>
+@endunless
 
 <div class="flex items-center gap-3 pt-2">
     <x-primary-button>{{ $submitLabel }}</x-primary-button>

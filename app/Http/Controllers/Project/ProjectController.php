@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -33,9 +34,22 @@ class ProjectController extends Controller
         return view('projects.show', [
             'project' => $project->load([
                 'users' => fn ($query) => $query->orderBy('users.id'),
-                'taskLists.tasks',
+                'taskLists' => fn ($query) => $query->active(),
+                'taskLists.tasks' => fn ($query) => $query->active(),
             ]),
             'colors' => ListColor::cases(),
+            'archivedLists' => $project->taskLists()
+                ->archived()
+                ->withCount(['tasks' => fn ($query) => $query->active()])
+                ->reorder('archived_at', 'desc')
+                ->get(),
+            // リストごとアーカイブされたタスクは、リストを戻せば一緒に戻るのでここには出さない
+            'archivedTasks' => $project->tasks()
+                ->archived()
+                ->whereHas('list', fn ($query) => $query->active())
+                ->with('list')
+                ->latest('archived_at')
+                ->get(),
         ]);
     }
 
@@ -94,7 +108,12 @@ class ProjectController extends Controller
             'icon_path' => $this->resolveIconPath($request, $project),
         ]);
 
-        $project->users()->sync($this->participants($request));
+        // 削除済みのユーザーは画面に出ないので、そのまま同期すると参加が外れて復元しても戻らない
+        $deleted = $project->users()->onlyTrashed()->get()
+            ->mapWithKeys(fn (User $user) => [$user->getKey() => ['role' => $user->pivot->role]])
+            ->all();
+
+        $project->users()->sync($this->participants($request) + $deleted);
 
         // 自分をオーナーから外した場合など、更新後に見えなくなることがある
         if (! $project->fresh()->hasParticipant($request->user())) {
@@ -109,7 +128,47 @@ class ProjectController extends Controller
     }
 
     /**
-     * プロジェクトを削除する
+     * 自分が参加しているアーカイブ済みプロジェクトの一覧を表示する
+     */
+    public function archived(Request $request): View
+    {
+        return view('projects.archived', [
+            'projects' => $request->user()->projects()->archived()->latest('archived_at')->get(),
+        ]);
+    }
+
+    /**
+     * プロジェクトをアーカイブする
+     *
+     * 消さないので、参加者・お気に入り・グループの割り当てやアイコン画像はそのまま残る。
+     */
+    public function archive(Project $project): RedirectResponse
+    {
+        Gate::authorize('archive', $project);
+
+        $project->archive();
+
+        return redirect()
+            ->route('dashboard')
+            ->with('status', 'プロジェクトをアーカイブしました。');
+    }
+
+    /**
+     * アーカイブしたプロジェクトを元に戻す
+     */
+    public function unarchive(Project $project): RedirectResponse
+    {
+        Gate::authorize('archive', $project);
+
+        $project->unarchive();
+
+        return redirect()
+            ->route('projects.show', $project)
+            ->with('status', 'プロジェクトを元に戻しました。');
+    }
+
+    /**
+     * アーカイブ済みのプロジェクトを完全に削除する
      */
     public function destroy(Project $project): RedirectResponse
     {
@@ -119,12 +178,12 @@ class ProjectController extends Controller
             Storage::disk('public')->delete($project->icon_path);
         }
 
-        // 参加者（project_user）は外部キーの cascade で一緒に消える
+        // 参加者・リスト・タスクは外部キーの cascade で一緒に消える
         $project->delete();
 
         return redirect()
-            ->route('dashboard')
-            ->with('status', 'プロジェクトを削除しました。');
+            ->route('projects.archived')
+            ->with('status', 'プロジェクトを完全に削除しました。');
     }
 
     /**

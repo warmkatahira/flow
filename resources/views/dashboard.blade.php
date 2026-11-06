@@ -151,7 +151,7 @@
                             <button type="button" @click="toggle()"
                                     :aria-expanded="(open || normalized() !== '') ? 'true' : 'false'"
                                     class="flex w-full items-center gap-2 border-b border-slate-300/70 bg-slate-200/70 px-4 py-2.5 text-left text-sm font-bold transition hover:bg-slate-200 {{ $groupName === '' ? 'text-slate-500' : 'text-slate-700' }}">
-                                <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-150"
+                                <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300"
                                      :class="(open || normalized() !== '') && 'rotate-90'"
                                      viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" clip-rule="evenodd"
@@ -167,20 +167,23 @@
                                 <span class="font-normal text-slate-400" x-text="hitsIn(groupNames) + '件'"></span>
                             </button>
 
-                            <div x-show="open || normalized() !== ''" class="bg-slate-50 px-4 py-4">
-                                @if ($groupProjects->isEmpty())
-                                    <p class="text-xs text-slate-400">
-                                        このグループにプロジェクトはありません。カードの ⋯ から入れられます。
-                                    </p>
-                                @else
-                                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                        @foreach ($groupProjects as $project)
-                                            <div x-show="matches(@js($project->name))">
-                                                <x-project-card :project="$project" :groups="$groups" class="h-full" />
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
+                            {{-- x-collapse は高さを 0 まで畳むので、余白は内側の要素に持たせる --}}
+                            <div x-show="open || normalized() !== ''" x-collapse.duration.300ms>
+                                <div class="bg-slate-50 px-4 py-4">
+                                    @if ($groupProjects->isEmpty())
+                                        <p class="text-xs text-slate-400">
+                                            このグループにプロジェクトはありません。カードの ⋯ から入れられます。
+                                        </p>
+                                    @else
+                                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                            @foreach ($groupProjects as $project)
+                                                <div x-show="matches(@js($project->name))">
+                                                    <x-project-card :project="$project" :groups="$groups" class="h-full" />
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </section>
                     @endforeach

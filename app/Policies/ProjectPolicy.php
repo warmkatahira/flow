@@ -45,15 +45,33 @@ class ProjectPolicy
             return Response::denyAsNotFound();
         }
 
-        return $project->isOwner($user)
-            ? Response::allow()
-            : Response::deny('プロジェクトを編集できるのはオーナーだけです。');
+        if (! $project->isOwner($user)) {
+            return Response::deny('プロジェクトを編集できるのはオーナーだけです。');
+        }
+
+        return $project->isArchived()
+            ? Response::deny('アーカイブ中のプロジェクトは編集できません。')
+            : Response::allow();
     }
 
     /**
-     * 削除できるか
+     * ボードを操作できるか（参加者なら誰でも。アーカイブ中は読み取り専用）
      */
-    public function delete(User $user, Project $project): Response
+    public function work(User $user, Project $project): Response
+    {
+        if (! $project->hasParticipant($user)) {
+            return Response::denyAsNotFound();
+        }
+
+        return $project->isArchived()
+            ? Response::deny('アーカイブ中のプロジェクトは操作できません。')
+            : Response::allow();
+    }
+
+    /**
+     * アーカイブしたり元に戻したりできるか
+     */
+    public function archive(User $user, Project $project): Response
     {
         if (! $project->hasParticipant($user)) {
             return Response::denyAsNotFound();
@@ -61,6 +79,24 @@ class ProjectPolicy
 
         return $project->isOwner($user)
             ? Response::allow()
-            : Response::deny('プロジェクトを削除できるのはオーナーだけです。');
+            : Response::deny('プロジェクトをアーカイブできるのはオーナーだけです。');
+    }
+
+    /**
+     * 完全に削除できるか（いきなり消さないよう、アーカイブ済みのものだけ）
+     */
+    public function delete(User $user, Project $project): Response
+    {
+        if (! $project->hasParticipant($user)) {
+            return Response::denyAsNotFound();
+        }
+
+        if (! $project->isOwner($user)) {
+            return Response::deny('プロジェクトを削除できるのはオーナーだけです。');
+        }
+
+        return $project->isArchived()
+            ? Response::allow()
+            : Response::deny('アーカイブしてから削除してください。');
     }
 }

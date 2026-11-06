@@ -15,7 +15,7 @@
                 <x-favorite-button :project="$project" />
             </div>
 
-            @if ($isOwner)
+            @if ($isOwner && ! $project->isArchived())
                 <a href="{{ route('projects.edit', $project) }}"
                    class="shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                     設定
@@ -39,6 +39,12 @@
                             class="border-b-2 px-4 py-3 text-sm font-semibold transition">
                         メンバー
                     </button>
+                    <button type="button" @click="tab = 'archive'"
+                            :class="tab === 'archive' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
+                            class="border-b-2 px-4 py-3 text-sm font-semibold transition">
+                        アーカイブ
+                        <span class="ml-0.5 font-normal text-slate-400">{{ $archivedLists->count() + $archivedTasks->count() }}</span>
+                    </button>
                 </nav>
             </div>
         </div>
@@ -46,15 +52,37 @@
         <div class="px-4 sm:px-6 lg:px-8 py-6">
             <x-session-status :status="session('status')" />
 
+            @if ($project->isArchived())
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+                    <p>このプロジェクトは {{ $project->archived_at->format('Y/m/d') }} にアーカイブされました。読み取り専用です。</p>
+
+                    @if ($isOwner)
+                        <form autocomplete="off" method="POST" action="{{ route('projects.unarchive', $project) }}">
+                            @csrf
+                            <button type="submit" class="rounded-lg bg-amber-600 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-700">元に戻す</button>
+                        </form>
+                    @endif
+                </div>
+            @endif
+
             {{-- ボード --}}
             <div x-show="tab === 'board'">
-                @if ($project->taskLists->isEmpty())
-                    <p class="mb-4 text-sm text-slate-500">
-                        リストを追加してカンバンを作りましょう。ToDo / 進行中 / 完了 のように並べます。
-                    </p>
-                @endif
+                @if ($project->isArchived())
+                    @include('projects.partials.board-readonly')
+                @else
+                    @if ($project->taskLists->isEmpty())
+                        <p class="mb-4 text-sm text-slate-500">
+                            リストを追加してカンバンを作りましょう。ToDo / 進行中 / 完了 のように並べます。
+                        </p>
+                    @endif
 
-                @include('projects.partials.board')
+                    @include('projects.partials.board')
+                @endif
+            </div>
+
+            {{-- アーカイブ --}}
+            <div x-show="tab === 'archive'" x-cloak>
+                @include('projects.partials.archive')
             </div>
 
             {{-- メンバー --}}
@@ -70,9 +98,7 @@
                                 $role = ProjectRole::tryFrom($user->pivot->role);
                             @endphp
                             <li class="flex items-center gap-3 px-5 py-3">
-                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
-                                    {{ mb_substr($user->name, 0, 1) }}
-                                </span>
+                                <x-user-avatar :user="$user" />
                                 <div class="min-w-0 flex-1">
                                     <p class="truncate text-sm text-slate-800">
                                         {{ $user->name }}

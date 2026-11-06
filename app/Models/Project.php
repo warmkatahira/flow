@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProjectRole;
+use App\Models\Concerns\Archivable;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable(['name', 'icon_path'])]
 class Project extends Model
 {
+    use Archivable;
+
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
 
@@ -29,6 +32,8 @@ class Project extends Model
     }
 
     /**
+     * アーカイブ済みも含む（番号はアーカイブ済みのタスクとも重複させない）
+     *
      * @return HasMany<Task, $this>
      */
     public function tasks(): HasMany

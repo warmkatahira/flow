@@ -129,4 +129,24 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect(route('login'));
     }
+
+    public function test_ログインすると最終ログイン日時が記録される(): void
+    {
+        $this->travelTo('2026-11-06 09:30:00');
+
+        $user = User::factory()->create(['password' => 'password']);
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect();
+
+        $this->assertSame('2026-11-06 09:30:00', $user->fresh()->last_login_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_ログインに失敗しても最終ログイン日時は変わらない(): void
+    {
+        $user = User::factory()->create(['password' => 'password']);
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'wrong']);
+
+        $this->assertNull($user->fresh()->last_login_at);
+    }
 }

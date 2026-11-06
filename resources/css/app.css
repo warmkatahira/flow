@@ -3,6 +3,11 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* カンバンで複数選択したタスク。Sortable に渡せるクラスは1つだけなのでまとめておく */
+.task-selected {
+    @apply bg-sky-50 ring-2 ring-sky-500;
+}
+
 @theme {
     --font-sans: 'Kosugi Maru', ui-sans-serif, system-ui, sans-serif, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans',
         'Noto Sans JP', Meiryo, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';

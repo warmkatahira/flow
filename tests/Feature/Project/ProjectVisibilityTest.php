@@ -60,15 +60,15 @@ class ProjectVisibilityTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_システム管理者でも参加していないプロジェクトは編集も削除もできない(): void
+    public function test_システム管理者でも参加していないプロジェクトは編集もアーカイブもできない(): void
     {
         $systemAdmin = User::factory()->systemAdmin()->create();
         $project = Project::factory()->ownedBy(User::factory()->create())->create();
 
         $this->actingAs($systemAdmin)->get(route('projects.edit', $project))->assertNotFound();
-        $this->actingAs($systemAdmin)->delete(route('projects.destroy', $project))->assertNotFound();
+        $this->actingAs($systemAdmin)->post(route('projects.archive', $project))->assertNotFound();
 
-        $this->assertDatabaseHas('projects', ['id' => $project->id]);
+        $this->assertFalse($project->fresh()->isArchived());
     }
 
     public function test_参加者は詳細を見られるが編集はできない(): void

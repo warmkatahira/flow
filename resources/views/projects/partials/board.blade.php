@@ -2,10 +2,19 @@
     カンバン本体。リストもタスクもドラッグで並べ替えられる（resources/js/app.js の x-board）。
     並べ替え以外の操作は素直にフォーム送信する。
 --}}
+<p class="mb-2 text-xs text-slate-500">Ctrl（Mac は ⌘）を押しながらクリックするとタスクを複数選択でき、まとめてドラッグできます。</p>
+
+{{-- ドラッグ中だけ出る。ここに落としたタスクをまとめてアーカイブする（resources/js/app.js の x-board） --}}
+<div data-archive-zone
+     class="hidden fixed bottom-6 left-1/2 z-40 max-h-20 w-80 -translate-x-1/2 overflow-hidden rounded-xl border-2 border-dashed border-amber-400 bg-amber-50 px-6 py-5 text-center text-sm font-semibold text-amber-800 shadow-lg has-[[data-task-id]]:bg-amber-200">
+    <span class="pointer-events-none">ここにドロップしてアーカイブ</span>
+</div>
+
 <div class="flex items-start gap-4 overflow-x-auto pb-4"
      x-board="{
         tasksUrl: @js(route('tasks.reorder', $project)),
         listsUrl: @js(route('lists.reorder', $project)),
+        archiveUrl: @js(route('tasks.archive-many', $project)),
      }">
     @foreach ($project->taskLists as $list)
         <section data-list-id="{{ $list->id }}"
@@ -16,7 +25,7 @@
                      class="flex cursor-grab items-center gap-2 rounded-t-xl px-3 py-2 {{ $list->color->headerClass() }}"
                      x-show="! editing">
                     <span class="min-w-0 flex-1 truncate text-sm font-bold">{{ $list->name }}</span>
-                    <span class="text-xs font-medium opacity-70">{{ $list->tasks->count() }}</span>
+                    <span data-list-count class="text-xs font-medium opacity-70">{{ $list->tasks->count() }}</span>
 
                     <button type="button" @click="editing = true" aria-label="リストを編集"
                             class="rounded p-1 transition hover:bg-black/10">
@@ -52,13 +61,12 @@
                     </div>
                 </form>
 
-                {{-- 誤って押さないよう、削除は編集を開いたときだけ出す --}}
-                <form autocomplete="off" method="POST" action="{{ route('lists.destroy', $list) }}" x-show="editing" x-cloak
+                {{-- 誤って押さないよう、アーカイブは編集を開いたときだけ出す --}}
+                <form autocomplete="off" method="POST" action="{{ route('lists.archive', $list) }}" x-show="editing" x-cloak
                       class="border-t border-slate-100 bg-white px-3 pb-3 pt-2"
-                      onsubmit="return confirm('{{ $list->name }} を削除します。中のタスクも消えます。よろしいですか？');">
+                      onsubmit="return confirm(@js($list->name.' をアーカイブします。中のタスクも一緒にボードから消えます。よろしいですか？'));">
                     @csrf
-                    @method('DELETE')
-                    <button type="submit" class="text-xs text-rose-600 hover:text-rose-800">リストを削除</button>
+                    <button type="submit" class="text-xs text-amber-700 hover:text-amber-900">リストをアーカイブ</button>
                 </form>
             </div>
 
@@ -110,11 +118,9 @@
                                 </div>
                             </form>
 
-                            <form autocomplete="off" method="POST" action="{{ route('tasks.destroy', $task) }}"
-                                  onsubmit="return confirm('このタスクを削除します。よろしいですか？');">
+                            <form autocomplete="off" method="POST" action="{{ route('tasks.archive', $task) }}">
                                 @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-xs text-rose-600 hover:text-rose-800">削除</button>
+                                <button type="submit" class="text-xs text-amber-700 hover:text-amber-900">アーカイブ</button>
                             </form>
                         </div>
                     </article>

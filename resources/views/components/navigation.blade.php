@@ -1,19 +1,41 @@
+@php
+    $tools = [
+        ['label' => 'ダッシュボード', 'route' => 'dashboard', 'active' => 'dashboard'],
+        ['label' => 'アーカイブ', 'route' => 'projects.archived', 'active' => 'projects.archived'],
+        ['label' => 'グループ', 'route' => 'project-groups.index', 'active' => 'project-groups.*'],
+    ];
+
+    // ユーザー管理はシステム管理者のみ
+    if (auth()->user()->can('manage-users')) {
+        $tools[] = ['label' => 'ユーザー管理', 'route' => 'users.index', 'active' => 'users.*'];
+    }
+@endphp
+
 <nav x-data="{ open: false }" class="bg-white border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-14">
-            <div class="flex items-center">
-                <a href="{{ route('dashboard') }}">
+            <div class="flex min-w-0 flex-1 items-center gap-6">
+                <a href="{{ route('dashboard') }}" class="shrink-0">
                     <x-application-logo class="h-7" />
                 </a>
+
+                {{-- ツールバー。狭い画面では横にスクロールする --}}
+                <div class="flex min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:none]">
+                    @foreach ($tools as $tool)
+                        <a href="{{ route($tool['route']) }}"
+                           @if (request()->routeIs($tool['active'])) aria-current="page" @endif
+                           class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition {{ request()->routeIs($tool['active']) ? 'bg-sky-50 text-sky-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+                            {{ $tool['label'] }}
+                        </a>
+                    @endforeach
+                </div>
             </div>
 
-            <div class="flex items-center relative">
+            <div class="flex shrink-0 items-center relative">
                 <button type="button" @click="open = ! open"
                         class="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">
-                    <span class="inline-flex items-center justify-center h-7 w-7 rounded-full bg-sky-600 text-white text-xs font-bold">
-                        {{ mb_substr(auth()->user()->name, 0, 1) }}
-                    </span>
-                    <span>{{ auth()->user()->name }}</span>
+                    <x-user-avatar :user="auth()->user()" size="xs" />
+                    <span class="hidden sm:inline">{{ auth()->user()->name }}</span>
                     <svg class="h-4 w-4 fill-current" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
@@ -26,18 +48,10 @@
                         <p class="mt-1 text-xs text-slate-400">{{ auth()->user()->role->label() }}</p>
                     </div>
 
-                    <a href="{{ route('project-groups.index') }}"
+                    <a href="{{ route('profile.edit') }}"
                        class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        グループ管理
+                        プロフィール
                     </a>
-
-                    {{-- ユーザー管理はシステム管理者のみ --}}
-                    @can('manage-users')
-                        <a href="{{ route('users.index') }}"
-                           class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                            ユーザー管理
-                        </a>
-                    @endcan
 
                     <form autocomplete="off" method="POST" action="{{ route('logout') }}">
                         @csrf

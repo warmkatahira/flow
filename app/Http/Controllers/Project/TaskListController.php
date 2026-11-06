@@ -24,7 +24,7 @@ class TaskListController extends Controller
      */
     public function store(Request $request, Project $project): RedirectResponse
     {
-        Gate::authorize('view', $project);
+        Gate::authorize('work', $project);
 
         $attributes = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -45,7 +45,9 @@ class TaskListController extends Controller
      */
     public function update(Request $request, TaskList $list): RedirectResponse
     {
-        Gate::authorize('view', $list->project);
+        Gate::authorize('work', $list->project);
+
+        abort_if($list->isArchived(), 404);
 
         $list->update($request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -56,15 +58,46 @@ class TaskListController extends Controller
     }
 
     /**
-     * リストを削除する（中のタスクも一緒に消える）
+     * リストをアーカイブする（中のタスクも一緒にボードから消える）
+     */
+    public function archive(TaskList $list): RedirectResponse
+    {
+        Gate::authorize('work', $list->project);
+
+        abort_if($list->isArchived(), 404);
+
+        $list->archive();
+
+        return back()->with('status', "{$list->name} をアーカイブしました。");
+    }
+
+    /**
+     * アーカイブしたリストをボードの末尾に戻す（中のタスクも一緒に戻る）
+     */
+    public function unarchive(TaskList $list): RedirectResponse
+    {
+        Gate::authorize('work', $list->project);
+
+        abort_unless($list->isArchived(), 404);
+
+        $list->position = (int) $list->project->taskLists()->max('position') + 1;
+        $list->unarchive();
+
+        return back()->with('status', "{$list->name} を元に戻しました。");
+    }
+
+    /**
+     * アーカイブ済みのリストを完全に削除する（中のタスクも一緒に消える）
      */
     public function destroy(TaskList $list): RedirectResponse
     {
-        Gate::authorize('view', $list->project);
+        Gate::authorize('work', $list->project);
+
+        abort_unless($list->isArchived(), 404);
 
         $list->delete();
 
-        return back()->with('status', 'リストを削除しました。');
+        return back()->with('status', "{$list->name} を完全に削除しました。");
     }
 
     /**
@@ -72,15 +105,15 @@ class TaskListController extends Controller
      */
     public function reorder(Request $request, Project $project): Response
     {
-        Gate::authorize('view', $project);
+        Gate::authorize('work', $project);
 
         $attributes = $request->validate([
             'ids' => ['required', 'array'],
             'ids.*' => ['integer'],
         ]);
 
-        // 他プロジェクトの id を混ぜられても動かないよう、自分のリストだけを対象にする
-        $lists = $project->taskLists()->whereKey($attributes['ids'])->get()->keyBy('id');
+        // 他プロジェクトの id を混ぜられても動かないよう、ボードに出ているリストだけを対象にする
+        $lists = $project->taskLists()->active()->whereKey($attributes['ids'])->get()->keyBy('id');
 
         foreach ($attributes['ids'] as $position => $id) {
             $lists->get($id)?->update(['position' => $position]);

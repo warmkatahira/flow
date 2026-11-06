@@ -10,7 +10,7 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     /**
-     * ダッシュボード（自分が参加しているプロジェクトの一覧）
+     * ダッシュボード（自分が参加しているプロジェクトの一覧。アーカイブ済みは出さない）
      *
      * グループは個人のもの。どのプロジェクトをどのグループに入れているかは
      * project_user（人とプロジェクトの組）に入っているので、
@@ -21,6 +21,7 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $projects = $user->projects()
+            ->active()
             ->with(['users' => fn ($query) => $query->orderBy('users.id')])
             ->withCount('users')
             ->orderBy('name')

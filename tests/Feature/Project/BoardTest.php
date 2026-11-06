@@ -58,9 +58,9 @@ class BoardTest extends TestCase
         $systemAdmin = User::factory()->systemAdmin()->create();
 
         $this->actingAs($systemAdmin)->post(route('tasks.store', $list), ['title' => 'タスク'])->assertNotFound();
-        $this->actingAs($systemAdmin)->delete(route('lists.destroy', $list))->assertNotFound();
+        $this->actingAs($systemAdmin)->post(route('lists.archive', $list))->assertNotFound();
 
-        $this->assertDatabaseHas('task_lists', ['id' => $list->id]);
+        $this->assertFalse($list->fresh()->isArchived());
     }
 
     public function test_タスクの番号はプロジェクトごとの連番になる(): void
@@ -124,21 +124,6 @@ class BoardTest extends TestCase
 
         // 対象外なので動いていない
         $this->assertSame($otherList->id, $foreign->fresh()->task_list_id);
-    }
-
-    public function test_リストを削除すると中のタスクも消える(): void
-    {
-        $user = User::factory()->create();
-        $project = Project::factory()->ownedBy($user)->create();
-        $list = $this->listFor($project);
-
-        $this->actingAs($user)->post(route('tasks.store', $list), ['title' => '消えるタスク']);
-        $task = Task::firstWhere('title', '消えるタスク');
-
-        $this->actingAs($user)->delete(route('lists.destroy', $list))->assertRedirect();
-
-        $this->assertDatabaseMissing('task_lists', ['id' => $list->id]);
-        $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
     }
 
     public function test_リストの並び順を保存できる(): void

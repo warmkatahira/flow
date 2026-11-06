@@ -25,6 +25,8 @@ return [
     'digits' => ':attribute は :digits 桁で入力してください。',
     'digits_between' => ':attribute は :min 桁から :max 桁で入力してください。',
     'email' => ':attribute は正しいメールアドレスの形式で入力してください。',
+    'enum' => ':attribute の値が正しくありません。',
+    'extensions' => ':attribute は :values 形式のファイルを選んでください。',
     'exists' => '選択された :attribute は正しくありません。',
     'file' => ':attribute にはファイルを指定してください。',
     'filled' => ':attribute は必須です。',

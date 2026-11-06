@@ -35,6 +35,10 @@ class AuthenticatedSessionController extends Controller
         // セッション固定攻撃対策
         $request->session()->regenerate();
 
+        $user = $request->user();
+        $user->last_login_at = now();
+        $user->save();
+
         return redirect()->intended(route('dashboard'));
     }
 
