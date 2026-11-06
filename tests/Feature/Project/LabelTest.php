@@ -45,6 +45,25 @@ class LabelTest extends TestCase
         return $label;
     }
 
+    public function test_プロジェクトを作ると既定のラベルが入る(): void
+    {
+        $this->actingAs($this->user)->post(route('projects.store'), ['name' => '新しい案件'])->assertRedirect();
+
+        $this->assertSame(
+            ['優先度：高', '優先度：中', '優先度：低', 'メモ', '確認中', '保留中'],
+            Project::firstWhere('name', '新しい案件')->labels()->pluck('name')->all(),
+        );
+    }
+
+    public function test_既定のラベルはラベルがあるプロジェクトには足さない(): void
+    {
+        $this->label('自分のラベル');
+
+        $this->project->createDefaultLabels();
+
+        $this->assertSame(['自分のラベル'], $this->project->labels()->pluck('name')->all());
+    }
+
     public function test_ラベルを追加できる(): void
     {
         $this->actingAs($this->user)

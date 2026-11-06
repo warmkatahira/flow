@@ -57,6 +57,7 @@ class ProjectSeeder extends Seeder
 
         foreach ($projects as [$name, $groupName, $participants]) {
             $project = Project::updateOrCreate(['name' => $name]);
+            $project->createDefaultLabels();
 
             $project->users()->sync(
                 array_map(fn (ProjectRole $role) => ['role' => $role->value], $participants),

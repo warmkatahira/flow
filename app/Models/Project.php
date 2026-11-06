@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ListColor;
 use App\Enums\ProjectRole;
 use App\Models\Concerns\Archivable;
 use Database\Factories\ProjectFactory;
@@ -39,6 +40,33 @@ class Project extends Model
     public function labels(): HasMany
     {
         return $this->hasMany(Label::class)->orderBy('position');
+    }
+
+    /**
+     * 最初から用意するラベルを作る（すでにラベルがあれば何もしない）
+     */
+    public function createDefaultLabels(): void
+    {
+        if ($this->labels()->exists()) {
+            return;
+        }
+
+        $defaults = [
+            '優先度：高' => ListColor::Rose,
+            '優先度：中' => ListColor::Amber,
+            '優先度：低' => ListColor::Emerald,
+            'メモ' => ListColor::Violet,
+            '確認中' => ListColor::Orange,
+            '保留中' => ListColor::Lime,
+        ];
+
+        $position = 0;
+
+        foreach ($defaults as $name => $color) {
+            $label = $this->labels()->make(['name' => $name, 'color' => $color->value]);
+            $label->position = $position++;
+            $label->save();
+        }
     }
 
     /**
