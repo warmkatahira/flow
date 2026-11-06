@@ -20,6 +20,10 @@
             if (localStorage.getItem('flow.sidebar.collapsed') === '1') {
                 document.documentElement.dataset.sidebar = 'closed';
             }
+
+            if (localStorage.getItem('flow.cards.expanded') === '1') {
+                document.documentElement.dataset.cards = 'expanded';
+            }
         } catch {
             // ブラウザの保存領域が使えなければ開いたまま
         }

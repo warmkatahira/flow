@@ -100,7 +100,7 @@
         <div class="min-w-0 flex-1">
             <button type="button" @click="$refs.calendar.showModal()" class="text-left hover:text-slate-800 {{ $task->started_on || $task->ended_on ? 'text-slate-700' : '' }}">
                 @if ($task->started_on || $task->ended_on)
-                    {{ $task->started_on?->format('Y/m/d') }} 〜 {{ $task->ended_on?->format('Y/m/d') }}
+                    {{ $task->started_on?->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }} 〜 {{ $task->ended_on?->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }}
                 @else
                     期間を設定
                 @endif

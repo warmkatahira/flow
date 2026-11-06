@@ -99,7 +99,7 @@ class TaskDetailTest extends TestCase
     {
         $this->actingAs($this->user)->put(route('tasks.period', $this->task), ['started_on' => '2026-11-01', 'ended_on' => '2026-11-10'])
             ->assertOk()
-            ->assertSee('2026/11/01');
+            ->assertSee('2026/11/01(日)');
 
         $this->assertSame('2026-11-10', $this->task->refresh()->ended_on->format('Y-m-d'));
 

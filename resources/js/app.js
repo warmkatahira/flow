@@ -515,6 +515,25 @@ Alpine.data('archiveConfirm', () => ({
 }));
 
 /**
+ * カードの詳細の開閉（拡張する / 折り畳む）。全プロジェクト共通で覚えておく
+ */
+Alpine.store('cardView', {
+    expanded: document.documentElement.dataset.cards === 'expanded',
+
+    toggle() {
+        this.expanded = ! this.expanded;
+
+        if (this.expanded) {
+            document.documentElement.dataset.cards = 'expanded';
+        } else {
+            delete document.documentElement.dataset.cards;
+        }
+
+        remember(localStorage, 'flow.cards.expanded', this.expanded ? '1' : '0');
+    },
+});
+
+/**
  * ボードの絞り込み
  *
  * カードに持たせた data-status / data-due / data-assignees を見て、画面の中で隠すだけ。
@@ -853,6 +872,7 @@ Alpine.data('taskDialog', (openUrl) => ({
     url: null,
     error: '',
     changed: false,
+    pressedOutside: false,
 
     init() {
         if (openUrl) {
@@ -891,13 +911,20 @@ Alpine.data('taskDialog', (openUrl) => ({
         this.$refs.dialog.close();
     },
 
-    // 入力欄を閉じて高さが縮むと、枠の中を押しても dialog 自身のクリックになるので、位置で見分ける
-    backdrop({ clientX, clientY }) {
+    // 入力欄を閉じると枠が縮み、枠の中を押したのに離したときには外になることがある。
+    // 押した瞬間に外だったときだけ閉じる
+    pressed({ clientX, clientY }) {
         const { left, right, top, bottom } = this.$refs.dialog.getBoundingClientRect();
 
-        if (clientX < left || clientX > right || clientY < top || clientY > bottom) {
+        this.pressedOutside = clientX < left || clientX > right || clientY < top || clientY > bottom;
+    },
+
+    backdrop() {
+        if (this.pressedOutside) {
             this.close();
         }
+
+        this.pressedOutside = false;
     },
 
     closed() {

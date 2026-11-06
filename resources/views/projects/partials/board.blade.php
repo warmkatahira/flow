@@ -100,8 +100,13 @@
                             <div class="min-w-0 flex-1">
                                 <p class="break-words text-sm text-slate-800">{{ $task->title }}</p>
 
+                                {{-- 詳細は「拡張する」で出す --}}
+                                @if ($task->description)
+                                    <p class="mt-1 line-clamp-2 hidden break-words text-xs text-slate-500 cards-expanded:[display:-webkit-box]">{{ $task->description }}</p>
+                                @endif
+
                                 @if ($task->started_on || $task->ended_on || $task->checklist_items_count || $task->comments_count || $task->assignees->isNotEmpty())
-                                    <div class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
+                                    <div class="mt-1.5 hidden flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 cards-expanded:flex">
                                         @if ($task->started_on || $task->ended_on)
                                             <span>{{ $task->started_on?->format('n/j') }}〜{{ $task->ended_on?->format('n/j') }}</span>
                                         @endif

@@ -6,6 +6,9 @@
 /* 左のプロジェクトリストを畳んでいるとき（html の data-sidebar。resources/js/app.js が切り替える） */
 @custom-variant sidebar-closed (html[data-sidebar='closed'] &);
 
+/* カードの詳細を出しているとき（html の data-cards。ボードの「拡張する」が切り替える） */
+@custom-variant cards-expanded (html[data-cards='expanded'] &);
+
 /* プロジェクトリストの開閉中だけ出す右端の波。ロゴの波と同じ考えで、縦に流しながら引いていく */
 .sidebar-wave-edge {
     position: absolute;

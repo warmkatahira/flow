@@ -35,6 +35,14 @@
         マイタスク
     </button>
 
+    <button type="button" @click="$store.cardView.toggle()" :aria-pressed="$store.cardView.expanded ? 'true' : 'false'"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-500 transition hover:bg-slate-50">
+        <svg class="h-4 w-4 transition-transform duration-200" :class="$store.cardView.expanded && 'rotate-180'" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+        </svg>
+        <span x-text="$store.cardView.expanded ? '折り畳む' : '拡張する'">拡張する</span>
+    </button>
+
     <div x-show="filterOpen" x-cloak
          class="absolute right-0 top-full z-30 mt-2 grid w-[36rem] max-w-[calc(100vw-2rem)] grid-cols-3 divide-x divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-slate-200">
         <div class="p-3">
