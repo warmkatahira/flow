@@ -5,7 +5,7 @@
     $isOwner = $project->roleOf($me) === ProjectRole::Owner;
 @endphp
 
-<x-layouts.app :title="$project->name">
+<x-layouts.app :title="$project->name" fill>
     <x-slot:header>
         <div class="flex items-center justify-between gap-4">
             <div class="flex min-w-0 items-center gap-2">
@@ -24,7 +24,7 @@
     </x-slot:header>
 
     {{-- プロジェクト内のタブ。ガントチャート・ファイルはこれから --}}
-    <div x-data="{ tab: 'board' }" class="flex-1"
+    <div x-data="{ tab: 'board' }" class="flex flex-1 flex-col"
          x-project-live="{ projectId: {{ $project->id }}, boardUrl: @js(route('projects.board', $project)) }">
         <div class="border-b border-slate-200 bg-white">
             <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex flex-1 flex-col px-4 sm:px-6 lg:px-8 pt-6 pb-2">
             <x-session-status :status="session('status')" />
 
             @if ($project->isArchived())
@@ -66,7 +66,7 @@
             @endif
 
             {{-- ボード --}}
-            <div x-show="tab === 'board'" data-live-board>
+            <div x-show="tab === 'board'" data-live-board class="flex flex-1 flex-col">
                 @include($project->isArchived() ? 'projects.partials.board-readonly' : 'projects.partials.board')
             </div>
 

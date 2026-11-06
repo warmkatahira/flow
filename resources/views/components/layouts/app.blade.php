@@ -1,4 +1,8 @@
-@props(['title' => null])
+@props([
+    'title' => null,
+    // 中身を画面の下まで伸ばすとき
+    'fill' => false,
+])
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -41,7 +45,7 @@
                 </header>
             @endisset
 
-            <main class="flex-1">
+            <main @class(['flex-1', 'flex flex-col' => $fill])>
                 {{ $slot }}
             </main>
         </div>
