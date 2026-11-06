@@ -15,24 +15,28 @@
                 <nav class="flex min-w-0 gap-1 overflow-x-auto [scrollbar-width:none]" aria-label="プロジェクトのタブ">
                     <button type="button" @click="tab = 'board'"
                             :class="tab === 'board' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
-                            class="shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition">
+                            class="inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M14 17h2.75A2.25 2.25 0 0019 14.75V5.25A2.25 2.25 0 0016.75 3H14v14zM12.5 3h-5v14h5V3zM3.25 3H6v14H3.25A2.25 2.25 0 011 14.75v-9.5A2.25 2.25 0 013.25 3z" /></svg>
                         ボード
                     </button>
                     <button type="button" @click="tab = 'members'"
                             :class="tab === 'members' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
-                            class="shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition">
+                            class="inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7 8a3 3 0 100-6 3 3 0 000 6zM14.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 18a9.953 9.953 0 01-5.385-1.572zM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 00-1.588-3.755 4.502 4.502 0 015.874 2.636.818.818 0 01-.36.98A7.465 7.465 0 0114.5 16z" /></svg>
                         メンバー
                     </button>
                     <button type="button" @click="tab = 'archive'"
                             :class="tab === 'archive' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
-                            class="shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition">
+                            class="inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M2 3a1 1 0 00-1 1v1a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1H2z" /><path fill-rule="evenodd" clip-rule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 01-1.99 1.79H4.802a2 2 0 01-1.99-1.79L2 7.5zM7 11a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" /></svg>
                         アーカイブ
                         <span data-live-archive-count class="ml-0.5 font-normal text-slate-400">{{ $archivedLists->count() + $archivedTasks->count() }}</span>
                     </button>
 
                     @if ($isOwner && ! $project->isArchived())
                         <a href="{{ route('projects.edit', $project) }}"
-                           class="shrink-0 border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-800">
+                           class="inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-800">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z" /></svg>
                             設定
                         </a>
                     @endif
