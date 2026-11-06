@@ -83,7 +83,6 @@ class ProjectController extends Controller
                 'users' => fn ($query) => $query->orderBy('users.id'),
                 'taskLists' => fn ($query) => $query->active(),
                 'taskLists.tasks' => fn ($query) => $query->active()->withCount([
-                    'comments',
                     'checklistItems',
                     'checklistItems as done_checklist_items_count' => fn ($items) => $items->where('is_done', true),
                 ]),

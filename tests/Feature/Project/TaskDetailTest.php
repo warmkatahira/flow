@@ -409,13 +409,11 @@ class TaskDetailTest extends TestCase
     public function test_ボードのカードに状態が出る(): void
     {
         $this->task->update(['started_on' => '2026-11-01', 'ended_on' => '2026-11-10']);
-        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => 'コメント']);
         $this->actingAs($this->user)->post(route('checklists.items.store', $this->checklist()), ['title' => '項目']);
 
         $this->actingAs($this->user)->get(route('projects.show', $this->project))
             ->assertOk()
             ->assertSee('11/1〜11/10')
-            ->assertSee('💬 1')
             ->assertSee('☑ 0/1');
     }
 
