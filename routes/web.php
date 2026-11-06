@@ -66,7 +66,6 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     });
     Route::put('lists/{list}', [TaskListController::class, 'update'])->name('lists.update');
     Route::post('lists/{list}/duplicate', [TaskListController::class, 'duplicate'])->name('lists.duplicate');
-    Route::post('lists/{list}/move', [TaskListController::class, 'move'])->name('lists.move');
     Route::post('lists/{list}/archive', [TaskListController::class, 'archive'])->name('lists.archive');
     Route::post('lists/{list}/unarchive', [TaskListController::class, 'unarchive'])->name('lists.unarchive');
     Route::delete('lists/{list}', [TaskListController::class, 'destroy'])->name('lists.destroy');

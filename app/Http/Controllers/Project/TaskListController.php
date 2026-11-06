@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 
 /**
  * カンバンのリスト（列）
@@ -74,7 +73,7 @@ class TaskListController extends Controller
 
         abort_if($list->isArchived(), 404);
 
-        $copy = DB::transaction(function () use ($request, $project, $list) {
+        DB::transaction(function () use ($request, $project, $list) {
             $locked = Project::whereKey($project->getKey())->lockForUpdate()->firstOrFail();
 
             $project->taskLists()->where('position', '>', $list->position)->increment('position');
@@ -95,58 +94,11 @@ class TaskListController extends Controller
 
                 $task->copyDetailsTo($taskCopy);
             }
-
-            return $copy;
         });
 
         BoardChanged::notify($project);
 
-        return back()->with('status', "{$copy->name} を作成しました。");
-    }
-
-    /**
-     * リストを中のタスクごと別のプロジェクトの末尾へ動かす
-     *
-     * アーカイブ済みのタスクも一緒に動かす。番号はプロジェクトごとの連番なので振り直す。
-     */
-    public function move(Request $request, TaskList $list): RedirectResponse
-    {
-        $from = $list->project;
-
-        Gate::authorize('work', $from);
-
-        abort_if($list->isArchived(), 404);
-
-        $attributes = $request->validate([
-            'project_id' => ['required', 'integer', Rule::notIn([$from->getKey()])],
-        ]);
-
-        $to = Project::findOrFail($attributes['project_id']);
-
-        Gate::authorize('work', $to);
-
-        DB::transaction(function () use ($list, $from, $to) {
-            // 順番を揃えて、同時に逆向きへ動かしてもデッドロックしないようにする
-            Project::whereKey([$from->getKey(), $to->getKey()])->orderBy('id')->lockForUpdate()->get();
-
-            $number = $to->nextTaskNumber();
-
-            foreach ($list->tasks()->reorder('number')->get() as $task) {
-                $task->project_id = $to->getKey();
-                $task->number = $number++;
-                $task->save();
-                $task->keepAssigneesIn($to);
-            }
-
-            $list->project_id = $to->getKey();
-            $list->position = (int) $to->taskLists()->max('position') + 1;
-            $list->save();
-        });
-
-        BoardChanged::notify($from);
-        BoardChanged::notify($to);
-
-        return back()->with('status', "{$list->name} を {$to->name} へ移動しました。");
+        return back()->with('toast', ['message' => '複製しました']);
     }
 
     /**

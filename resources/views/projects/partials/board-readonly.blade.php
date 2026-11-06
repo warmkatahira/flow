@@ -1,15 +1,15 @@
 {{-- アーカイブ中のプロジェクトのボード。見るだけなので操作の UI は持たない --}}
-<div class="flex flex-1 items-start gap-4 overflow-x-auto pb-4" x-drag-scroll>
+<div class="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-3 pr-4 sm:pr-6 lg:pr-8 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]" x-drag-scroll>
     @forelse ($project->taskLists as $list)
-        <section class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
-            <div class="h-2 rounded-t-xl" style="background-color: {{ $list->color }}"></div>
+        <section class="flex min-h-0 w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
+            <div class="h-2 shrink-0 rounded-t-xl" style="background-color: {{ $list->color }}"></div>
 
-            <div class="flex items-center gap-1.5 px-3 pb-1 pt-2">
+            <div class="flex shrink-0 items-center gap-1.5 px-3 pb-1 pt-2">
                 <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
                 <span class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
             </div>
 
-            <div class="min-h-8 space-y-2 p-2">
+            <div class="min-h-8 flex-1 space-y-2 overflow-y-auto p-2 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
                 @foreach ($list->tasks as $task)
                     <article class="flex items-start gap-2 rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
                         <div class="flex shrink-0 flex-col items-center gap-1">

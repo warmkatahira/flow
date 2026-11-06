@@ -66,7 +66,9 @@ class BoardMenuTest extends TestCase
         $archived->archive();
         $right = $this->listIn($this->project, '右', 1);
 
-        $this->actingAs($this->user)->post(route('lists.duplicate', $this->list))->assertRedirect();
+        $this->actingAs($this->user)->post(route('lists.duplicate', $this->list))
+            ->assertRedirect()
+            ->assertSessionHas('toast', ['message' => '複製しました']);
 
         $copy = TaskList::firstWhere('name', 'ToDo のコピー');
 
@@ -113,10 +115,8 @@ class BoardMenuTest extends TestCase
         $list = $this->listIn($target, '先', 0);
 
         $this->actingAs($this->user)->post(route('tasks.move', $task), ['list_id' => $list->id])->assertNotFound();
-        $this->actingAs($this->user)->post(route('lists.move', $this->list), ['project_id' => $target->id])->assertNotFound();
 
         $this->assertSame($this->list->id, $task->refresh()->task_list_id);
-        $this->assertSame($this->project->id, $this->list->refresh()->project_id);
     }
 
     public function test_アーカイブしたプロジェクトやリストへは動かせない(): void
@@ -131,34 +131,6 @@ class BoardMenuTest extends TestCase
 
         $this->actingAs($this->user)->post(route('tasks.move', $task), ['list_id' => $archivedList->id])->assertNotFound();
         $this->actingAs($this->user)->post(route('tasks.move', $task), ['list_id' => $targetList->id])->assertForbidden();
-        $this->actingAs($this->user)->post(route('lists.move', $this->list), ['project_id' => $target->id])->assertForbidden();
-    }
-
-    public function test_リストを他のプロジェクトへ動かすとタスクも番号を振り直して動く(): void
-    {
-        $active = $this->taskIn($this->list, '一', 1);
-        $archived = $this->taskIn($this->list, '済', 2);
-        $archived->archive();
-
-        $target = Project::factory()->ownedBy($this->user)->create();
-        $existing = $this->listIn($target, '先', 4);
-        $this->taskIn($existing, '先客', 1);
-
-        $this->actingAs($this->user)->post(route('lists.move', $this->list), ['project_id' => $target->id])->assertRedirect();
-
-        $this->list->refresh();
-        $this->assertSame($target->id, $this->list->project_id);
-        $this->assertSame(5, $this->list->position);
-        $this->assertSame([$target->id, 2], [$active->refresh()->project_id, $active->number]);
-        $this->assertSame([$target->id, 3], [$archived->refresh()->project_id, $archived->number]);
-        $this->assertTrue($archived->isArchived());
-    }
-
-    public function test_リストを同じプロジェクトへは動かせない(): void
-    {
-        $this->actingAs($this->user)
-            ->post(route('lists.move', $this->list), ['project_id' => $this->project->id])
-            ->assertSessionHasErrors('project_id');
     }
 
     public function test_アーカイブ中のタスクは複製も移動もできない(): void

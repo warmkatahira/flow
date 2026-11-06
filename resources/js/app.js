@@ -64,8 +64,9 @@ Alpine.directive('drag-scroll', (element) => {
 
     const overflows = () => element.scrollWidth > element.clientWidth;
     const panning = () => 'panning' in element.dataset;
-    // スクロールバーの上も target はこの要素になる
-    const onScrollbar = (event) => event.clientY > element.getBoundingClientRect().top + element.clientHeight;
+    // スクロールバーの上でも押した先はこの要素やリストになるので、位置で見分ける
+    const onScrollbar = ({ target, clientX, clientY }) => clientY > element.getBoundingClientRect().top + element.clientHeight
+        || (target.clientWidth > 0 && clientX > target.getBoundingClientRect().left + target.clientWidth);
 
     element.addEventListener('pointerdown', (event) => {
         if (event.pointerType !== 'mouse' || event.button !== 0 || ! overflows()
@@ -469,12 +470,11 @@ Alpine.data('boardMenu', () => ({
 }));
 
 /**
- * リストとタスクの移動先を選ぶダイアログ
+ * タスクの移動先を選ぶダイアログ
  *
  * 他のプロジェクトへも動かせる。候補は他の人の変更があるので、開くたびに取り直す。
  */
 Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
-    kind: 'task',
     name: '',
     action: '',
     listId: null,
@@ -483,12 +483,6 @@ Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
     targetListId: null,
     loading: false,
 
-    get projectOptions() {
-        return this.kind === 'list'
-            ? this.projects.filter((project) => project.id !== currentProjectId)
-            : this.projects;
-    },
-
     get listOptions() {
         const project = this.projects.find((candidate) => candidate.id === this.projectId);
 
@@ -496,11 +490,11 @@ Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
     },
 
     get canSubmit() {
-        return ! this.loading && (this.kind === 'list' ? Boolean(this.projectId) : Boolean(this.targetListId));
+        return ! this.loading && Boolean(this.targetListId);
     },
 
-    async open({ kind, name, action, listId = null }) {
-        Object.assign(this, { kind, name, action, listId, projects: [], projectId: null, targetListId: null, loading: true });
+    async open({ name, action, listId }) {
+        Object.assign(this, { name, action, listId, projects: [], projectId: null, targetListId: null, loading: true });
         this.$refs.dialog.showModal();
 
         const response = await fetch(targetsUrl, { headers: { Accept: 'application/json' } });
@@ -516,7 +510,7 @@ Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
 
         // 選択肢が描かれてからでないと select に値が入らない
         await this.$nextTick();
-        this.projectId = kind === 'list' ? (this.projectOptions[0]?.id ?? null) : currentProjectId;
+        this.projectId = currentProjectId;
         this.pickList();
     },
 

@@ -62,7 +62,7 @@ class TaskController extends Controller
 
         abort_unless($task->isOnBoard(), 404);
 
-        $copy = DB::transaction(function () use ($request, $project, $task) {
+        DB::transaction(function () use ($request, $project, $task) {
             $locked = Project::whereKey($project->getKey())->lockForUpdate()->firstOrFail();
 
             $task->list->tasks()->where('position', '>', $task->position)->increment('position');
@@ -75,13 +75,11 @@ class TaskController extends Controller
             $copy->save();
 
             $task->copyDetailsTo($copy);
-
-            return $copy;
         });
 
         BoardChanged::notify($project);
 
-        return back()->with('status', "#{$copy->number} に複製しました。");
+        return back()->with('toast', ['message' => '複製しました']);
     }
 
     /**

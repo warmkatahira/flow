@@ -1,6 +1,6 @@
 @props([
     'title' => null,
-    // 中身を画面の下まで伸ばすとき
+    // 中身を画面の高さぴったりに収めるとき（ページ全体はスクロールさせない）
     'fill' => false,
     // 左のプロジェクトリストを出すか（プロジェクトの画面だけ）
     'sidebar' => false,
@@ -35,7 +35,7 @@
         @endif
 
         {{-- min-w-0 がないとボードの幅に引っ張られて、横スクロールがボードの中に収まらない --}}
-        <div class="flex min-h-screen min-w-0 flex-1 flex-col">
+        <div @class(['flex min-w-0 flex-1 flex-col', 'h-dvh overflow-hidden' => $fill, 'min-h-screen' => ! $fill])>
             <x-navigation :has-sidebar="$sidebar" />
 
             @isset($header)
@@ -46,7 +46,7 @@
                 </header>
             @endisset
 
-            <main @class(['flex-1', 'flex flex-col' => $fill])>
+            <main @class(['flex-1', 'flex min-h-0 flex-col' => $fill])>
                 {{ $slot }}
             </main>
         </div>

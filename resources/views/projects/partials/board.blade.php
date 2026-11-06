@@ -20,8 +20,8 @@
     </span>
 </div>
 
-{{-- 掴んで横へ動かせる場所を増やすため、画面の下まで広げる --}}
-<div class="flex flex-1 items-start gap-4 overflow-x-auto pb-4"
+{{-- リストは画面の下まで伸ばし、タスクが多いときはリストの中でスクロールする --}}
+<div class="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-3 pr-4 sm:pr-6 lg:pr-8 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]"
      x-drag-scroll
      x-board="{
         tasksUrl: @js(route('tasks.reorder', $project)),
@@ -30,12 +30,12 @@
      }">
     @foreach ($project->taskLists as $list)
         <section data-list-id="{{ $list->id }}" x-data="{ adding: false }"
-                 class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
+                 class="flex min-h-0 w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
             {{-- 上端の帯。見出しと同じくリストを掴める --}}
-            <div data-list-handle class="h-2 cursor-grab rounded-t-xl" style="background-color: {{ $list->color }}"></div>
+            <div data-list-handle class="h-2 shrink-0 cursor-grab rounded-t-xl" style="background-color: {{ $list->color }}"></div>
 
             {{-- 見出し --}}
-            <div>
+            <div class="shrink-0">
                 <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2">
                     <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
                     <span data-list-count class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
@@ -49,11 +49,6 @@
                                 @click="menuOpen = false; $dispatch('open-list-edit', { name: @js($list->name), color: @js($list->color), action: @js(route('lists.update', $list)) })"
                                 class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
                             リストを編集
-                        </button>
-                        <button type="button" role="menuitem"
-                                @click="menuOpen = false; $dispatch('open-move', { kind: 'list', name: @js($list->name), action: @js(route('lists.move', $list)) })"
-                                class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
-                            リストを移動
                         </button>
                         <form autocomplete="off" method="POST" action="{{ route('lists.duplicate', $list) }}">
                             @csrf
@@ -72,7 +67,7 @@
             </div>
 
             {{-- タスクを追加 --}}
-            <div class="px-2 pt-2">
+            <div class="shrink-0 px-2 pt-2">
                 <button type="button" @click="adding = true; $nextTick(() => $refs.title.focus())" x-show="! adding"
                         class="flex w-full items-center justify-center gap-1 rounded-lg bg-white px-3 py-1.5 text-sm text-sky-600 transition hover:bg-sky-50">
                     ＋ タスクを追加
@@ -90,7 +85,7 @@
             </div>
 
             {{-- タスク --}}
-            <div data-tasks="{{ $list->id }}" class="min-h-8 space-y-2 p-2">
+            <div data-tasks="{{ $list->id }}" class="min-h-8 flex-1 space-y-2 overflow-y-auto p-2 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
                 @foreach ($list->tasks as $task)
                     <article data-task-id="{{ $task->id }}" data-task-url="{{ route('tasks.show', $task) }}"
                              class="cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200 transition hover:ring-slate-300">
@@ -139,7 +134,7 @@
                                     <x-board-menu-item type="submit">タスクを複製</x-board-menu-item>
                                 </form>
                                 <button type="button" role="menuitem"
-                                        @click="menuOpen = false; $dispatch('open-move', { kind: 'task', name: @js($task->title), action: @js(route('tasks.move', $task)), listId: {{ $list->id }} })"
+                                        @click="menuOpen = false; $dispatch('open-move', { name: @js($task->title), action: @js(route('tasks.move', $task)), listId: {{ $list->id }} })"
                                         class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
                                     タスクを移動
                                 </button>
@@ -160,7 +155,7 @@
     @endforeach
 
     {{-- リストを追加 --}}
-    <div class="w-72 shrink-0" x-data="{ adding: false }">
+    <div class="w-72 shrink-0 self-start" x-data="{ adding: false }">
         <button type="button" @click="adding = true; $nextTick(() => $refs.name.focus())" x-show="! adding"
                 class="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-300 bg-white/60 px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-white">
             ＋ リストを追加

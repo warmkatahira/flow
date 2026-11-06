@@ -7,7 +7,7 @@
 
 <x-layouts.app :title="$project->name" fill sidebar>
     {{-- プロジェクト内のタブ。ガントチャート・ファイルはこれから --}}
-    <div x-data="{ tab: 'board' }" class="flex flex-1 flex-col"
+    <div x-data="{ tab: 'board' }" class="flex min-h-0 flex-1 flex-col"
          x-project-live="{ projectId: {{ $project->id }}, boardUrl: @js(route('projects.board', $project)) }">
         <div class="border-b border-slate-200 bg-white">
             {{-- プロジェクト名は左のリストにあるので、見出しは置かない --}}
@@ -46,7 +46,9 @@
             </div>
         </div>
 
-        <div class="flex flex-1 flex-col px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+        {{-- ボードは画面の右端まで見せるので、右の余白は中身ごとに持たせる --}}
+        <div class="flex min-h-0 flex-1 flex-col pl-4 pt-4 sm:pl-6 lg:pl-8">
+            <div class="shrink-0 pr-4 sm:pr-6 lg:pr-8">
             <x-session-status :status="session('status')" />
 
             @if ($project->isArchived())
@@ -63,6 +65,8 @@
             @endif
 
             {{-- ボード --}}
+            </div>
+
             @unless ($project->isArchived())
                 @include('projects.partials.move-dialog')
                 @include('projects.partials.list-edit-dialog')
@@ -74,17 +78,18 @@
                 ])
             @endunless
 
-            <div x-show="tab === 'board'" data-live-board class="flex flex-1 flex-col">
+            <div x-show="tab === 'board'" data-live-board class="flex min-h-0 flex-1 flex-col">
                 @include($project->isArchived() ? 'projects.partials.board-readonly' : 'projects.partials.board')
             </div>
 
             {{-- アーカイブ --}}
-            <div x-show="tab === 'archive'" x-cloak data-live-archive>
+            <div x-show="tab === 'archive'" x-cloak data-live-archive class="min-h-0 flex-1 overflow-y-auto pb-6 pr-4 sm:pr-6 lg:pr-8">
                 @include('projects.partials.archive')
             </div>
 
             {{-- メンバー --}}
-            <div x-show="tab === 'members'" x-cloak class="max-w-3xl">
+            <div x-show="tab === 'members'" x-cloak class="min-h-0 flex-1 overflow-y-auto pb-6 pr-4 sm:pr-6 lg:pr-8">
+                <div class="max-w-3xl">
                 <div class="rounded-xl bg-white shadow-sm overflow-hidden">
                     <div class="border-b border-slate-100 px-5 py-4">
                         <h2 class="text-sm font-bold text-slate-700">参加者（{{ $project->users->count() }}人）</h2>
@@ -114,6 +119,7 @@
                             </li>
                         @endforeach
                     </ul>
+                </div>
                 </div>
             </div>
         </div>
