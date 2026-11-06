@@ -23,14 +23,14 @@
         archiveUrl: @js(route('tasks.archive-many', $project)),
      }">
     @foreach ($project->taskLists as $list)
-        <section data-list-id="{{ $list->id }}" x-data="{ adding: false, editing: false }"
+        <section data-list-id="{{ $list->id }}" x-data="{ adding: false }"
                  class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
             {{-- 上端の帯。見出しと同じくリストを掴める --}}
             <div data-list-handle class="h-2 cursor-grab rounded-t-xl" style="background-color: {{ $list->color }}"></div>
 
             {{-- 見出し --}}
             <div>
-                <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2" x-show="! editing">
+                <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2">
                     <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
                     <span data-list-count class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
 
@@ -39,7 +39,11 @@
 
                         <div class="my-1.5 border-t border-slate-100"></div>
 
-                        <x-board-menu-item @click="menuOpen = false; editing = true">リストを編集</x-board-menu-item>
+                        <button type="button" role="menuitem"
+                                @click="menuOpen = false; $dispatch('open-list-edit', { name: @js($list->name), color: @js($list->color), action: @js(route('lists.update', $list)) })"
+                                class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
+                            リストを編集
+                        </button>
                         <button type="button" role="menuitem"
                                 @click="menuOpen = false; $dispatch('open-move', { kind: 'list', name: @js($list->name), action: @js(route('lists.move', $list)) })"
                                 class="block w-full px-4 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
@@ -59,23 +63,6 @@
                         </form>
                     </x-board-menu>
                 </div>
-
-                {{-- 名前と色の変更 --}}
-                <form autocomplete="off" method="POST" action="{{ route('lists.update', $list) }}" x-show="editing" x-cloak
-                      class="space-y-2 bg-white p-3 ring-1 ring-slate-200">
-                    @csrf
-                    @method('PUT')
-
-                    <input autocomplete="off" type="text" name="name" value="{{ $list->name }}" required maxlength="255"
-                           class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
-
-                    <x-list-color-picker :value="$list->color" />
-
-                    <div class="flex items-center gap-2">
-                        <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">保存</button>
-                        <button type="button" @click="editing = false" class="text-xs text-slate-600 hover:text-slate-900">やめる</button>
-                    </div>
-                </form>
             </div>
 
             {{-- タスクを追加 --}}
@@ -88,7 +75,7 @@
                 <form autocomplete="off" method="POST" action="{{ route('tasks.store', $list) }}" x-show="adding" x-cloak class="space-y-2">
                     @csrf
                     <input autocomplete="off" type="text" name="title" x-ref="title" required maxlength="255" placeholder="タスク名"
-                           class="block w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
+                           class="block w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
                     <div class="flex items-center gap-2">
                         <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">追加</button>
                         <button type="button" @click="adding = false" class="text-xs text-slate-600 hover:text-slate-900">やめる</button>

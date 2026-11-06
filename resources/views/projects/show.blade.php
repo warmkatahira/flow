@@ -68,6 +68,7 @@
             {{-- ボード --}}
             @unless ($project->isArchived())
                 @include('projects.partials.move-dialog')
+                @include('projects.partials.list-edit-dialog')
             @endunless
 
             <div x-show="tab === 'board'" data-live-board class="flex flex-1 flex-col">
