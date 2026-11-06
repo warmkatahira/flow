@@ -11,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 
 /**
  * カンバンのリスト（列）
@@ -29,7 +28,7 @@ class TaskListController extends Controller
 
         $attributes = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'color' => ['nullable', Rule::enum(ListColor::class)],
+            'color' => ['nullable', 'regex:'.ListColor::PATTERN],
         ]);
 
         $project->taskLists()->create([
@@ -54,7 +53,7 @@ class TaskListController extends Controller
 
         $list->update($request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'color' => ['required', Rule::enum(ListColor::class)],
+            'color' => ['required', 'regex:'.ListColor::PATTERN],
         ]));
 
         BoardChanged::notify($list->project);

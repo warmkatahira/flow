@@ -120,7 +120,7 @@
 | `project_groups` | プロジェクトをまとめる個人のグループ（`user_id`, `name`, `position`） | 実装済み |
 | `projects` | プロジェクト（`name`, `icon_path`, `archived_at`） | 実装済み |
 | `project_user` | プロジェクトと参加者の中間テーブル（`role`, `is_favorite`, `group_id`） | 実装済み |
-| `task_lists` | リスト（列）。`name`, `color`, `position`, `archived_at` | 実装済み |
+| `task_lists` | リスト（列）。`name`, `color`（`#rrggbb`。プリセットは `ListColor`）, `position`, `archived_at` | 実装済み |
 | `tasks` | タスク。`number`(プロジェクトごとの連番), `title`, `position`, `archived_at` | 実装済み |
 | `task_checklist_items` | タスクの中のチェックボックス。並び順、完了フラグ、`started_on`, `ended_on` | 未実装 |
 

@@ -2,11 +2,11 @@
 <div class="flex flex-1 items-start gap-4 overflow-x-auto pb-4" x-drag-scroll>
     @forelse ($project->taskLists as $list)
         <section class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
-            <div class="h-2 rounded-t-xl {{ $list->color->colorClass() }}"></div>
+            <div class="h-2 rounded-t-xl" style="background-color: {{ $list->color }}"></div>
 
             <div class="flex items-center gap-1.5 px-3 pb-1 pt-2">
-                <span class="min-w-0 truncate text-sm font-bold text-slate-900">{{ $list->name }}</span>
-                <span class="shrink-0 text-sm font-semibold text-sky-600">{{ $list->tasks->count() }}</span>
+                <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
+                <span class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
             </div>
 
             <div class="min-h-8 space-y-2 p-2">

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Project;
 
-use App\Enums\ListColor;
 use App\Enums\ProjectRole;
 use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
@@ -66,7 +65,6 @@ class ProjectController extends Controller
                 'taskLists' => fn ($query) => $query->active(),
                 'taskLists.tasks' => fn ($query) => $query->active(),
             ]),
-            'colors' => ListColor::cases(),
             'archivedLists' => $project->taskLists()
                 ->archived()
                 ->withCount(['tasks' => fn ($query) => $query->active()])

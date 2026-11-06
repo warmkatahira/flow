@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Enums\ListColor;
 use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,13 +18,13 @@ class TaskList extends Model
     use Archivable;
 
     /**
-     * @return array<string, string>
+     * カラーコード（#rrggbb）。比べやすいよう小文字に揃える
+     *
+     * @return Attribute<string, string>
      */
-    protected function casts(): array
+    protected function color(): Attribute
     {
-        return [
-            'color' => ListColor::class,
-        ];
+        return Attribute::set(fn (string $value) => strtolower($value));
     }
 
     /**

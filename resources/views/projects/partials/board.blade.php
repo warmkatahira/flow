@@ -26,13 +26,13 @@
         <section data-list-id="{{ $list->id }}"
                  class="flex w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
             {{-- 上端の帯。見出しと同じくリストを掴める --}}
-            <div data-list-handle class="h-2 cursor-grab rounded-t-xl {{ $list->color->colorClass() }}"></div>
+            <div data-list-handle class="h-2 cursor-grab rounded-t-xl" style="background-color: {{ $list->color }}"></div>
 
             {{-- 見出し --}}
             <div x-data="{ editing: false }">
                 <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2" x-show="! editing">
-                    <span class="min-w-0 truncate text-sm font-bold text-slate-900">{{ $list->name }}</span>
-                    <span data-list-count class="shrink-0 text-sm font-semibold text-sky-600">{{ $list->tasks->count() }}</span>
+                    <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
+                    <span data-list-count class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
 
                     <button type="button" @click="editing = true" aria-label="リストを編集"
                             class="ml-auto shrink-0 rounded p-1 text-slate-700 transition hover:bg-black/10">
@@ -51,16 +51,7 @@
                     <input autocomplete="off" type="text" name="name" value="{{ $list->name }}" required maxlength="255"
                            class="block w-full rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
 
-                    <div class="flex flex-wrap gap-1.5">
-                        @foreach ($colors as $color)
-                            <label class="cursor-pointer">
-                                <input autocomplete="off" type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
-                                       @checked($list->color === $color)>
-                                <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->colorClass() }}"
-                                      title="{{ $color->label() }}"></span>
-                            </label>
-                        @endforeach
-                    </div>
+                    <x-list-color-picker :value="$list->color" />
 
                     <div class="flex items-center gap-2">
                         <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">保存</button>
@@ -80,7 +71,7 @@
             {{-- タスクを追加 --}}
             <div class="px-2 pt-2" x-data="{ adding: false }">
                 <button type="button" @click="adding = true; $nextTick(() => $refs.title.focus())" x-show="! adding"
-                        class="flex w-full items-center justify-center gap-1 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-sky-600 transition hover:bg-sky-50">
+                        class="flex w-full items-center justify-center gap-1 rounded-lg bg-white px-3 py-1.5 text-sm text-sky-600 transition hover:bg-sky-50">
                     ＋ タスクを追加
                 </button>
 
@@ -150,16 +141,7 @@
             <input autocomplete="off" type="text" name="name" x-ref="name" required maxlength="255" placeholder="リスト名"
                    class="block w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
 
-            <div class="flex flex-wrap gap-1.5">
-                @foreach ($colors as $color)
-                    <label class="cursor-pointer">
-                        <input autocomplete="off" type="radio" name="color" value="{{ $color->value }}" class="peer sr-only"
-                               @checked($loop->first)>
-                        <span class="block h-6 w-6 rounded-full ring-offset-1 peer-checked:ring-2 peer-checked:ring-slate-700 {{ $color->colorClass() }}"
-                              title="{{ $color->label() }}"></span>
-                    </label>
-                @endforeach
-            </div>
+            <x-list-color-picker />
 
             <div class="flex items-center gap-2">
                 <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">追加</button>

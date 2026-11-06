@@ -169,4 +169,33 @@ class BoardTest extends TestCase
         $this->assertSame(0, $second->fresh()->position);
         $this->assertSame(1, $first->fresh()->position);
     }
+
+    public function test_リストに好きな色を付けられる(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $list = $this->listFor($project);
+
+        $this->actingAs($user)
+            ->put(route('lists.update', $list), ['name' => 'ToDo', 'color' => '#7D5CC1'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('#7d5cc1', $list->refresh()->color);
+        $this->actingAs($user)->get(route('projects.show', $project))->assertSee('background-color: #7d5cc1', false);
+    }
+
+    public function test_カラーコード以外は色にできない(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $list = $this->listFor($project);
+
+        foreach (['sky', '#12345', '#12345g', 'red; background: url(x)'] as $color) {
+            $this->actingAs($user)
+                ->put(route('lists.update', $list), ['name' => 'ToDo', 'color' => $color])
+                ->assertSessionHasErrors('color');
+        }
+
+        $this->assertSame(ListColor::Sky->value, $list->refresh()->color);
+    }
 }

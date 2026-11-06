@@ -3,26 +3,29 @@
 namespace App\Enums;
 
 /**
- * リスト（列）の色
+ * リスト（列）の色のプリセット
  *
- * Tailwind のクラスは動的に組み立てるとビルド時に拾われないので、
- * 使う組み合わせをここに書き切っておく。
+ * リストには好きな色も付けられるので、task_lists.color はカラーコードで持つ。
+ * ここにあるのは選択肢だけで、この中の値とは限らない。
  */
 enum ListColor: string
 {
+    /** task_lists.color に入れられる形式 */
+    public const PATTERN = '/^#[0-9a-fA-F]{6}$/';
+
     // 選ぶボタンはこの順に並ぶ。先頭が新しいリストの初期値
-    case Sky = 'sky';
-    case Indigo = 'indigo';
-    case Violet = 'violet';
-    case Pink = 'pink';
-    case Rose = 'rose';
-    case Orange = 'orange';
-    case Amber = 'amber';
-    case Lime = 'lime';
-    case Emerald = 'emerald';
-    case Teal = 'teal';
-    case Brown = 'brown';
-    case Slate = 'slate';
+    case Sky = '#00a6f4';
+    case Indigo = '#625fff';
+    case Violet = '#7f22fe';
+    case Pink = '#fb64b6';
+    case Rose = '#ff2056';
+    case Orange = '#ff6900';
+    case Amber = '#ffba00';
+    case Lime = '#7ccf00';
+    case Emerald = '#00bc7d';
+    case Teal = '#00bba7';
+    case Brown = '#973c00';
+    case Slate = '#90a1b9';
 
     public function label(): string
     {
@@ -40,38 +43,5 @@ enum ListColor: string
             self::Brown => '茶',
             self::Slate => 'グレー',
         };
-    }
-
-    /**
-     * リスト上端の帯と、色を選ぶボタンの見本
-     */
-    public function colorClass(): string
-    {
-        return match ($this) {
-            self::Sky => 'bg-sky-500',
-            self::Indigo => 'bg-indigo-500',
-            self::Violet => 'bg-violet-600',
-            self::Pink => 'bg-pink-400',
-            self::Rose => 'bg-rose-500',
-            self::Orange => 'bg-orange-500',
-            self::Amber => 'bg-amber-400',
-            self::Lime => 'bg-lime-500',
-            self::Emerald => 'bg-emerald-500',
-            self::Teal => 'bg-teal-500',
-            self::Brown => 'bg-amber-800',
-            self::Slate => 'bg-slate-400',
-        };
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return array_reduce(
-            self::cases(),
-            fn (array $options, self $color) => $options + [$color->value => $color->label()],
-            [],
-        );
     }
 }

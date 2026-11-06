@@ -100,5 +100,6 @@ return [
         'current_password' => '現在のパスワード',
         'role' => '権限',
         'is_active' => 'ステータス',
+        'color' => '色',
     ],
 ];
