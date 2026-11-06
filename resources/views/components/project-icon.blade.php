@@ -2,6 +2,7 @@
 
 @php
     $sizeClass = match ($size) {
+        'xs' => 'h-6 w-6 text-xs',
         'sm' => 'h-8 w-8 text-sm',
         'lg' => 'h-16 w-16 text-2xl',
         default => 'h-12 w-12 text-lg',

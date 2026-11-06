@@ -8,8 +8,7 @@
 <x-layouts.app :title="$project->name">
     <x-slot:header>
         <div class="flex items-center justify-between gap-4">
-            <div class="flex min-w-0 items-center gap-2" x-data
-                 x-init="$store.favorites.ids = @js($project->isFavoritedBy($me) ? [$project->id] : [])">
+            <div class="flex min-w-0 items-center gap-2">
                 <x-project-icon :project="$project" size="sm" />
                 <h1 class="truncate text-lg font-bold text-slate-800">{{ $project->name }}</h1>
                 <x-favorite-button :project="$project" />

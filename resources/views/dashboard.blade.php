@@ -16,7 +16,7 @@
         </div>
     </x-slot:header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="px-4 sm:px-6 lg:px-8 py-8">
         <x-session-status :status="session('status')" />
 
         @if ($projects->isEmpty())
@@ -60,7 +60,7 @@
                         return this.all.filter((project) => this.$store.favorites.has(project.id) && this.matches(project.name)).length;
                     },
                  }"
-                 x-init="$store.favorites.ids = @js($favoriteIds)">
+>
                 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <h2 class="text-sm font-bold text-slate-500">
                         参加しているプロジェクト

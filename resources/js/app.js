@@ -280,6 +280,73 @@ Alpine.store('favorites', {
     },
 });
 
+/**
+ * 左のプロジェクトリスト
+ *
+ * 広い画面では畳める列（状態は覚えておく）、狭い画面では開閉する引き出しになる。
+ * 保存領域が使えないブラウザでも、覚えられないだけで動くようにする。
+ */
+const CLOSED_GROUPS_KEY = 'flow.sidebar.closedGroups';
+
+const closedGroups = () => {
+    try {
+        return JSON.parse(localStorage.getItem(CLOSED_GROUPS_KEY) ?? '[]');
+    } catch {
+        return [];
+    }
+};
+
+const remember = (storage, key, value) => {
+    try {
+        storage.setItem(key, value);
+    } catch {
+        // 覚えられないだけ
+    }
+};
+
+Alpine.store('sidebar', {
+    drawer: false,
+
+    toggle() {
+        if (! window.matchMedia('(min-width: 64rem)').matches) {
+            this.drawer = ! this.drawer;
+
+            return;
+        }
+
+        const root = document.documentElement;
+        const collapsed = root.dataset.sidebar !== 'closed';
+
+        if (collapsed) {
+            root.dataset.sidebar = 'closed';
+        } else {
+            delete root.dataset.sidebar;
+        }
+
+        remember(localStorage, 'flow.sidebar.collapsed', collapsed ? '1' : '0');
+    },
+});
+
+Alpine.data('sidebarGroup', (name, hasCurrent) => ({
+    open: hasCurrent || ! closedGroups().includes(name),
+
+    toggle() {
+        this.open = ! this.open;
+
+        const others = closedGroups().filter((closed) => closed !== name);
+
+        remember(localStorage, CLOSED_GROUPS_KEY, JSON.stringify(this.open ? others : [...others, name]));
+    },
+}));
+
+window.addEventListener('pagehide', () => {
+    const tree = document.querySelector('[data-sidebar-scroll]');
+
+    if (tree) {
+        remember(sessionStorage, 'flow.sidebar.scroll', String(tree.scrollTop));
+    }
+});
+
 window.Alpine = Alpine;
 
 /**

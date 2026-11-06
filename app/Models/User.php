@@ -7,12 +7,14 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable(['name', 'email', 'password', 'role', 'is_active'])]
@@ -59,6 +61,37 @@ class User extends Authenticatable
     public function projectGroups(): HasMany
     {
         return $this->hasMany(ProjectGroup::class);
+    }
+
+    /**
+     * プロジェクトを自分のグループごとに分ける（キーはグループ名）
+     *
+     * どのプロジェクトをどのグループに入れているかは project_user（人とプロジェクトの組）に
+     * 入っているので、$projects は自分のリレーション越しに取ったものを渡す。
+     *
+     * @param  EloquentCollection<int, Project>  $projects
+     * @param  EloquentCollection<int, ProjectGroup>  $groups
+     * @return Collection<string, Collection<int, Project>>
+     */
+    public function projectSections(EloquentCollection $projects, EloquentCollection $groups): Collection
+    {
+        $byGroupId = $projects->groupBy(fn (Project $project) => (string) ($project->pivot->group_id ?? ''))->toBase();
+
+        // セクションはグループ側を起点に組み立てる。
+        // プロジェクトを集約して作ると、まだ何も入れていないグループが消えてしまう。
+        // 並びはグループ管理で決めた順（position）で、中はプロジェクト名順のまま。
+        $sections = $groups->mapWithKeys(
+            fn (ProjectGroup $group) => [$group->name => $byGroupId->get((string) $group->id, collect())],
+        )->toBase();
+
+        // 未所属は最後に「グループなし」（キーは ''）として置く。1件もなければ出さない
+        $ungrouped = $byGroupId->get('', collect());
+
+        if ($ungrouped->isNotEmpty()) {
+            $sections->put('', $ungrouped);
+        }
+
+        return $sections;
     }
 
     /**

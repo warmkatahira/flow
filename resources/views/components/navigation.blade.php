@@ -1,4 +1,6 @@
 @php
+    $hasSidebar = ! auth()->user()->must_change_password;
+
     $tools = [
         ['label' => 'ダッシュボード', 'route' => 'dashboard', 'active' => 'dashboard'],
         ['label' => 'アーカイブ', 'route' => 'projects.archived', 'active' => 'projects.archived'],
@@ -12,10 +14,22 @@
 @endphp
 
 <nav x-data="{ open: false }" class="bg-white border-b border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-14">
-            <div class="flex min-w-0 flex-1 items-center gap-6">
-                <a href="{{ route('dashboard') }}" class="shrink-0">
+            <div class="flex min-w-0 flex-1 items-center gap-4">
+                @if ($hasSidebar)
+                    <button type="button" @click="$store.sidebar.toggle()" aria-label="プロジェクトリストの表示を切り替える"
+                            class="shrink-0 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10zm.75 4.5a.75.75 0 000 1.5h14.5a.75.75 0 000-1.5H2.75z" />
+                        </svg>
+                    </button>
+                @endif
+
+                {{-- リストを出している間はロゴがその上にあるので、ここには出さない --}}
+                <a href="{{ route('dashboard') }}"
+                   class="shrink-0 {{ $hasSidebar ? 'lg:hidden lg:sidebar-closed:block' : '' }}">
                     <x-application-logo class="h-7" />
                 </a>
 

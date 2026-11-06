@@ -3,6 +3,9 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* 左のプロジェクトリストを畳んでいるとき（html の data-sidebar。resources/js/app.js が切り替える） */
+@custom-variant sidebar-closed (html[data-sidebar='closed'] &);
+
 /* カンバンで複数選択したタスク。Sortable に渡せるクラスは1つだけなのでまとめておく */
 .task-selected {
     @apply bg-sky-50 ring-2 ring-sky-500;
