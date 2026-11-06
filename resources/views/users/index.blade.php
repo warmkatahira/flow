@@ -63,14 +63,14 @@
                                 {{ $user->last_login_at?->format('Y/m/d H:i') ?? '未ログイン' }}
                             </td>
                             <td class="px-4 py-3">
-                                <div class="flex items-center justify-end gap-3 whitespace-nowrap">
-                                    <a href="{{ route('users.edit', $user) }}" class="text-sky-600 hover:text-sky-800">編集</a>
+                                <div class="flex items-center justify-end gap-2 whitespace-nowrap">
+                                    <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center justify-center rounded-lg border bg-white px-2.5 py-1 text-xs font-semibold transition border-slate-300 text-slate-700 hover:bg-slate-50">編集</a>
 
                                     @unless (auth()->user()->is($user))
                                         <form autocomplete="off" method="POST" action="{{ route('users.password.reset', $user) }}"
                                               onsubmit="return confirm(@js($user->name.' のパスワードをリセットします。今のパスワードは使えなくなります。よろしいですか？'));">
                                             @csrf
-                                            <button type="submit" class="text-amber-700 hover:text-amber-900">パスワードリセット</button>
+                                            <button type="submit" class="inline-flex items-center justify-center rounded-lg border bg-white px-2.5 py-1 text-xs font-semibold transition border-amber-300 text-amber-700 hover:bg-amber-50">パスワードリセット</button>
                                         </form>
                                     @endunless
 
@@ -79,7 +79,7 @@
                                               onsubmit="return confirm(@js($user->name.' を削除します。ログインできなくなりますが、削除済みの一覧から元に戻せます。よろしいですか？'));">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-rose-600 hover:text-rose-800">削除</button>
+                                            <button type="submit" class="inline-flex items-center justify-center rounded-lg border bg-white px-2.5 py-1 text-xs font-semibold transition border-rose-300 text-rose-600 hover:bg-rose-50">削除</button>
                                         </form>
                                     @endunless
                                 </div>
