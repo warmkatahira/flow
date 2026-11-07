@@ -106,73 +106,7 @@
                 @endif
             </button>
 
-            {{-- 1回目に押した日が開始、2回目に押した日が終了（resources/js/app.js の periodPicker） --}}
-            <dialog x-ref="calendar" @click.self="$refs.calendar.close()"
-                    class="m-auto max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-xl rounded-2xl bg-white shadow-xl outline-none backdrop:bg-slate-900/20">
-                <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.period', $task) }}" class="relative p-6">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="started_on" :value="start ?? ''">
-                    <input type="hidden" name="ended_on" :value="end ?? ''">
-
-                    <h3 class="text-center text-sm text-slate-700">期間の設定</h3>
-
-                    <button type="button" @click="$refs.calendar.close()" aria-label="閉じる"
-                            class="absolute right-3 top-3 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100">
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                        </svg>
-                    </button>
-
-                    <div class="mt-4 grid gap-6 sm:grid-cols-2" @mouseleave="hovered = null">
-                        <template x-for="(month, index) in months" :key="month.label">
-                            <div>
-                                <div class="flex items-center justify-between">
-                                    <button type="button" @click="shift(-1)" aria-label="前の月" :class="index === 0 ? '' : 'invisible'"
-                                            class="rounded-md bg-sky-50 p-1 text-sky-500 transition hover:bg-sky-100">
-                                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path d="M12.5 4.5v11L6 10z" />
-                                        </svg>
-                                    </button>
-                                    <span class="text-sm text-slate-700" x-text="month.label"></span>
-                                    <button type="button" @click="shift(1)" aria-label="次の月" :class="index === months.length - 1 ? '' : 'invisible'"
-                                            class="rounded-md bg-sky-50 p-1 text-sky-500 transition hover:bg-sky-100">
-                                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path d="M7.5 4.5v11L14 10z" />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <div class="mt-2 grid grid-cols-7 text-center text-xs text-slate-400">
-                                    @foreach (['日', '月', '火', '水', '木', '金', '土'] as $weekday)
-                                        <span class="py-1">{{ $weekday }}</span>
-                                    @endforeach
-                                </div>
-
-                                <div class="grid grid-cols-7 gap-y-0.5 text-center text-sm">
-                                    <template x-for="blank in month.blanks" :key="`blank-${blank}`"><span></span></template>
-                                    <template x-for="day in month.days" :key="day.date">
-                                        <button type="button" @click="pick(day.date)" @mouseenter="hovered = day.date"
-                                                :aria-pressed="[start, end].includes(day.date) ? 'true' : 'false'" :aria-label="day.date"
-                                                :class="dayClass(day.date)" class="h-8 rounded-md transition-colors" x-text="day.number"></button>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <div class="mt-5 flex justify-center gap-4">
-                        <button type="button" @click="clear()"
-                                class="w-36 rounded-lg bg-sky-50 py-2 text-sm text-sky-600 transition hover:bg-sky-100">
-                            クリア
-                        </button>
-                        <button type="submit" :disabled="! dirty"
-                                class="w-36 rounded-lg bg-sky-500 py-2 text-sm text-white transition hover:bg-sky-600 disabled:bg-slate-200 disabled:text-slate-400">
-                            保存
-                        </button>
-                    </div>
-                </form>
-            </dialog>
+            @include('projects.partials.period-dialog', ['action' => route('tasks.period', $task), 'heading' => '期間の設定'])
         </div>
     </div>
 
@@ -312,6 +246,66 @@
                                     <span class="min-w-0 break-words {{ $item->is_done ? 'text-slate-400 line-through' : 'text-slate-700' }}">{{ $item->title }}</span>
                                 </button>
                             </form>
+
+                            {{-- 項目の期間 --}}
+                            <div x-data="periodPicker(@js($item->started_on?->format('Y-m-d')), @js($item->ended_on?->format('Y-m-d')))" class="shrink-0">
+                                <button type="button" @click="$refs.calendar.showModal()"
+                                        aria-label="{{ $item->title }} の期間{{ $item->periodLabel() ? '：'.$item->periodLabel() : 'を設定' }}"
+                                        @class([
+                                            'flex items-center gap-1 rounded px-1 py-0.5 text-xs transition hover:bg-slate-100',
+                                            'text-slate-600' => $item->periodLabel(),
+                                            'text-slate-300 hover:text-slate-600' => ! $item->periodLabel(),
+                                        ])>
+                                    <svg class="h-4 w-4 shrink-0 {{ $item->periodLabel() ? 'text-sky-500' : '' }}" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" />
+                                    </svg>
+                                    @if ($item->periodLabel())
+                                        <span class="whitespace-nowrap">{{ $item->periodLabel() }}</span>
+                                    @endif
+                                </button>
+
+                                @include('projects.partials.period-dialog', ['action' => route('checklist-items.period', $item), 'heading' => $item->title.' の期間'])
+                            </div>
+
+                            {{-- 項目の担当者（1人）。今の担当者をもう一度選ぶと外れる --}}
+                            <div x-data="{ picking: false }" class="relative shrink-0" @click.outside="picking = false">
+                                <button type="button" @click="picking = ! picking" aria-haspopup="menu" :aria-expanded="picking ? 'true' : 'false'"
+                                        aria-label="{{ $item->title }} の担当者{{ $item->assignee ? '：'.$item->assignee->name : 'を設定' }}"
+                                        title="{{ $item->assignee?->name ?? '担当者を設定' }}"
+                                        class="flex items-center rounded p-0.5 text-slate-300 transition hover:bg-slate-100 hover:text-slate-600">
+                                    @if ($item->assignee)
+                                        <x-user-avatar :user="$item->assignee" size="xxs" />
+                                    @else
+                                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
+                                        </svg>
+                                    @endif
+                                </button>
+
+                                <form data-task-form autocomplete="off" method="POST" action="{{ route('checklist-items.assignee', $item) }}"
+                                      x-show="picking" x-cloak role="menu"
+                                      class="absolute right-0 top-full z-20 mt-1 max-h-56 w-56 overflow-y-auto rounded-xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200">
+                                    @csrf
+                                    @foreach ($task->project->users as $user)
+                                        <button type="submit" name="user_id" value="{{ $user->id }}" role="menuitem"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-100">
+                                            <x-user-avatar :user="$user" size="xxs" />
+                                            <span class="min-w-0 flex-1 truncate">{{ $user->name }}</span>
+                                            @if ($item->assignee_id === $user->id)
+                                                <svg class="h-4 w-4 shrink-0 text-sky-500" viewBox="0 0 20 20" fill="currentColor" aria-label="担当中">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" />
+                                                </svg>
+                                            @endif
+                                        </button>
+                                    @endforeach
+                                    @if ($item->assignee)
+                                        <button type="submit" name="user_id" value="" role="menuitem"
+                                                class="mt-1 w-full border-t border-slate-100 px-3 pb-0.5 pt-2 text-left text-sm text-slate-500 transition hover:bg-slate-100">
+                                            担当を外す
+                                        </button>
+                                    @endif
+                                </form>
+                            </div>
 
                             <form data-task-form autocomplete="off" method="POST" action="{{ route('checklist-items.destroy', $item) }}">
                                 @csrf

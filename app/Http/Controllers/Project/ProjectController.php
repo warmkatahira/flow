@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Models\Project;
+use App\Models\TaskChecklist;
+use App\Models\TaskChecklistItem;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
@@ -169,11 +171,18 @@ class ProjectController extends Controller
 
         $project->users()->sync($this->participants($request) + $deleted);
 
-        // 参加者から外れた人は担当からも外す
+        // 参加者から外れた人は担当からも外す（チェックリストの項目の担当者も）
+        $participants = $project->users()->withTrashed()->pluck('users.id');
+
         DB::table('task_user')
             ->whereIn('task_id', $project->tasks()->select('id'))
-            ->whereNotIn('user_id', $project->users()->withTrashed()->pluck('users.id'))
+            ->whereNotIn('user_id', $participants)
             ->delete();
+
+        TaskChecklistItem::query()
+            ->whereIn('task_checklist_id', TaskChecklist::query()->whereIn('task_id', $project->tasks()->select('id'))->select('id'))
+            ->whereNotIn('assignee_id', $participants)
+            ->update(['assignee_id' => null]);
 
         BoardChanged::notify($project, reload: true);
 

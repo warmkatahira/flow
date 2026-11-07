@@ -315,6 +315,120 @@ class TaskDetailTest extends TestCase
         $this->actingAs($outsider)->postJson(route('checklists.items.reorder', $checklist), ['ids' => [1]])->assertNotFound();
     }
 
+    private function checkItem(string $title = '項目'): TaskChecklistItem
+    {
+        return $this->item(TaskChecklist::firstWhere('title', 'チェック') ?? $this->checklist(), $title);
+    }
+
+    public function test_項目に期間を設定できる(): void
+    {
+        $item = $this->checkItem();
+
+        $this->actingAs($this->user)->put(route('checklist-items.period', $item), ['started_on' => '2026-11-07', 'ended_on' => '2026-11-09'])
+            ->assertOk()
+            ->assertSee('11/7(土) 〜 11/9(月)');
+
+        $item->refresh();
+        $this->assertSame('2026-11-07', $item->started_on->format('Y-m-d'));
+        $this->assertSame('2026-11-09', $item->ended_on->format('Y-m-d'));
+
+        // 空で送ると消える
+        $this->actingAs($this->user)->put(route('checklist-items.period', $item), ['started_on' => '', 'ended_on' => ''])->assertOk();
+        $this->assertNull($item->refresh()->started_on);
+        $this->assertNull($item->ended_on);
+    }
+
+    public function test_項目の終了日は開始日より前にできない(): void
+    {
+        $item = $this->checkItem();
+
+        $this->actingAs($this->user)->put(route('checklist-items.period', $item), ['started_on' => '2026-11-09', 'ended_on' => '2026-11-07'])
+            ->assertSessionHasErrors('ended_on');
+        $this->assertNull($item->refresh()->started_on);
+    }
+
+    public function test_項目に担当者を1人付けて替えて外せる(): void
+    {
+        $item = $this->checkItem();
+        $member = $this->participant();
+
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => $member->id])->assertOk();
+        $this->assertSame($member->id, $item->refresh()->assignee_id);
+
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => $this->user->id])->assertOk();
+        $this->assertSame($this->user->id, $item->refresh()->assignee_id);
+
+        // 今の担当者をもう一度選ぶと外れる
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => $this->user->id])->assertOk();
+        $this->assertNull($item->refresh()->assignee_id);
+
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => $member->id]);
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => ''])->assertOk();
+        $this->assertNull($item->refresh()->assignee_id);
+    }
+
+    public function test_参加者以外は項目の担当者にできない(): void
+    {
+        $item = $this->checkItem();
+
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => User::factory()->create()->id])->assertNotFound();
+        $this->assertNull($item->refresh()->assignee_id);
+    }
+
+    public function test_参加していない人は項目の期間も担当者も変えられない(): void
+    {
+        $item = $this->checkItem();
+        $outsider = User::factory()->create();
+
+        $this->actingAs($outsider)->put(route('checklist-items.period', $item), ['started_on' => '2026-11-07'])->assertNotFound();
+        $this->actingAs($outsider)->post(route('checklist-items.assignee', $item), ['user_id' => $outsider->id])->assertNotFound();
+    }
+
+    public function test_参加者から外すと項目の担当からも外れる(): void
+    {
+        $item = $this->checkItem();
+        $member = $this->participant();
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => $member->id]);
+
+        $this->actingAs($this->user)->put(route('projects.update', $this->project), [
+            'name' => $this->project->name,
+            'members' => [$this->user->id],
+            'roles' => [$this->user->id => 'owner'],
+        ])->assertRedirect();
+
+        $this->assertNull($item->refresh()->assignee_id);
+    }
+
+    public function test_他のプロジェクトへ動かすと参加していない項目の担当者は外れる(): void
+    {
+        $stay = $this->checkItem('残る');
+        $leave = $this->checkItem('外れる');
+        $member = $this->participant();
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $stay), ['user_id' => $this->user->id]);
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $leave), ['user_id' => $member->id]);
+
+        $target = Project::factory()->ownedBy($this->user)->create();
+        $list = $target->taskLists()->create(['name' => '先', 'color' => ListColor::Sky->value, 'position' => 0]);
+
+        $this->actingAs($this->user)->post(route('tasks.move', $this->task), ['list_id' => $list->id]);
+
+        $this->assertSame($this->user->id, $stay->refresh()->assignee_id);
+        $this->assertNull($leave->refresh()->assignee_id);
+    }
+
+    public function test_複製すると項目の期間と担当者も写る(): void
+    {
+        $item = $this->checkItem();
+        $this->actingAs($this->user)->put(route('checklist-items.period', $item), ['started_on' => '2026-11-07', 'ended_on' => '2026-11-09']);
+        $this->actingAs($this->user)->post(route('checklist-items.assignee', $item), ['user_id' => $this->user->id]);
+
+        $this->actingAs($this->user)->post(route('tasks.duplicate', $this->task));
+
+        $copy = Task::firstWhere('title', 'タスク のコピー')->checklistItems->first();
+        $this->assertSame('2026-11-07', $copy->started_on->format('Y-m-d'));
+        $this->assertSame($this->user->id, $copy->assignee_id);
+    }
+
     public function test_コメントを投稿できる(): void
     {
         $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => '確認します'])

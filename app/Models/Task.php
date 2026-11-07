@@ -131,13 +131,18 @@ class Task extends Model
     }
 
     /**
-     * 移動先のプロジェクトに参加していない担当者を外す
+     * 移動先のプロジェクトに参加していない担当者を外す（チェックリストの項目の担当者も）
      */
     public function keepAssigneesIn(Project $project): void
     {
-        $this->assignees()->detach(
-            $this->assignees()->pluck('users.id')->diff($project->users()->pluck('users.id')),
-        );
+        $participants = $project->users()->pluck('users.id');
+
+        $this->assignees()->detach($this->assignees()->pluck('users.id')->diff($participants));
+
+        TaskChecklistItem::query()
+            ->whereIn('task_checklist_id', $this->checklists()->select('id'))
+            ->whereNotIn('assignee_id', $participants)
+            ->update(['assignee_id' => null]);
     }
 
     /**

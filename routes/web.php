@@ -96,6 +96,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     Route::post('checklists/{checklist}/items', [TaskChecklistController::class, 'storeItem'])->name('checklists.items.store');
     Route::post('checklists/{checklist}/items/reorder', [TaskChecklistController::class, 'reorderItems'])->name('checklists.items.reorder');
     Route::post('checklist-items/{item}/toggle', [TaskChecklistController::class, 'toggleItem'])->name('checklist-items.toggle');
+    Route::put('checklist-items/{item}/period', [TaskChecklistController::class, 'periodItem'])->name('checklist-items.period');
+    Route::post('checklist-items/{item}/assignee', [TaskChecklistController::class, 'assignItem'])->name('checklist-items.assignee');
     Route::delete('checklist-items/{item}', [TaskChecklistController::class, 'destroyItem'])->name('checklist-items.destroy');
     Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
     Route::delete('comments/{comment}', [TaskCommentController::class, 'destroy'])->name('comments.destroy');

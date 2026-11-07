@@ -165,4 +165,47 @@ class TaskChecklistController extends Controller
 
         return $this->changed($task);
     }
+
+    /**
+     * 項目の期間を変える。開始日だけ・終了日だけでもよい
+     */
+    public function periodItem(Request $request, TaskChecklistItem $item): View
+    {
+        $task = $item->checklist->task;
+
+        $this->authorizeDetail($task);
+
+        $item->update($request->validate([
+            'started_on' => ['nullable', 'date'],
+            'ended_on' => ['nullable', 'date', ...($request->filled('started_on') ? ['after_or_equal:started_on'] : [])],
+        ]));
+
+        return $this->changed($task);
+    }
+
+    /**
+     * 項目の担当者を決める（プロジェクトの参加者から1人）。今の担当者をもう一度選ぶか、空で送ると外す
+     */
+    public function assignItem(Request $request, TaskChecklistItem $item): View
+    {
+        $task = $item->checklist->task;
+
+        $this->authorizeDetail($task);
+
+        $attributes = $request->validate([
+            'user_id' => ['nullable', 'integer'],
+        ]);
+
+        $userId = isset($attributes['user_id']) ? (int) $attributes['user_id'] : null;
+
+        if ($userId !== null && $userId !== $item->assignee_id) {
+            $item->assignee_id = $task->project->users()->whereKey($userId)->firstOrFail()->getKey();
+        } else {
+            $item->assignee_id = null;
+        }
+
+        $item->save();
+
+        return $this->changed($task);
+    }
 }
