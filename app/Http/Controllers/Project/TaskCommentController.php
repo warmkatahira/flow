@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Project;
 
+use App\Enums\Reaction;
 use App\Events\MentionReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
 use App\Models\Task;
 use App\Models\TaskComment;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class TaskCommentController extends Controller
@@ -44,6 +46,31 @@ class TaskCommentController extends Controller
         abort_unless($comment->user_id === $request->user()->getKey(), 403);
 
         $comment->delete();
+
+        return $this->changed($comment->task);
+    }
+
+    /**
+     * 1つのコメントに1人1つ。同じ絵文字を押すと外し、別の絵文字を押すと付け替える
+     */
+    public function react(Request $request, TaskComment $comment): View
+    {
+        $this->authorizeDetail($comment->task);
+
+        $emoji = Reaction::from($request->validate([
+            'emoji' => ['required', Rule::enum(Reaction::class)],
+        ])['emoji']);
+
+        $mine = $comment->reactions()->firstWhere('user_id', $request->user()->getKey());
+
+        if ($mine?->emoji === $emoji) {
+            $mine->delete();
+        } else {
+            $reaction = $mine ?? $comment->reactions()->make();
+            $reaction->user_id = $request->user()->getKey();
+            $reaction->emoji = $emoji;
+            $reaction->save();
+        }
 
         return $this->changed($comment->task);
     }

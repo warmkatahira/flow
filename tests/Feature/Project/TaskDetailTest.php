@@ -391,6 +391,58 @@ class TaskDetailTest extends TestCase
         $this->actingAs($this->user)->get(route('tasks.show', $this->task))->assertOk()->assertSee('退職前のコメント');
     }
 
+    public function test_コメントにリアクションを付け外しできる(): void
+    {
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => 'コメント']);
+        $comment = TaskComment::first();
+
+        $this->actingAs($this->user)->post(route('comments.react', $comment), ['emoji' => '👍'])
+            ->assertOk()
+            ->assertSee('いいね 1件（自分も付けています）');
+        $this->actingAs($this->participant())->post(route('comments.react', $comment), ['emoji' => '👍'])
+            ->assertOk()
+            ->assertSee('いいね 2件');
+        $this->assertSame(2, $comment->reactions()->count());
+
+        // もう一度押すと外れる
+        $this->actingAs($this->user)->post(route('comments.react', $comment), ['emoji' => '👍'])
+            ->assertOk()
+            ->assertDontSee('（自分も付けています）');
+        $this->assertSame(1, $comment->reactions()->count());
+    }
+
+    public function test_リアクションは1つのコメントに1人1つで別の絵文字は付け替える(): void
+    {
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => 'コメント']);
+        $comment = TaskComment::first();
+
+        $this->actingAs($this->user)->post(route('comments.react', $comment), ['emoji' => '👍']);
+        $this->actingAs($this->user)->post(route('comments.react', $comment), ['emoji' => '🎉'])
+            ->assertOk()
+            ->assertSee('お祝い 1件（自分も付けています）')
+            ->assertDontSee('いいね 1件');
+
+        $this->assertSame(['🎉'], $comment->reactions()->pluck('emoji')->map->value->all());
+    }
+
+    public function test_決まった絵文字以外は付けられない(): void
+    {
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => 'コメント']);
+        $comment = TaskComment::first();
+
+        $this->actingAs($this->user)->post(route('comments.react', $comment), ['emoji' => '💩'])->assertSessionHasErrors('emoji');
+        $this->assertSame(0, $comment->reactions()->count());
+    }
+
+    public function test_参加していない人はリアクションできない(): void
+    {
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => 'コメント']);
+        $comment = TaskComment::first();
+
+        $this->actingAs(User::factory()->create())->post(route('comments.react', $comment), ['emoji' => '👍'])->assertNotFound();
+        $this->assertSame(0, $comment->reactions()->count());
+    }
+
     public function test_複製すると担当者とチェックリストは写りコメントは写らない(): void
     {
         $this->task->assignees()->attach($this->user);

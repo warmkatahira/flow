@@ -388,6 +388,42 @@
                 </div>
 
                 <p class="mt-1 whitespace-pre-wrap break-words text-sm text-slate-800">{{ $comment->bodyHtml() }}</p>
+
+                {{-- リアクション。押すたびに付け外しする --}}
+                <form data-task-form autocomplete="off" method="POST" action="{{ route('comments.react', $comment) }}"
+                      x-data="{ picking: false }" @click.outside="picking = false" class="relative mt-1.5 flex flex-wrap items-center gap-1.5">
+                    @csrf
+                    @foreach ($comment->reactionSummary(auth()->user()) as $reaction)
+                        <button type="submit" name="emoji" value="{{ $reaction['emoji']->value }}"
+                                title="{{ $reaction['users']->pluck('name')->join('、') }}"
+                                aria-label="{{ $reaction['emoji']->label() }} {{ $reaction['users']->count() }}件{{ $reaction['mine'] ? '（自分も付けています）' : '' }}"
+                                aria-pressed="{{ $reaction['mine'] ? 'true' : 'false' }}"
+                                @class([
+                                    'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition',
+                                    'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100' => $reaction['mine'],
+                                    'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' => ! $reaction['mine'],
+                                ])>
+                            <span class="text-sm leading-none">{{ $reaction['emoji']->value }}</span>
+                            <span class="tabular-nums">{{ $reaction['users']->count() }}</span>
+                        </button>
+                    @endforeach
+
+                    <button type="button" @click="picking = ! picking" aria-label="リアクションを付ける" aria-haspopup="menu" :aria-expanded="picking ? 'true' : 'false'"
+                            class="flex h-6 items-center rounded-full border border-slate-200 px-1.5 text-slate-400 transition hover:bg-slate-50 hover:text-slate-600">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.536-4.464a.75.75 0 10-1.061-1.061 3.5 3.5 0 01-4.95 0 .75.75 0 00-1.06 1.06 5 5 0 007.07 0zM9 8.5c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S7.448 7 8 7s1 .672 1 1.5zm3 1.5c.552 0 1-.672 1-1.5S12.552 7 12 7s-1 .672-1 1.5.448 1.5 1 1.5z" />
+                        </svg>
+                        <span class="ml-0.5 text-xs leading-none">+</span>
+                    </button>
+
+                    <div x-show="picking" x-cloak role="menu"
+                         class="absolute left-0 top-full z-20 mt-1 flex gap-0.5 rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-slate-200">
+                        @foreach (\App\Enums\Reaction::cases() as $emoji)
+                            <button type="submit" name="emoji" value="{{ $emoji->value }}" role="menuitem" title="{{ $emoji->label() }}" aria-label="{{ $emoji->label() }}"
+                                    class="rounded-lg p-1 text-lg leading-none transition hover:bg-slate-100">{{ $emoji->value }}</button>
+                        @endforeach
+                    </div>
+                </form>
             </div>
         </div>
     @endforeach

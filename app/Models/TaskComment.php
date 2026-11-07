@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use App\Enums\Reaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
 
@@ -38,6 +40,33 @@ class TaskComment extends Model
     public function mentions(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'task_comment_mentions')->withTimestamps()->withTrashed();
+    }
+
+    /**
+     * @return HasMany<TaskCommentReaction, $this>
+     */
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(TaskCommentReaction::class)->oldest('id');
+    }
+
+    /**
+     * 付いているリアクションを絵文字ごとにまとめる（Reaction の順。誰も付けていない絵文字は出さない）
+     *
+     * @return Collection<int, array{emoji: Reaction, users: Collection<int, User>, mine: bool}>
+     */
+    public function reactionSummary(?User $viewer): Collection
+    {
+        $byEmoji = $this->reactions->groupBy(fn (TaskCommentReaction $reaction) => $reaction->emoji->value);
+
+        return collect(Reaction::cases())
+            ->filter(fn (Reaction $emoji) => $byEmoji->has($emoji->value))
+            ->map(fn (Reaction $emoji) => [
+                'emoji' => $emoji,
+                'users' => $users = $byEmoji[$emoji->value]->map->user,
+                'mine' => $viewer !== null && $users->contains('id', $viewer->getKey()),
+            ])
+            ->values();
     }
 
     /**
