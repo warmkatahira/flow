@@ -131,6 +131,14 @@ class TaskComment extends Model
     }
 
     /**
+     * 投稿したあとに本文を直したか（リアクションやメンションでは updated_at は変わらない）
+     */
+    public function isEdited(): bool
+    {
+        return $this->updated_at->gt($this->created_at);
+    }
+
+    /**
      * 書式を外した本文（通知の一覧、メンションの判定）
      */
     public function bodyText(): string

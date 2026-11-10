@@ -61,6 +61,43 @@ class TaskCommentController extends Controller
     }
 
     /**
+     * 本文を直す（投稿した本人だけ）。添付ファイルはそのまま
+     *
+     * 新しくメンションした人にだけ知らせる。前からメンションしていた人へは知らせ直さない。
+     */
+    public function update(Request $request, TaskComment $comment): View
+    {
+        $task = $comment->task;
+
+        $this->authorizeDetail($task);
+
+        abort_unless($comment->user_id === $request->user()->getKey(), 403);
+
+        $hasFiles = $comment->attachments()->exists();
+
+        $attributes = $request->validate([
+            'body' => [$hasFiles ? 'nullable' : 'required', 'string', 'max:100000', new RichTextLength(required: ! $hasFiles)],
+        ]);
+
+        $before = $comment->mentions()->pluck('users.id');
+
+        $comment->body = $attributes['body'] ?? '';
+
+        if ($comment->isDirty('body')) {
+            $comment->save();
+            $comment->syncMentions($task->project->users);
+
+            $added = $comment->mentions()->pluck('users.id')->diff($before)->reject(fn (int $id) => $id === $comment->user_id);
+
+            foreach ($added as $userId) {
+                NotificationReceived::notify($userId);
+            }
+        }
+
+        return $this->changed($task);
+    }
+
+    /**
      * 消せるのは投稿した本人だけ
      */
     public function destroy(Request $request, TaskComment $comment): View

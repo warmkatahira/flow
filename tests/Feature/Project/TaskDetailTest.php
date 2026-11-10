@@ -450,6 +450,52 @@ class TaskDetailTest extends TestCase
         $this->assertModelMissing($comment);
     }
 
+    public function test_コメントを編集できるのは投稿した本人だけ(): void
+    {
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => '最初']);
+        $comment = TaskComment::first();
+
+        $this->actingAs($this->participant())->put(route('comments.update', $comment), ['body' => '書き換え'])->assertForbidden();
+        $this->assertSame('<p>最初</p>', $comment->fresh()->body);
+
+        $this->travel(1)->minutes();
+
+        $this->actingAs($this->user)->put(route('comments.update', $comment), ['body' => '<p>直した</p>'])
+            ->assertOk()
+            ->assertSee('直した')
+            ->assertSee('（編集済み）');
+
+        $this->assertSame('<p>直した</p>', $comment->fresh()->body);
+    }
+
+    public function test_編集していなければ編集済みと出さず_空にはできない(): void
+    {
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => '最初'])
+            ->assertDontSee('（編集済み）');
+
+        $this->actingAs($this->user)->put(route('comments.update', TaskComment::first()), ['body' => '<p></p>'])
+            ->assertSessionHasErrors('body');
+    }
+
+    public function test_編集で新しくメンションした人にだけ知らせる(): void
+    {
+        $member = $this->participant();
+        $member->update(['name' => '田中']);
+        $other = $this->participant();
+        $other->update(['name' => '佐藤']);
+
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => '@田中 確認して']);
+        $comment = TaskComment::first();
+
+        \Illuminate\Support\Facades\Event::fake([\App\Events\NotificationReceived::class]);
+
+        $this->actingAs($this->user)->put(route('comments.update', $comment), ['body' => '@田中 @佐藤 確認して']);
+
+        \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\NotificationReceived::class, 1);
+        \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\NotificationReceived::class, fn ($event) => $event->userId === $other->id);
+        $this->assertEqualsCanonicalizing([$member->id, $other->id], $comment->mentions()->pluck('users.id')->all());
+    }
+
     public function test_参加者をメンションできる(): void
     {
         $member = $this->participant();

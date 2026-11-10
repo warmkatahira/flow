@@ -103,6 +103,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     Route::post('checklist-items/{item}/assignee', [TaskChecklistController::class, 'assignItem'])->name('checklist-items.assignee');
     Route::delete('checklist-items/{item}', [TaskChecklistController::class, 'destroyItem'])->name('checklist-items.destroy');
     Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
+    Route::put('comments/{comment}', [TaskCommentController::class, 'update'])->name('comments.update');
     Route::delete('comments/{comment}', [TaskCommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('comments/{comment}/reactions', [TaskCommentController::class, 'react'])->name('comments.react');
     Route::get('attachments/{attachment}', [TaskCommentAttachmentController::class, 'show'])->name('attachments.show');

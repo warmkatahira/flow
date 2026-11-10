@@ -430,26 +430,83 @@
     </form>
 
     @foreach ($task->comments as $comment)
+        @php($mine = $comment->user_id === auth()->id())
         <div class="flex gap-3">
             <x-user-avatar :user="$comment->user" />
 
-            <div class="min-w-0 flex-1">
+            {{-- 編集・削除は投稿した本人だけ --}}
+            <div class="min-w-0 flex-1" x-data="{ editingComment: false }">
                 <div class="flex items-center gap-3 text-xs text-slate-500">
                     <span class="text-slate-700">{{ $comment->user->name }}</span>
                     <span>{{ $comment->created_at->format('Y年m月d日 H:i') }}</span>
+                    @if ($comment->isEdited())
+                        <span title="{{ $comment->updated_at->format('Y年m月d日 H:i') }} に編集">（編集済み）</span>
+                    @endif
 
-                    @if ($comment->user_id === auth()->id())
-                        <form data-task-form autocomplete="off" method="POST" action="{{ route('comments.destroy', $comment) }}" class="ml-auto"
-                              onsubmit="return confirm('コメントを削除します。よろしいですか？');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-slate-400 hover:text-slate-700">削除</button>
-                        </form>
+                    @if ($mine)
+                        <div x-show="! editingComment" class="ml-auto flex items-center gap-1.5">
+                            <button type="button" @click="editingComment = true"
+                                    class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white py-0.5 pl-1.5 pr-2.5 text-xs text-slate-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700">
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+                                </svg>
+                                編集
+                            </button>
+                            <form data-task-form autocomplete="off" method="POST" action="{{ route('comments.destroy', $comment) }}"
+                                  onsubmit="return confirm('コメントを削除します。よろしいですか？');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-white py-0.5 pl-1.5 pr-2.5 text-xs text-rose-600 transition hover:border-rose-500 hover:bg-rose-500 hover:text-white">
+                                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" />
+                                    </svg>
+                                    削除
+                                </button>
+                            </form>
+                        </div>
                     @endif
                 </div>
 
+                @if ($mine)
+                    {{-- 編集。押したときだけエディタを作る（resources/js/rich-text.js の commentEditor）。Escape でやめる --}}
+                    <template x-if="editingComment">
+                        <form data-task-form autocomplete="off" method="POST" action="{{ route('comments.update', $comment) }}"
+                              x-data="commentEditor(@js($task->project->users->map->only('id', 'name')->values()), undefined, { content: @js($comment->body), hasAttachments: @js($comment->attachments->isNotEmpty()), cancel: () => editingComment = false })"
+                              @submit="submit($event)"
+                              class="relative mt-1.5 rounded-xl border border-slate-300 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="body" x-ref="input">
+
+                            <div class="border-b border-slate-200 px-1.5 py-1">
+                                @include('projects.partials.rich-text-toolbar')
+                            </div>
+
+                            <div class="relative px-3 pt-2">
+                                <div x-ref="editor" class="text-sm text-slate-800"></div>
+
+                                <ul x-show="candidates.length > 0" x-cloak role="listbox" aria-label="メンションする人"
+                                    class="absolute left-3 top-full z-20 mt-1 max-h-48 w-64 overflow-y-auto rounded-xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200">
+                                    <template x-for="(member, index) in candidates" :key="member.id">
+                                        <li role="option" :aria-selected="index === highlighted ? 'true' : 'false'"
+                                            @mousedown.prevent="choose(member)" @mouseenter="highlighted = index"
+                                            :class="index === highlighted && 'bg-sky-50'"
+                                            class="cursor-pointer truncate px-3 py-1.5 text-sm text-slate-700" x-text="member.name"></li>
+                                    </template>
+                                </ul>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3 px-3 pb-3 pt-1">
+                                <button type="button" @click="editingComment = false" class="{{ $cancelClass }}">やめる</button>
+                                <button type="submit" class="{{ $saveClass }}">保存</button>
+                            </div>
+                        </form>
+                    </template>
+                @endif
+
                 @if (trim($comment->bodyText()) !== '')
-                    <div class="rich-text mt-1 break-words text-sm text-slate-800">{{ $comment->bodyHtml() }}</div>
+                    <div x-show="! editingComment" class="rich-text mt-1 break-words text-sm text-slate-800">{{ $comment->bodyHtml() }}</div>
                 @endif
 
                 {{-- 添付ファイル。画像は小さく出し、押すと別のタブで開く。それ以外はダウンロード --}}

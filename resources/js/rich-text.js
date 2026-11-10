@@ -175,7 +175,12 @@ Alpine.data('richDescription', (saved) => {
  *
  * メンションは「@名前」という文字のまま入れる。誰へのメンションかはサーバーが本文の文字から決める。
  */
-Alpine.data('commentEditor', (members, limits = { files: 5, bytes: 10 * 1024 * 1024 }) => {
+/**
+ * コメントの入力（投稿と編集）
+ *
+ * 編集のときは options.content に今の本文を入れ、options.cancel に Escape で呼ぶ処理を渡す。
+ */
+Alpine.data('commentEditor', (members, limits = { files: 5, bytes: 10 * 1024 * 1024 }, options = {}) => {
     let editor = null;
 
     return {
@@ -192,7 +197,7 @@ Alpine.data('commentEditor', (members, limits = { files: 5, bytes: 10 * 1024 * 1
 
         init() {
             editor = createEditor(this.$refs.editor, {
-                content: '',
+                content: options.content ?? '',
                 placeholder: 'コメントを書く（@ でメンション）',
                 onTransaction: () => this.refreshMarks(),
                 onUpdate: () => this.lookup(),
@@ -203,6 +208,10 @@ Alpine.data('commentEditor', (members, limits = { files: 5, bytes: 10 * 1024 * 1
             editor.on('blur', () => {
                 this.candidates = [];
             });
+
+            if (options.content !== undefined) {
+                editor.commands.focus('end');
+            }
         },
 
         lookup() {
@@ -219,6 +228,15 @@ Alpine.data('commentEditor', (members, limits = { files: 5, bytes: 10 * 1024 * 1
          * 候補が出ているときの矢印・Enter・Tab・Escape。処理したら true（エディタには渡さない）
          */
         keydown(event) {
+            // 編集中の Escape は編集をやめる（ダイアログまで届くと閉じてしまう）
+            if (event.key === 'Escape' && this.candidates.length === 0 && options.cancel) {
+                event.preventDefault();
+                event.stopPropagation();
+                options.cancel();
+
+                return true;
+            }
+
             // 変換の確定の Enter は候補の決定にしない
             if (this.candidates.length === 0 || event.isComposing) {
                 return false;
@@ -299,7 +317,8 @@ Alpine.data('commentEditor', (members, limits = { files: 5, bytes: 10 * 1024 * 1
          * 送る前にエディタの中身をフォームへ写す。本文もファイルもなければ送らない
          */
         submit(event) {
-            if (this.files.length > 0 && (editor.isEmpty || editor.getText().trim() === '')) {
+            // ファイルがあれば本文は空でもよい（編集では、すでに付いているファイルも数える）
+            if ((this.files.length > 0 || options.hasAttachments) && (editor.isEmpty || editor.getText().trim() === '')) {
                 this.$refs.input.value = '';
 
                 return;
