@@ -452,9 +452,13 @@
     @endforeach
 </div>
 
-<div class="border-t border-slate-200 px-6 py-3 text-xs text-slate-400">
-    タスク作成: {{ $task->created_at->format('Y年m月d日 H:i') }}
-    @if ($task->creator)
-        <span class="ml-3">作成者: {{ $task->creator->name }}</span>
-    @endif
-</div>
+{{-- ラベルの文字数が違っても日時と名前の位置が揃うよう、表の形に並べる。最終更新は並べ替えとコメントでは変わらない --}}
+<dl class="grid grid-cols-[max-content_max-content_1fr] gap-x-3 gap-y-0.5 border-t border-slate-200 px-6 py-3 text-xs text-slate-400">
+    <dt>作成</dt>
+    <dd>{{ $task->created_at->format('Y年m月d日 H:i') }}</dd>
+    <dd>{{ $task->creator?->name }}</dd>
+
+    <dt>最終更新</dt>
+    <dd>{{ $task->updated_at->format('Y年m月d日 H:i') }}</dd>
+    <dd>{{ $task->updater?->name }}</dd>
+</dl>

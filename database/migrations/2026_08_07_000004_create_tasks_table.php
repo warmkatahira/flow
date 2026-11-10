@@ -23,6 +23,8 @@ return new class extends Migration
             $table->date('started_on')->nullable();
             $table->date('ended_on')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            // 最後に中身を変えた人。並べ替えとコメントでは変えない（updated_at も同じ）
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedInteger('position');
             $table->timestamps();
             $table->timestamp('archived_at')->nullable()->index();

@@ -217,7 +217,7 @@ class TaskChecklistController extends Controller
     private function checklistChanged(Task $task, bool $changed = true): View
     {
         if ($changed) {
-            $task->notifyFollowers(auth()->user(), TaskActivity::Checklist);
+            $task->recordActivity(auth()->user(), TaskActivity::Checklist);
         }
 
         return $this->changed($task);

@@ -41,11 +41,11 @@ class TaskDetailController extends Controller
         ]));
 
         if ($task->wasChanged('title')) {
-            $task->notifyFollowers($request->user(), TaskActivity::Title);
+            $task->recordActivity($request->user(), TaskActivity::Title);
         }
 
         if ($task->wasChanged('description')) {
-            $task->notifyFollowers($request->user(), TaskActivity::Description);
+            $task->recordActivity($request->user(), TaskActivity::Description);
         }
 
         return $this->changed($task);
@@ -60,7 +60,7 @@ class TaskDetailController extends Controller
         ]));
 
         if ($task->wasChanged('status')) {
-            $task->notifyFollowers($request->user(), TaskActivity::Status, $task->status->label());
+            $task->recordActivity($request->user(), TaskActivity::Status, $task->status->label());
         }
 
         return $this->changed($task);
@@ -81,7 +81,7 @@ class TaskDetailController extends Controller
         if ($task->wasChanged(['started_on', 'ended_on'])) {
             $period = collect([$task->started_on, $task->ended_on])->filter()->map->format('n/j')->unique()->join('〜');
 
-            $task->notifyFollowers($request->user(), TaskActivity::Period, $period ?: null);
+            $task->recordActivity($request->user(), TaskActivity::Period, $period ?: null);
         }
 
         return $this->changed($task);
@@ -102,7 +102,7 @@ class TaskDetailController extends Controller
 
         $task->assignees()->toggle($user->getKey());
 
-        $task->notifyFollowers($request->user(), TaskActivity::Assignee);
+        $task->recordActivity($request->user(), TaskActivity::Assignee);
 
         return $this->changed($task);
     }

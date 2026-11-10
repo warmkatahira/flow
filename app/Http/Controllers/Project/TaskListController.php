@@ -90,6 +90,7 @@ class TaskListController extends Controller
                 $taskCopy->task_list_id = $copy->getKey();
                 $taskCopy->number = $number++;
                 $taskCopy->created_by = $request->user()->getKey();
+                $taskCopy->updated_by = $request->user()->getKey();
                 $taskCopy->save();
 
                 $task->copyDetailsTo($taskCopy);

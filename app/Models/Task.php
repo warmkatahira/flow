@@ -69,6 +69,16 @@ class Task extends Model
     }
 
     /**
+     * 最後に中身を変えた人（削除済みのユーザーでも名前を出す）
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function updater(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by')->withTrashed();
+    }
+
+    /**
      * 担当者
      *
      * @return BelongsToMany<User, $this>
@@ -94,6 +104,25 @@ class Task extends Model
     public function notifications(): HasMany
     {
         return $this->hasMany(TaskNotification::class);
+    }
+
+    /**
+     * タスクの動きを記録する
+     *
+     * 最終更新者と更新日時を変え（コメントはタスク自体の変更ではないので変えない）、フォローしている人へ知らせる。
+     *
+     * @param  array<int, int>  $except  別の通知（メンションなど）で知らせた人
+     */
+    public function recordActivity(User $actor, TaskActivity $type, ?string $detail = null, array $except = []): void
+    {
+        if ($type !== TaskActivity::Comment) {
+            // 並べ替えで更新日時を止めていたものも、ここでは必ず変える
+            $this->timestamps = true;
+            $this->updated_by = $actor->getKey();
+            $this->touch();
+        }
+
+        $this->notifyFollowers($actor, $type, $detail, $except);
     }
 
     /**

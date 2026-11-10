@@ -243,4 +243,52 @@ class TaskFollowTest extends TestCase
         $this->assertFalse($this->task->followers()->exists());
         $this->assertCount(0, TaskNotification::all());
     }
+
+    public function test_作成者と最終更新者を記録する(): void
+    {
+        $this->assertSame($this->owner->id, $this->task->updated_by);
+
+        $this->travel(1)->hours();
+        $this->actingAs($this->follower)->put(route('tasks.status', $this->task), ['status' => 'done']);
+
+        $task = $this->task->fresh();
+        $this->assertSame($this->owner->id, $task->created_by);
+        $this->assertSame($this->follower->id, $task->updated_by);
+        $this->assertTrue($task->updated_at->isAfter($task->created_at));
+
+        $this->actingAs($this->owner)->get(route('tasks.show', $this->task))
+            ->assertSeeInOrder(['作成', '持ち主', '最終更新', 'フォロワー']);
+    }
+
+    public function test_チェックリストやラベルの変更でも最終更新者が変わる(): void
+    {
+        $this->actingAs($this->follower)->post(route('tasks.checklists.store', $this->task), ['title' => '手順']);
+
+        $this->assertSame($this->follower->id, $this->task->fresh()->updated_by);
+    }
+
+    public function test_並べ替えとコメントでは最終更新は変わらない(): void
+    {
+        $before = $this->task->fresh()->updated_at;
+        $this->travel(1)->hours();
+
+        $this->actingAs($this->follower)->post(route('tasks.reorder', $this->project), ['list_id' => $this->todo->id, 'ids' => [$this->task->id]]);
+        $this->actingAs($this->follower)->post(route('tasks.comments.store', $this->task), ['body' => 'メモ']);
+
+        $task = $this->task->fresh();
+        $this->assertSame($this->owner->id, $task->updated_by);
+        $this->assertTrue($task->updated_at->equalTo($before));
+    }
+
+    public function test_リストを移ると最終更新者が変わる(): void
+    {
+        $this->travel(1)->hours();
+
+        $this->actingAs($this->follower)->post(route('tasks.reorder', $this->project), ['list_id' => $this->doing->id, 'ids' => [$this->task->id], 'moved' => [$this->task->id]]);
+
+        $task = $this->task->fresh();
+        $this->assertSame($this->doing->id, $task->task_list_id);
+        $this->assertSame($this->follower->id, $task->updated_by);
+        $this->assertTrue($task->updated_at->isAfter($task->created_at));
+    }
 }

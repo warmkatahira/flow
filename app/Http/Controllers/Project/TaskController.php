@@ -44,6 +44,7 @@ class TaskController extends Controller
             $task->project_id = $locked->getKey();
             $task->number = $locked->nextTaskNumber();
             $task->created_by = $request->user()->getKey();
+            $task->updated_by = $request->user()->getKey();
             $task->save();
         });
 
@@ -73,6 +74,7 @@ class TaskController extends Controller
             $copy->number = $locked->nextTaskNumber();
             $copy->position = $task->position + 1;
             $copy->created_by = $request->user()->getKey();
+            $copy->updated_by = $request->user()->getKey();
             $copy->save();
 
             $task->copyDetailsTo($copy);
@@ -121,11 +123,13 @@ class TaskController extends Controller
 
             $task->task_list_id = $list->getKey();
             $task->position = (int) $list->tasks()->max('position') + 1;
+            // 同じリストの末尾へ送るだけなら並べ替えなので、更新日時は変えない（移ったときは下の recordActivity で変える）
+            $task->timestamps = false;
             $task->save();
         });
 
         if ($movedList) {
-            $task->notifyFollowers($request->user(), TaskActivity::Moved, $from->isNot($to) ? "{$to->name} / {$list->name}" : $list->name);
+            $task->recordActivity($request->user(), TaskActivity::Moved, $from->isNot($to) ? "{$to->name} / {$list->name}" : $list->name);
         }
 
         BoardChanged::notify($from);
@@ -147,7 +151,7 @@ class TaskController extends Controller
         abort_unless($task->isOnBoard(), 404);
 
         $task->archive();
-        $task->notifyFollowers($request->user(), TaskActivity::Archived);
+        $task->recordActivity($request->user(), TaskActivity::Archived);
 
         BoardChanged::notify($task->project);
 
@@ -178,7 +182,7 @@ class TaskController extends Controller
         $count = $project->tasks()->whereKey($ids)->update(['archived_at' => now()]);
 
         foreach ($project->tasks()->whereKey($ids)->get() as $task) {
-            $task->notifyFollowers($request->user(), TaskActivity::Archived);
+            $task->recordActivity($request->user(), TaskActivity::Archived);
         }
 
         BoardChanged::notify($project);
@@ -213,7 +217,7 @@ class TaskController extends Controller
         $project->tasks()->whereKey($tasks->modelKeys())->update(['archived_at' => null]);
 
         foreach ($tasks as $task) {
-            $task->notifyFollowers($request->user(), TaskActivity::Restored);
+            $task->recordActivity($request->user(), TaskActivity::Restored);
         }
 
         BoardChanged::notify($project);
@@ -243,7 +247,7 @@ class TaskController extends Controller
         }
 
         $task->unarchive();
-        $task->notifyFollowers($request->user(), TaskActivity::Restored);
+        $task->recordActivity($request->user(), TaskActivity::Restored);
 
         BoardChanged::notify($task->project);
 
@@ -309,14 +313,16 @@ class TaskController extends Controller
                     continue;
                 }
 
+                // 並べ替えだけでは更新日時を変えない。リストを移ったものは下の recordActivity で変える
                 $task->position = $position;
+                $task->timestamps = false;
                 $task->save();
             }
         });
 
         // 同じリストの中の並べ替えは知らせない
         foreach ($movedTasks as $task) {
-            $task->notifyFollowers($request->user(), TaskActivity::Moved, $list->name);
+            $task->recordActivity($request->user(), TaskActivity::Moved, $list->name);
         }
 
         BoardChanged::notify($project);

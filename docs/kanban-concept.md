@@ -160,6 +160,8 @@
 
 - ステータス（`App\Enums\TaskStatus`）: 未着手 / 進行中 / 完了 / 中止 / 保留
 - タイトル・説明・期間・担当者・チェックリスト・コメント
+- 作成者と最終更新者を持ち、詳細画面の下に作成・最終更新の日時と一緒に出す（`created_by`, `updated_by`）
+  - 最終更新（`updated_at` と `updated_by`）は `Task::recordActivity` で変える。フォローの通知になる動きと同じで、並べ替えとコメントでは変えない
 - タイトルと説明は保存ボタンがなく、フォーカスを外すと保存する（Esc で取り消し。タイトルは Enter でも確定）
 - 説明とコメントは書式を付けられる（Tiptap のエディタ。`resources/js/rich-text.js`）
   - 使える書式は文字の装飾だけ: 太字・斜体・下線・取り消し線・文字色・背景色・大きさ。ツールバーとショートカット（Ctrl+B など）で付ける
@@ -219,7 +221,7 @@
 | `projects` | プロジェクト（`name`, `icon_path`, `archived_at`） | 実装済み |
 | `project_user` | プロジェクトと参加者の中間テーブル（`role`, `is_favorite`, `group_id`） | 実装済み |
 | `task_lists` | リスト（列）。`name`, `color`（`#rrggbb`。プリセットは `ListColor`）, `position`, `archived_at` | 実装済み |
-| `tasks` | タスク。`number`(プロジェクトごとの連番), `title`, `description`, `status`, `started_on`, `ended_on`, `created_by`, `position`, `archived_at` | 実装済み |
+| `tasks` | タスク。`number`(プロジェクトごとの連番), `title`, `description`, `status`, `started_on`, `ended_on`, `created_by`, `updated_by`, `position`, `archived_at` | 実装済み |
 | `task_user` | タスクの担当者 | 実装済み |
 | `labels` | プロジェクトごとのラベルの種類。`name`, `color`, `position` | 実装済み |
 | `label_task` | タスクに付けたラベル | 実装済み |

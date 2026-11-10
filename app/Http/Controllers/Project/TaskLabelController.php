@@ -36,7 +36,7 @@ class TaskLabelController extends Controller
         $changes = $task->labels()->sync($attributes['labels'] ?? []);
 
         if ($changes['attached'] || $changes['detached']) {
-            $task->notifyFollowers($request->user(), TaskActivity::Label);
+            $task->recordActivity($request->user(), TaskActivity::Label);
         }
 
         return $this->changed($task);

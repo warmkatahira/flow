@@ -38,7 +38,7 @@ class TaskCommentController extends Controller
         }
 
         // メンションした人にはメンションとして届いているので、同じコメントを二重に知らせない
-        $task->notifyFollowers($request->user(), TaskActivity::Comment, $comment->bodyText(), $mentioned->all());
+        $task->recordActivity($request->user(), TaskActivity::Comment, $comment->bodyText(), $mentioned->all());
 
         return $this->changed($task);
     }

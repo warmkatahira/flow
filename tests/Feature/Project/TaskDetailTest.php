@@ -58,7 +58,7 @@ class TaskDetailTest extends TestCase
             ->assertOk()
             ->assertSee('#'.$this->task->number.' ToDo')
             ->assertSee('説明を編集')
-            ->assertSee('作成者: 作った人');
+            ->assertSeeInOrder(['作成', '作った人']);
     }
 
     public function test_参加していない人は開けない(): void
