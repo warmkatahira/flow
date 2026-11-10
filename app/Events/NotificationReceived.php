@@ -6,16 +6,16 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 
 /**
- * メンションされたことを本人の画面へ知らせる
+ * 通知（メンション・フォローしたタスクの動き）が増えたことを本人の画面へ知らせる
  *
  * 中身は送らない。受け取った画面が通知を取り直す。
  */
-class MentionReceived implements ShouldBroadcastNow
+class NotificationReceived implements ShouldBroadcastNow
 {
     public function __construct(public int $userId) {}
 
     /**
-     * 通知に失敗してもコメントは保存できているので、操作自体は失敗させない
+     * 通知に失敗しても操作は保存できているので、操作自体は失敗させない
      */
     public static function notify(int $userId): void
     {
@@ -32,7 +32,7 @@ class MentionReceived implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'mention.received';
+        return 'notification.received';
     }
 
     /**

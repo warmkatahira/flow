@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Project;
 
 use App\Enums\Reaction;
-use App\Events\MentionReceived;
+use App\Enums\TaskActivity;
+use App\Events\NotificationReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
 use App\Models\Task;
@@ -30,9 +31,14 @@ class TaskCommentController extends Controller
         $comment->save();
         $comment->syncMentions($task->project->users);
 
-        foreach ($comment->mentions()->pluck('users.id')->reject(fn (int $id) => $id === $comment->user_id) as $userId) {
-            MentionReceived::notify($userId);
+        $mentioned = $comment->mentions()->pluck('users.id')->reject(fn (int $id) => $id === $comment->user_id);
+
+        foreach ($mentioned as $userId) {
+            NotificationReceived::notify($userId);
         }
+
+        // メンションした人にはメンションとして届いているので、同じコメントを二重に知らせない
+        $task->notifyFollowers($request->user(), TaskActivity::Comment, $comment->bodyText(), $mentioned->all());
 
         return $this->changed($task);
     }

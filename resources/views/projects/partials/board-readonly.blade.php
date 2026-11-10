@@ -14,10 +14,14 @@
                     <article data-status="{{ $task->status->value }}" data-due="{{ $task->ended_on?->format('Y-m-d') }}"
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
+                             data-followed="{{ $followedTaskIds->contains($task->id) ? '1' : '' }}"
                              class="flex items-start gap-2 rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
                         <div class="flex shrink-0 flex-col items-center gap-1">
                             <span class="text-[10px] font-medium leading-4 text-slate-400">#{{ $task->number }}</span>
                             <x-task-status-icon :status="$task->status" class="h-4 w-4" />
+                            @if ($followedTaskIds->contains($task->id))
+                                <x-follow-icon class="h-3.5 w-3.5 text-sky-500" title="フォロー中" />
+                            @endif
                         </div>
                         <div class="min-w-0 flex-1">
                             <p class="text-sm text-slate-800">{{ $task->title }}</p>

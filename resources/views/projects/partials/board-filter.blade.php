@@ -35,6 +35,13 @@
         マイタスク
     </button>
 
+    <button type="button" @click="$store.boardFilter.toggleFollowed()" :aria-pressed="$store.boardFilter.followed ? 'true' : 'false'"
+            :class="$store.boardFilter.followed ? 'border-sky-500 bg-sky-50 text-sky-600' : 'border-slate-300 text-slate-500 hover:bg-slate-50'"
+            class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm transition">
+        <x-follow-icon class="h-4 w-4" />
+        フォロー中
+    </button>
+
     <button type="button" x-show="tab === 'board'" @click="$store.cardView.toggle()" :aria-pressed="$store.cardView.expanded ? 'true' : 'false'"
             class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-500 transition hover:bg-slate-50">
         <svg class="h-4 w-4 transition-transform duration-200" :class="$store.cardView.expanded && 'rotate-180'" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -104,7 +111,7 @@
 
             {{-- 絞り込んでいないときは押せない --}}
             <button type="button" @click="$store.boardFilter.clear()"
-                    :disabled="$store.boardFilter.count === 0 && ! $store.boardFilter.mine"
+                    :disabled="$store.boardFilter.count === 0 && ! $store.boardFilter.mine && ! $store.boardFilter.followed"
                     class="group mt-auto inline-flex items-center gap-1.5 self-end rounded-full bg-rose-50 py-1 pl-1.5 pr-3 text-xs font-semibold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-500 hover:text-white hover:ring-rose-500 disabled:cursor-default disabled:bg-slate-50 disabled:text-slate-300 disabled:ring-slate-200">
                 <svg class="h-4 w-4 transition-transform duration-300 group-enabled:group-hover:rotate-90" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" />

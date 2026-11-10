@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Project;
 
 use App\Enums\ListColor;
+use App\Enums\TaskActivity;
 use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
@@ -32,7 +33,11 @@ class TaskLabelController extends Controller
             'labels.*' => ['integer', Rule::exists('labels', 'id')->where('project_id', $task->project_id)],
         ]);
 
-        $task->labels()->sync($attributes['labels'] ?? []);
+        $changes = $task->labels()->sync($attributes['labels'] ?? []);
+
+        if ($changes['attached'] || $changes['detached']) {
+            $task->notifyFollowers($request->user(), TaskActivity::Label);
+        }
 
         return $this->changed($task);
     }

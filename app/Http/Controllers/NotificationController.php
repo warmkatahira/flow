@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\TaskComment;
+use App\Models\TaskNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * 通知（自分へのメンション）
+ * 通知（自分へのメンションと、フォローしたタスクの動き）
+ *
+ * どちらも1つのベルにまとめ、新しい順に混ぜて出す。
  */
 class NotificationController extends Controller
 {
+    private const LIMIT = 20;
+
     /**
      * 未読の件数と一覧を返す
      */
@@ -19,15 +24,28 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
+        $mentions = $user->mentionedComments()
+            ->with(['user', 'task.project'])
+            ->orderByPivot('created_at', 'desc')
+            ->limit(self::LIMIT)
+            ->get();
+
+        $activities = $user->taskNotifications()
+            ->with(['actor', 'task.project'])
+            ->latest()
+            ->latest('id')
+            ->limit(self::LIMIT)
+            ->get();
+
+        $notifications = $mentions->toBase()
+            ->merge($activities)
+            ->sortByDesc(fn ($item) => $item instanceof TaskComment ? $item->pivot->created_at : $item->created_at)
+            ->take(self::LIMIT)
+            ->values();
+
         return response()->json([
-            'count' => $user->unreadMentionCount(),
-            'html' => view('components.notification-list', [
-                'comments' => $user->mentionedComments()
-                    ->with(['user', 'task.project'])
-                    ->orderByPivot('created_at', 'desc')
-                    ->limit(20)
-                    ->get(),
-            ])->render(),
+            'count' => $user->unreadNotificationCount(),
+            'html' => view('components.notification-list', ['notifications' => $notifications])->render(),
         ]);
     }
 
@@ -43,9 +61,32 @@ class NotificationController extends Controller
         return redirect()->route('projects.show', [$comment->task->project_id, 'task' => $comment->task_id]);
     }
 
+    /**
+     * フォローしたタスクの通知から開く
+     *
+     * アーカイブされたタスクは開けないので、この通知だけ既読にしてプロジェクトのアーカイブを開く。
+     */
+    public function openActivity(Request $request, TaskNotification $notification): RedirectResponse
+    {
+        abort_unless($request->user()->taskNotifications()->whereKey($notification->getKey())->exists(), 404);
+
+        $task = $notification->task;
+
+        if (! $task->isOnBoard()) {
+            $notification->read_at = now();
+            $notification->save();
+
+            return redirect()
+                ->route('projects.show', [$task->project_id, 'tab' => 'archive'])
+                ->with('status', "#{$task->number} {$task->title} はアーカイブされています");
+        }
+
+        return redirect()->route('projects.show', [$task->project_id, 'task' => $task->getKey()]);
+    }
+
     public function readAll(Request $request): JsonResponse
     {
-        $request->user()->markMentionsRead();
+        $request->user()->markNotificationsRead();
 
         return $this->index($request);
     }

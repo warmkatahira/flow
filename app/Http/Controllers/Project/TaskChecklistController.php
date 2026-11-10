@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Project;
 
+use App\Enums\TaskActivity;
 use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
@@ -28,7 +29,7 @@ class TaskChecklistController extends Controller
         $checklist->position = (int) $task->checklists()->max('position') + 1;
         $checklist->save();
 
-        return $this->changed($task);
+        return $this->checklistChanged($task);
     }
 
     public function update(Request $request, TaskChecklist $checklist): View
@@ -39,7 +40,7 @@ class TaskChecklistController extends Controller
             'title' => ['required', 'string', 'max:255'],
         ]));
 
-        return $this->changed($checklist->task);
+        return $this->checklistChanged($checklist->task, $checklist->wasChanged('title'));
     }
 
     public function destroy(TaskChecklist $checklist): View
@@ -48,7 +49,7 @@ class TaskChecklistController extends Controller
 
         $checklist->delete();
 
-        return $this->changed($checklist->task);
+        return $this->checklistChanged($checklist->task);
     }
 
     /**
@@ -138,7 +139,7 @@ class TaskChecklistController extends Controller
         $item->position = (int) $checklist->items()->max('position') + 1;
         $item->save();
 
-        return $this->changed($checklist->task);
+        return $this->checklistChanged($checklist->task);
     }
 
     /**
@@ -152,7 +153,7 @@ class TaskChecklistController extends Controller
 
         $item->update(['is_done' => ! $item->is_done]);
 
-        return $this->changed($task);
+        return $this->checklistChanged($task);
     }
 
     public function destroyItem(TaskChecklistItem $item): View
@@ -163,7 +164,7 @@ class TaskChecklistController extends Controller
 
         $item->delete();
 
-        return $this->changed($task);
+        return $this->checklistChanged($task);
     }
 
     /**
@@ -180,7 +181,7 @@ class TaskChecklistController extends Controller
             'ended_on' => ['nullable', 'date', ...($request->filled('started_on') ? ['after_or_equal:started_on'] : [])],
         ]));
 
-        return $this->changed($task);
+        return $this->checklistChanged($task, $item->wasChanged(['started_on', 'ended_on']));
     }
 
     /**
@@ -204,7 +205,20 @@ class TaskChecklistController extends Controller
             $item->assignee_id = null;
         }
 
+        $changed = $item->isDirty('assignee_id');
         $item->save();
+
+        return $this->checklistChanged($task, $changed);
+    }
+
+    /**
+     * チェックリストが変わったことをフォローしている人へ知らせてから中身を返す（並べ替えは知らせない）
+     */
+    private function checklistChanged(Task $task, bool $changed = true): View
+    {
+        if ($changed) {
+            $task->notifyFollowers(auth()->user(), TaskActivity::Checklist);
+        }
 
         return $this->changed($task);
     }

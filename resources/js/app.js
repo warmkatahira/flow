@@ -545,7 +545,7 @@ Alpine.store('cardView', {
 /**
  * ボードの絞り込み
  *
- * カードに持たせた data-status / data-due / data-assignees / data-labels を見て、画面の中で隠すだけ。
+ * カードに持たせた data-status / data-due / data-assignees / data-labels / data-followed を見て、画面の中で隠すだけ。
  * 種類どうしは AND、同じ種類の中は OR。フォームの送信で読み込み直しても消えないよう、タブの間は覚えておく。
  */
 const ymd = (date) => [
@@ -572,6 +572,7 @@ Alpine.store('boardFilter', {
     assignees: [],
     labels: [],
     mine: false,
+    followed: false,
 
     get count() {
         return this.statuses.length + this.assignees.length + this.dues.length + this.labels.length;
@@ -591,9 +592,9 @@ Alpine.store('boardFilter', {
     },
 
     changed() {
-        const { statuses, dues, from, to, assignees, labels, mine } = this;
+        const { statuses, dues, from, to, assignees, labels, mine, followed } = this;
 
-        remember(sessionStorage, this.key, JSON.stringify({ statuses, dues, from, to, assignees, labels, mine }));
+        remember(sessionStorage, this.key, JSON.stringify({ statuses, dues, from, to, assignees, labels, mine, followed }));
         this.apply();
     },
 
@@ -609,8 +610,13 @@ Alpine.store('boardFilter', {
         this.changed();
     },
 
+    toggleFollowed() {
+        this.followed = ! this.followed;
+        this.changed();
+    },
+
     clear() {
-        Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], labels: [], mine: false });
+        Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], labels: [], mine: false, followed: false });
         this.changed();
     },
 
@@ -633,7 +639,7 @@ Alpine.store('boardFilter', {
     },
 
     matches(card, ranges) {
-        const { status, due, assignees, labels } = card.dataset;
+        const { status, due, assignees, labels, followed } = card.dataset;
         const ids = assignees ? assignees.split(',').map(Number) : [];
         const labelIds = labels ? labels.split(',').map(Number) : [];
 
@@ -642,6 +648,10 @@ Alpine.store('boardFilter', {
         }
 
         if (this.mine && ! ids.includes(this.me)) {
+            return false;
+        }
+
+        if (this.followed && followed !== '1') {
             return false;
         }
 
@@ -826,6 +836,7 @@ Alpine.data('taskCalendar', (projectId) => {
                     due: task.due ?? '',
                     assignees: task.assignees.join(','),
                     labels: task.labels.join(','),
+                    followed: task.followed ? '1' : '',
                 },
             }, ranges));
         },
@@ -1042,7 +1053,7 @@ Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
 /**
  * 通知のベル
  *
- * メンションされたら合図が届くので、件数を取り直す。
+ * メンションやフォローしたタスクの動きがあると合図が届くので、件数を取り直す。
  */
 Alpine.data('notifications', (initialCount, userId, url, readAllUrl) => ({
     count: initialCount,
@@ -1050,7 +1061,7 @@ Alpine.data('notifications', (initialCount, userId, url, readAllUrl) => ({
     html: '',
 
     init() {
-        window.Echo.private(`users.${userId}`).listen('.mention.received', () => this.refresh());
+        window.Echo.private(`users.${userId}`).listen('.notification.received', () => this.refresh());
     },
 
     async refresh() {

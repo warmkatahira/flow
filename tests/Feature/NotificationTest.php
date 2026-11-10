@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Broadcasting\UserChannel;
 use App\Enums\ListColor;
-use App\Events\MentionReceived;
+use App\Events\NotificationReceived;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskComment;
@@ -64,20 +64,20 @@ class NotificationTest extends TestCase
 
     public function test_メンションされた人へ通知が届く(): void
     {
-        Event::fake([MentionReceived::class]);
+        Event::fake([NotificationReceived::class]);
 
         $this->comment('@参加者 確認して');
 
-        Event::assertDispatched(MentionReceived::class, fn (MentionReceived $event) => $event->userId === $this->member->id);
+        Event::assertDispatched(NotificationReceived::class, fn (NotificationReceived $event) => $event->userId === $this->member->id);
     }
 
     public function test_自分へのメンションは通知にならない(): void
     {
-        Event::fake([MentionReceived::class]);
+        Event::fake([NotificationReceived::class]);
 
         $this->comment('@投稿者 メモ');
 
-        Event::assertNotDispatched(MentionReceived::class);
+        Event::assertNotDispatched(NotificationReceived::class);
         $this->assertSame(0, $this->author->unreadMentionCount());
     }
 

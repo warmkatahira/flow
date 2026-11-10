@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\TaskActivity;
 use App\Enums\TaskStatus;
+use App\Events\NotificationReceived;
 use App\Models\Concerns\Archivable;
 use App\Support\RichText;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -74,6 +76,63 @@ class Task extends Model
     public function assignees(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps()->orderBy('users.id');
+    }
+
+    /**
+     * フォローしている人
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'task_follows')->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<TaskNotification, $this>
+     */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(TaskNotification::class);
+    }
+
+    /**
+     * フォローしている人へ動きを知らせる
+     *
+     * 動かした本人と、今プロジェクトに参加していない人には送らない。
+     * コメント以外は、同じ人の同じ種類の動きが未読で残っていれば1件にまとめて新しくする。
+     *
+     * @param  array<int, int>  $except  別の通知（メンションなど）で知らせた人
+     */
+    public function notifyFollowers(User $actor, TaskActivity $type, ?string $detail = null, array $except = []): void
+    {
+        $recipients = $this->followers()
+            ->whereKeyNot([$actor->getKey(), ...$except])
+            ->whereHas('projects', fn ($projects) => $projects->whereKey($this->project_id))
+            ->pluck('users.id');
+
+        $detail = $detail === null ? null : mb_strimwidth($detail, 0, 255, '…');
+
+        foreach ($recipients as $userId) {
+            $notification = $type->merges()
+                ? $this->notifications()
+                    ->where('user_id', $userId)
+                    ->where('actor_id', $actor->getKey())
+                    ->where('type', $type)
+                    ->whereNull('read_at')
+                    ->first()
+                : null;
+
+            $notification ??= $this->notifications()->make();
+            $notification->user_id = $userId;
+            $notification->actor_id = $actor->getKey();
+            $notification->type = $type;
+            $notification->detail = $detail;
+            $notification->created_at = now();
+            $notification->save();
+
+            NotificationReceived::notify($userId);
+        }
     }
 
     /**
@@ -155,13 +214,14 @@ class Task extends Model
     }
 
     /**
-     * 移動先のプロジェクトに参加していない担当者を外す（チェックリストの項目の担当者も）
+     * 移動先のプロジェクトに参加していない担当者とフォローを外す（チェックリストの項目の担当者も）
      */
     public function keepAssigneesIn(Project $project): void
     {
         $participants = $project->users()->pluck('users.id');
 
         $this->assignees()->detach($this->assignees()->pluck('users.id')->diff($participants));
+        $this->followers()->detach($this->followers()->pluck('users.id')->diff($participants));
 
         TaskChecklistItem::query()
             ->whereIn('task_checklist_id', $this->checklists()->select('id'))

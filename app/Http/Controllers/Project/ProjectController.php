@@ -17,6 +17,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -109,7 +110,10 @@ class ProjectController extends Controller
                 ->get(),
         ];
 
-        return [...$data, 'calendarTasks' => $this->calendarTasks($data['project'])];
+        // 自分がフォローしているタスク（カードの印と「フォロー中」の絞り込みに使う）
+        $data['followedTaskIds'] = auth()->user()->followedTasks()->where('tasks.project_id', $project->getKey())->pluck('tasks.id');
+
+        return [...$data, 'calendarTasks' => $this->calendarTasks($data['project'], $data['followedTaskIds'])];
     }
 
     /**
@@ -117,9 +121,10 @@ class ProjectController extends Controller
      *
      * 開始日だけ・終了日だけのものは、その1日に出す。
      *
+     * @param  SupportCollection<int, int>  $followedTaskIds
      * @return list<array<string, mixed>>
      */
-    private function calendarTasks(Project $project): array
+    private function calendarTasks(Project $project, SupportCollection $followedTaskIds): array
     {
         $tasks = [];
 
@@ -145,6 +150,7 @@ class ProjectController extends Controller
                     'color' => $list->color,
                     'assignees' => $task->assignees->modelKeys(),
                     'labels' => $task->labels->modelKeys(),
+                    'followed' => $followedTaskIds->contains($task->id),
                     'url' => $project->isArchived() ? null : route('tasks.show', $task),
                 ];
             }
@@ -220,13 +226,15 @@ class ProjectController extends Controller
 
         $project->users()->sync($this->participants($request) + $deleted);
 
-        // 参加者から外れた人は担当からも外す（チェックリストの項目の担当者も）
+        // 参加者から外れた人は担当とフォローからも外す（チェックリストの項目の担当者も）
         $participants = $project->users()->withTrashed()->pluck('users.id');
 
-        DB::table('task_user')
-            ->whereIn('task_id', $project->tasks()->select('id'))
-            ->whereNotIn('user_id', $participants)
-            ->delete();
+        foreach (['task_user', 'task_follows'] as $table) {
+            DB::table($table)
+                ->whereIn('task_id', $project->tasks()->select('id'))
+                ->whereNotIn('user_id', $participants)
+                ->delete();
+        }
 
         TaskChecklistItem::query()
             ->whereIn('task_checklist_id', TaskChecklist::query()->whereIn('task_id', $project->tasks()->select('id'))->select('id'))

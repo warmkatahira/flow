@@ -87,6 +87,51 @@ class User extends Authenticatable
     }
 
     /**
+     * フォローしているタスク
+     *
+     * @return BelongsToMany<Task, $this>
+     */
+    public function followedTasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'task_follows')->withTimestamps();
+    }
+
+    /**
+     * フォローしたタスクの動きの通知
+     *
+     * アーカイブされたことも知らせるので、タスクとリストがアーカイブ中でも出す。
+     * プロジェクトがアーカイブ中か、参加していないものは出さない。
+     *
+     * @return HasMany<TaskNotification, $this>
+     */
+    public function taskNotifications(): HasMany
+    {
+        return $this->hasMany(TaskNotification::class)
+            ->whereHas('task.project', fn ($projects) => $projects->active()->visibleTo($this));
+    }
+
+    /**
+     * ベルに出す未読の件数（メンションとフォローの通知の合計）
+     */
+    public function unreadNotificationCount(): int
+    {
+        return $this->unreadMentionCount() + $this->taskNotifications()->whereNull('read_at')->count();
+    }
+
+    /**
+     * メンションとフォローの通知を既読にする（タスクを渡すとそのタスクの分だけ）
+     */
+    public function markNotificationsRead(?Task $task = null): void
+    {
+        $this->markMentionsRead($task);
+
+        $this->hasMany(TaskNotification::class)
+            ->whereNull('read_at')
+            ->when($task, fn ($query) => $query->where('task_id', $task->getKey()))
+            ->update(['read_at' => now()]);
+    }
+
+    /**
      * 自分へのメンションを既読にする（タスクを渡すとそのタスクの分だけ）
      */
     public function markMentionsRead(?Task $task = null): void

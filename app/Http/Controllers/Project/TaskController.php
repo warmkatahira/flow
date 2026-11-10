@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Project;
 
+use App\Enums\TaskActivity;
 use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
@@ -104,6 +105,8 @@ class TaskController extends Controller
 
         Gate::authorize('work', $to);
 
+        $movedList = $task->task_list_id !== $list->getKey();
+
         DB::transaction(function () use ($task, $list, $from, $to) {
             // 順番を揃えて、同時に逆向きへ動かしてもデッドロックしないようにする
             Project::whereKey([$from->getKey(), $to->getKey()])->orderBy('id')->lockForUpdate()->get();
@@ -121,6 +124,10 @@ class TaskController extends Controller
             $task->save();
         });
 
+        if ($movedList) {
+            $task->notifyFollowers($request->user(), TaskActivity::Moved, $from->isNot($to) ? "{$to->name} / {$list->name}" : $list->name);
+        }
+
         BoardChanged::notify($from);
 
         if ($from->isNot($to)) {
@@ -133,13 +140,14 @@ class TaskController extends Controller
     /**
      * タスクをアーカイブする
      */
-    public function archive(Task $task): RedirectResponse
+    public function archive(Request $request, Task $task): RedirectResponse
     {
         Gate::authorize('work', $task->project);
 
         abort_unless($task->isOnBoard(), 404);
 
         $task->archive();
+        $task->notifyFollowers($request->user(), TaskActivity::Archived);
 
         BoardChanged::notify($task->project);
 
@@ -169,6 +177,10 @@ class TaskController extends Controller
 
         $count = $project->tasks()->whereKey($ids)->update(['archived_at' => now()]);
 
+        foreach ($project->tasks()->whereKey($ids)->get() as $task) {
+            $task->notifyFollowers($request->user(), TaskActivity::Archived);
+        }
+
         BoardChanged::notify($project);
 
         session()->flash('toast', [
@@ -192,11 +204,17 @@ class TaskController extends Controller
             'ids.*' => ['integer'],
         ]);
 
-        $project->tasks()
+        $tasks = $project->tasks()
             ->archived()
             ->whereKey($attributes['ids'])
             ->whereHas('list', fn ($query) => $query->active())
-            ->update(['archived_at' => null]);
+            ->get();
+
+        $project->tasks()->whereKey($tasks->modelKeys())->update(['archived_at' => null]);
+
+        foreach ($tasks as $task) {
+            $task->notifyFollowers($request->user(), TaskActivity::Restored);
+        }
 
         BoardChanged::notify($project);
 
@@ -225,6 +243,7 @@ class TaskController extends Controller
         }
 
         $task->unarchive();
+        $task->notifyFollowers($request->user(), TaskActivity::Restored);
 
         BoardChanged::notify($task->project);
 
@@ -270,7 +289,9 @@ class TaskController extends Controller
         $list = $project->taskLists()->active()->whereKey($attributes['list_id'])->firstOrFail();
         $tasks = $project->tasks()->active()->whereKey($attributes['ids'])->get()->keyBy('id');
 
-        DB::transaction(function () use ($attributes, $list, $tasks) {
+        $movedTasks = collect();
+
+        DB::transaction(function () use ($attributes, $list, $tasks, $movedTasks) {
             foreach ($attributes['ids'] as $position => $id) {
                 $task = $tasks->get($id);
 
@@ -279,6 +300,10 @@ class TaskController extends Controller
                 }
 
                 if (in_array($id, $attributes['moved'] ?? [], true)) {
+                    if ($task->task_list_id !== $list->getKey()) {
+                        $movedTasks->push($task);
+                    }
+
                     $task->task_list_id = $list->getKey();
                 } elseif ($task->task_list_id !== $list->getKey()) {
                     continue;
@@ -288,6 +313,11 @@ class TaskController extends Controller
                 $task->save();
             }
         });
+
+        // 同じリストの中の並べ替えは知らせない
+        foreach ($movedTasks as $task) {
+            $task->notifyFollowers($request->user(), TaskActivity::Moved, $list->name);
+        }
 
         BoardChanged::notify($project);
 

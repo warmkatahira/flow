@@ -34,9 +34,10 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     // ダッシュボード（自分が参加しているプロジェクトの一覧）
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 通知（自分へのメンション）
+    // 通知（自分へのメンションと、フォローしたタスクの動き）
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('notifications/activities/{notification}', [NotificationController::class, 'openActivity'])->name('notifications.activities.open');
     Route::get('notifications/{comment}', [NotificationController::class, 'open'])->name('notifications.open');
 
     // 自分のプロフィール
@@ -84,6 +85,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     Route::put('tasks/{task}/status', [TaskDetailController::class, 'status'])->name('tasks.status');
     Route::put('tasks/{task}/period', [TaskDetailController::class, 'period'])->name('tasks.period');
     Route::post('tasks/{task}/assignee', [TaskDetailController::class, 'assignee'])->name('tasks.assignee');
+    Route::post('tasks/{task}/follow', [TaskDetailController::class, 'follow'])->name('tasks.follow');
     Route::put('tasks/{task}/labels', [TaskLabelController::class, 'sync'])->name('tasks.labels.sync');
     Route::post('tasks/{task}/labels', [TaskLabelController::class, 'store'])->name('tasks.labels.store');
     Route::post('tasks/{task}/labels/reorder', [TaskLabelController::class, 'reorder'])->name('tasks.labels.reorder');

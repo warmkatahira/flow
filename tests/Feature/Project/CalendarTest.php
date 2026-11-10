@@ -71,6 +71,7 @@ class CalendarTest extends TestCase
             'color' => ListColor::Sky->value,
             'assignees' => [],
             'labels' => [],
+            'followed' => false,
             'url' => route('tasks.show', $task),
         ], $calendar['期間あり']);
     }

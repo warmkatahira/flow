@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Project;
 
+use App\Enums\TaskActivity;
 use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
@@ -22,7 +23,7 @@ class TaskDetailController extends Controller
     {
         $this->authorizeDetail($task);
 
-        $request->user()->markMentionsRead($task);
+        $request->user()->markNotificationsRead($task);
 
         return $this->detail($task);
     }
@@ -39,6 +40,14 @@ class TaskDetailController extends Controller
             'description' => ['sometimes', 'nullable', 'string', 'max:100000', new RichTextLength],
         ]));
 
+        if ($task->wasChanged('title')) {
+            $task->notifyFollowers($request->user(), TaskActivity::Title);
+        }
+
+        if ($task->wasChanged('description')) {
+            $task->notifyFollowers($request->user(), TaskActivity::Description);
+        }
+
         return $this->changed($task);
     }
 
@@ -49,6 +58,10 @@ class TaskDetailController extends Controller
         $task->update($request->validate([
             'status' => ['required', Rule::enum(TaskStatus::class)],
         ]));
+
+        if ($task->wasChanged('status')) {
+            $task->notifyFollowers($request->user(), TaskActivity::Status, $task->status->label());
+        }
 
         return $this->changed($task);
     }
@@ -64,6 +77,12 @@ class TaskDetailController extends Controller
             'started_on' => ['nullable', 'date'],
             'ended_on' => ['nullable', 'date', ...($request->filled('started_on') ? ['after_or_equal:started_on'] : [])],
         ]));
+
+        if ($task->wasChanged(['started_on', 'ended_on'])) {
+            $period = collect([$task->started_on, $task->ended_on])->filter()->map->format('n/j')->unique()->join('〜');
+
+            $task->notifyFollowers($request->user(), TaskActivity::Period, $period ?: null);
+        }
 
         return $this->changed($task);
     }
@@ -83,6 +102,20 @@ class TaskDetailController extends Controller
 
         $task->assignees()->toggle($user->getKey());
 
+        $task->notifyFollowers($request->user(), TaskActivity::Assignee);
+
         return $this->changed($task);
+    }
+
+    /**
+     * 自分のフォローを付け外しする。自分の画面のことなので、他の人へは知らせない
+     */
+    public function follow(Request $request, Task $task): View
+    {
+        $this->authorizeDetail($task);
+
+        $task->followers()->toggle($request->user()->getKey());
+
+        return $this->detail($task);
     }
 }
