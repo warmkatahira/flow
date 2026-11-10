@@ -29,7 +29,7 @@
                         $openable = ! $project->isArchived() && $task->isOnBoard();
                         $extension = strtoupper(pathinfo($file->name, PATHINFO_EXTENSION));
                     @endphp
-                    <tr x-show="@js(mb_strtolower($file->name)).includes(fileQuery.trim().toLowerCase())" class="align-middle transition hover:bg-slate-50">
+                    <tr x-show="@js(mb_strtolower($file->name)).includes(fileQuery.trim().toLowerCase())" class="group align-middle transition-colors hover:bg-sky-50 hover:shadow-[inset_3px_0_0_var(--color-sky-500)]">
                         <td class="px-4 py-2.5">
                             <div class="flex min-w-0 items-center gap-3">
                                 @if ($file->isInlineImage())
@@ -77,7 +77,7 @@
                         <td class="px-4 py-2.5">
                             <div class="flex items-center justify-end gap-1.5">
                                 <a href="{{ route('attachments.show', [$file, 'download' => 1]) }}" download="{{ $file->name }}"
-                                   class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100">
+                                   class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition group-hover:bg-sky-500 group-hover:text-white hover:bg-sky-600!">
                                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                         <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
                                         <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
