@@ -95,7 +95,7 @@ class ProjectManagementTest extends TestCase
                     $newMember->id => ProjectRole::Member->value,
                 ],
             ])
-            ->assertRedirect(route('projects.show', $project));
+            ->assertRedirect(route('projects.edit', $project));
 
         $this->assertTrue($project->fresh()->hasParticipant($newMember));
     }

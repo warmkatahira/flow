@@ -19,30 +19,35 @@
     <x-input-error :messages="$errors->get('name')" />
 </div>
 
-{{-- アイコン画像 --}}
-<div>
+{{-- アイコン画像。選ぶと表示エリアを決めるポップアップが開き、切り抜いた画像だけを送る（resources/js/image-cropper.js） --}}
+<div x-data="imageCropper">
     <x-input-label for="icon" value="アイコン画像" />
 
     <div class="flex items-center gap-4">
+        {{-- 切り抜いたら、保存する前からその画像を見せる --}}
+        <img x-show="preview" x-cloak :src="preview" alt="" class="h-16 w-16 shrink-0 rounded-xl object-cover ring-1 ring-slate-200">
         @if ($project)
-            <x-project-icon :project="$project" size="lg" />
+            <x-project-icon :project="$project" size="lg" x-show="! preview" />
         @endif
 
         <div class="flex-1">
-            <input autocomplete="off" id="icon" name="icon" type="file" accept="image/jpeg,image/png,image/webp"
+            <input autocomplete="off" id="icon" name="icon" type="file" accept="image/jpeg,image/png,image/webp" x-ref="input" @change="open($event.target.files)"
                    class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-sky-700 hover:file:bg-sky-100">
             <p class="mt-1 text-xs text-slate-500">
-                JPEG / PNG / WebP、2MB まで。未設定のときはプロジェクト名の頭文字を表示します。
+                JPEG / PNG / WebP。選んだあとに表示する範囲を調整できます。未設定のときはプロジェクト名の頭文字を表示します。
             </p>
         </div>
     </div>
 
+    <x-image-cropper-dialog />
+
+    <p x-show="error" x-cloak x-text="error" class="mt-2 text-sm text-rose-600"></p>
     <x-input-error :messages="$errors->get('icon')" />
 
     @if ($project?->icon_path)
-        <label class="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
-            <input autocomplete="off" type="checkbox" name="remove_icon" value="1"
-                   class="rounded border-slate-300 text-sky-600 focus:ring-sky-500/30">
+        <label class="mt-2 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+            <input autocomplete="off" type="checkbox" name="remove_icon" value="1" class="peer sr-only">
+            <x-check-mark />
             アイコン画像を削除する
         </label>
     @endif
@@ -55,7 +60,8 @@
         オーナーだけがプロジェクトの編集・アーカイブ・参加者の変更をできます。
     </p>
 
-    <div class="divide-y divide-slate-100 rounded-lg border border-slate-200">
+    {{-- 行のどこを押しても選べる。選んだ行は色を付け、選んでいない人の権限は薄くする --}}
+    <div class="space-y-2">
         @foreach ($users as $user)
             @php
                 $currentRole = $project?->roleOf($user);
@@ -73,19 +79,23 @@
                     : old("roles.{$user->id}", $currentRole?->value ?? ProjectRole::Member->value);
             @endphp
 
-            <div class="flex items-center gap-3 px-4 py-3">
-                <input autocomplete="off" type="checkbox" id="member-{{ $user->id }}" name="members[]" value="{{ $user->id }}"
-                       @checked($checked) @disabled($isCreator)
-                       class="rounded border-slate-300 text-sky-600 focus:ring-sky-500/30 disabled:opacity-60">
+            <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 transition has-[input:checked]:border-sky-300 has-[input:checked]:bg-sky-50/60 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-sky-500/40 [&:not(:has(input:checked))_select]:opacity-50">
+                <label for="member-{{ $user->id }}" @class(['flex min-w-0 flex-1 items-center gap-3', 'cursor-pointer' => ! $isCreator])>
+                    <input autocomplete="off" type="checkbox" id="member-{{ $user->id }}" name="members[]" value="{{ $user->id }}"
+                           @checked($checked) @disabled($isCreator) class="peer sr-only">
+                    <x-check-mark />
 
-                <label for="member-{{ $user->id }}" class="min-w-0 flex-1 cursor-pointer">
-                    <span class="block truncate text-sm text-slate-800">
-                        {{ $user->name }}
-                        @if ($me->is($user))
-                            <span class="ml-1 text-xs text-slate-400">(自分)</span>
-                        @endif
+                    <x-user-avatar :user="$user" size="sm" />
+
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm text-slate-800">
+                            {{ $user->name }}
+                            @if ($me->is($user))
+                                <span class="ml-1 text-xs text-slate-400">(自分)</span>
+                            @endif
+                        </span>
+                        <span class="block truncate text-xs text-slate-500">{{ $user->email }}</span>
                     </span>
-                    <span class="block truncate text-xs text-slate-500">{{ $user->email }}</span>
                 </label>
 
                 @if ($isCreator)

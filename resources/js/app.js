@@ -3,6 +3,7 @@ import Alpine from 'alpinejs';
 import Sortable, { MultiDrag } from 'sortablejs';
 import './echo';
 import './rich-text';
+import './image-cropper';
 
 Sortable.mount(new MultiDrag());
 

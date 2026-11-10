@@ -251,8 +251,9 @@ class ProjectController extends Controller
                 ->with('status', 'プロジェクトを更新しました。自分を参加者から外したため一覧には表示されません。');
         }
 
+        // 続けて直せるよう、設定画面のままにする
         return redirect()
-            ->route('projects.show', $project)
+            ->route('projects.edit', $project)
             ->with('status', 'プロジェクトを更新しました。');
     }
 

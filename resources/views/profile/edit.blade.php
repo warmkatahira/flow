@@ -8,55 +8,13 @@
             <h2 class="text-sm font-bold text-slate-700">アイコン画像</h2>
 
             {{--
-                ドロップしたファイルも input に入れ直して、普通のフォーム送信で保存する。
-                accept はドロップには効かないので、種類とサイズは画面側でも確かめる
-                （最終的な判定はサーバー側のバリデーション）。
+                選ぶか枠にドロップすると表示エリアを決めるポップアップが開き、切り抜いた画像だけを保存する
+                （resources/js/image-cropper.js の imageCropper。プロジェクトのアイコンと同じ）。
                 枠の外に落としてもブラウザが画像を開いて画面を離れないよう、window でも止める。
             --}}
             <form autocomplete="off" method="POST" action="{{ route('profile.avatar.update') }}"
                   enctype="multipart/form-data" class="mt-4"
-                  x-data="{
-                      dragging: false,
-                      preview: null,
-                      fileName: '',
-                      error: '',
-                      pick(files) {
-                          const file = files[0];
-
-                          this.clear();
-
-                          if (! file) {
-                              return;
-                          }
-
-                          if (! ['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-                              this.error = 'JPEG / PNG / WebP の画像を選んでください。';
-                              return;
-                          }
-
-                          if (file.size > 2048 * 1024) {
-                              this.error = '画像のサイズは 2MB までです。';
-                              return;
-                          }
-
-                          const transfer = new DataTransfer();
-                          transfer.items.add(file);
-                          this.$refs.input.files = transfer.files;
-
-                          this.preview = URL.createObjectURL(file);
-                          this.fileName = file.name;
-                      },
-                      clear() {
-                          if (this.preview) {
-                              URL.revokeObjectURL(this.preview);
-                          }
-
-                          this.preview = null;
-                          this.fileName = '';
-                          this.error = '';
-                          this.$refs.input.value = '';
-                      },
-                  }"
+                  x-data="imageCropper({ round: true })"
                   @dragover.window.prevent
                   @drop.window.prevent>
                 @csrf
@@ -75,18 +33,18 @@
                     <label for="avatar"
                            @dragover.prevent="dragging = true"
                            @dragleave.prevent="dragging = false"
-                           @drop.prevent="dragging = false; pick($event.dataTransfer.files)"
+                           @drop.prevent="dragging = false; open($event.dataTransfer.files)"
                            :class="dragging ? 'border-sky-500 bg-sky-50' : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'"
                            class="block w-full flex-1 cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 text-center transition focus-within:ring-2 focus-within:ring-sky-500/30">
                         <input autocomplete="off" id="avatar" name="avatar" type="file" x-ref="input"
                                accept="image/jpeg,image/png,image/webp" class="sr-only"
-                               @change="pick($event.target.files)">
+                               @change="open($event.target.files)">
 
                         <span class="pointer-events-none block text-sm font-medium text-slate-700">
                             画像をここにドラッグ＆ドロップ
                         </span>
                         <span class="pointer-events-none mt-1 block text-xs text-sky-700">またはクリックして選択</span>
-                        <span class="pointer-events-none mt-2 block text-xs text-slate-500">JPEG / PNG / WebP、2MB まで</span>
+                        <span class="pointer-events-none mt-2 block text-xs text-slate-500">JPEG / PNG / WebP。選んだあとに表示する範囲を調整できます</span>
                     </label>
                 </div>
 
@@ -96,8 +54,10 @@
                 <div x-show="preview" x-cloak class="mt-4 flex items-center gap-3">
                     <x-primary-button>保存する</x-primary-button>
                     <button type="button" @click="clear()" class="text-sm text-slate-600 hover:text-slate-900">やめる</button>
-                    <span class="min-w-0 truncate text-xs text-slate-500" x-text="fileName"></span>
+                    <span class="min-w-0 truncate text-xs text-slate-500" x-text="name"></span>
                 </div>
+
+                <x-image-cropper-dialog />
             </form>
 
             @if ($user->avatar_path)
