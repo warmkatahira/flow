@@ -463,7 +463,7 @@ class TaskDetailTest extends TestCase
         $this->actingAs($this->user)->put(route('comments.update', $comment), ['body' => '<p>直した</p>'])
             ->assertOk()
             ->assertSee('直した')
-            ->assertSee('（編集済み）');
+            ->assertSee('（編集済み '.now()->format('Y年m月d日 H:i').'）');
 
         $this->assertSame('<p>直した</p>', $comment->fresh()->body);
     }

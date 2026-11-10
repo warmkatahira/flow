@@ -440,7 +440,7 @@
                     <span class="text-slate-700">{{ $comment->user->name }}</span>
                     <span>{{ $comment->created_at->format('Y年m月d日 H:i') }}</span>
                     @if ($comment->isEdited())
-                        <span title="{{ $comment->updated_at->format('Y年m月d日 H:i') }} に編集">（編集済み）</span>
+                        <span>（編集済み {{ $comment->updated_at->format('Y年m月d日 H:i') }}）</span>
                     @endif
 
                     @if ($mine)
