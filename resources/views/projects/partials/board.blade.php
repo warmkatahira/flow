@@ -8,18 +8,6 @@
     </p>
 @endif
 
-{{-- ドラッグ中だけ出る。ここに落としたタスクをまとめてアーカイブする（resources/js/app.js の x-board） --}}
-<div data-archive-zone
-     class="hidden fixed bottom-6 left-1/2 z-40 w-80 -translate-x-1/2 animate-flow-rise overflow-hidden rounded-2xl bg-slate-900/85 px-5 py-4 text-sm text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-md transition-[background-color,scale] duration-200 has-[[data-task-id]]:scale-105 has-[[data-task-id]]:bg-sky-500 [&_[data-task-id]]:absolute [&_[data-task-id]]:opacity-0">
-    <span class="pointer-events-none flex items-center justify-center gap-2.5">
-        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path d="M2 3a1 1 0 00-1 1v1a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1H2z" />
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 01-1.99 1.79H4.802a2 2 0 01-1.99-1.79L2 7.5zM7 11a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
-        </svg>
-        ここにドロップしてアーカイブ
-    </span>
-</div>
-
 {{-- リストは画面の下まで伸ばし、タスクが多いときはリストの中でスクロールする --}}
 <div class="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-3 pr-4 sm:pr-6 lg:pr-8 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]"
      x-drag-scroll
@@ -187,4 +175,19 @@
             </div>
         </form>
     </div>
+</div>
+
+{{--
+    ドラッグ中だけボードの下に出る。ここに落としたタスクをまとめてアーカイブする（resources/js/app.js の x-board）
+    リストに重ねるとリストの末尾への移動と取り合ってちらつくので、重ねずにボードの下へ並べる（出ている間はリストが縮む）
+--}}
+<div data-archive-zone
+     class="relative mb-3 mr-4 hidden h-16 shrink-0 animate-flow-rise items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-400 bg-slate-900/85 px-5 text-sm text-white shadow-lg sm:mr-6 lg:mr-8 transition-colors duration-200 [&:not(.hidden)]:flex has-[[data-task-id]]:border-sky-200 has-[[data-task-id]]:bg-sky-500 [&_[data-task-id]]:absolute [&_[data-task-id]]:opacity-0">
+    <span class="pointer-events-none flex items-center justify-center gap-2.5">
+        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M2 3a1 1 0 00-1 1v1a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1H2z" />
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 01-1.99 1.79H4.802a2 2 0 01-1.99-1.79L2 7.5zM7 11a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
+        </svg>
+        ここにドロップしてアーカイブ
+    </span>
 </div>
