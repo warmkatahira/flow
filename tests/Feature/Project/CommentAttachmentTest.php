@@ -161,4 +161,36 @@ class CommentAttachmentTest extends TestCase
 
         Storage::disk(TaskCommentAttachment::DISK)->assertMissing($path);
     }
+
+    public function test_ファイルのタブにプロジェクトの添付ファイルが並ぶ(): void
+    {
+        $this->comment([UploadedFile::fake()->create('見積書.pdf', 10, 'application/pdf')]);
+
+        // 他のプロジェクトのファイルは出さない
+        $other = Project::factory()->ownedBy($this->owner)->create();
+        $otherList = $other->taskLists()->create(['name' => '別', 'color' => ListColor::Sky->value, 'position' => 0]);
+        $this->actingAs($this->owner)->post(route('tasks.store', $otherList), ['title' => '別のタスク']);
+        $this->actingAs($this->owner)->post(route('tasks.comments.store', Task::firstWhere('title', '別のタスク')), [
+            'body' => 'x', 'attachments' => [UploadedFile::fake()->create('別の資料.xlsx', 1)],
+        ]);
+
+        $this->actingAs($this->owner)->get(route('projects.show', [$this->project, 'tab' => 'files']))
+            ->assertOk()
+            ->assertSee('見積書.pdf')
+            ->assertSee(route('attachments.show', [TaskCommentAttachment::firstWhere('name', '見積書.pdf'), 'download' => 1]), false)
+            ->assertDontSee('別の資料.xlsx');
+
+        $this->actingAs($this->owner)->getJson(route('projects.board', $this->project))
+            ->assertJson(fn ($json) => $json->where('files', fn ($html) => str_contains($html, '見積書.pdf'))->etc());
+    }
+
+    public function test_アーカイブ中のタスクのファイルも出し_開けないことを示す(): void
+    {
+        $this->comment([UploadedFile::fake()->create('メモ.txt', 1)]);
+        $this->actingAs($this->owner)->post(route('tasks.archive', $this->task));
+
+        $this->actingAs($this->owner)->get(route('projects.show', [$this->project, 'tab' => 'files']))
+            ->assertSee('メモ.txt')
+            ->assertSee('アーカイブ中');
+    }
 }

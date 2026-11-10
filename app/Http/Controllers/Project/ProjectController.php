@@ -75,6 +75,7 @@ class ProjectController extends Controller
             'archiveCount' => $data['archivedLists']->count() + $data['archivedTasks']->count(),
             'filterLabels' => view('projects.partials.filter-labels', $data)->render(),
             'calendar' => $data['calendarTasks'],
+            'files' => view('projects.partials.files', $data)->render(),
         ]);
     }
 
@@ -110,6 +111,14 @@ class ProjectController extends Controller
                 ->latest('archived_at')
                 ->get(),
         ];
+
+        // コメントに添付されたファイル（「ファイル」タブ）。アーカイブ中のタスクのものも出す
+        $data['files'] = TaskCommentAttachment::query()
+            ->whereHas('comment.task', fn ($tasks) => $tasks->where('project_id', $project->getKey()))
+            ->with(['comment.user', 'comment.task.list'])
+            ->latest()
+            ->latest('id')
+            ->get();
 
         // 自分がフォローしているタスク（カードの印と「フォロー中」の絞り込みに使う）
         $data['followedTaskIds'] = auth()->user()->followedTasks()->where('tasks.project_id', $project->getKey())->pluck('tasks.id');

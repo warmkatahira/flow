@@ -241,6 +241,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
     const archiveCount = element.querySelector('[data-live-archive-count]');
     const filterLabels = element.querySelector('[data-live-filter-labels]');
     const calendar = element.querySelector('[data-live-calendar]');
+    const files = element.querySelector('[data-live-files]');
 
     let stale = false;
     let fetching = false;
@@ -284,6 +285,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
             archive.innerHTML = data.archive;
             archiveCount.textContent = data.archiveCount;
             filterLabels.innerHTML = data.filterLabels;
+            files.innerHTML = data.files;
 
             if (calendar) {
                 calendar.textContent = JSON.stringify(data.calendar);
