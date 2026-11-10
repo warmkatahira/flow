@@ -239,6 +239,7 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
     const archive = element.querySelector('[data-live-archive]');
     const archiveCount = element.querySelector('[data-live-archive-count]');
     const filterLabels = element.querySelector('[data-live-filter-labels]');
+    const calendar = element.querySelector('[data-live-calendar]');
 
     let stale = false;
     let fetching = false;
@@ -282,6 +283,11 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
             archive.innerHTML = data.archive;
             archiveCount.textContent = data.archiveCount;
             filterLabels.innerHTML = data.filterLabels;
+
+            if (calendar) {
+                calendar.textContent = JSON.stringify(data.calendar);
+                window.dispatchEvent(new CustomEvent('calendar-refresh'));
+            }
 
             const scroller = board.querySelector('[x-board]');
 
@@ -751,6 +757,157 @@ Alpine.data('blurEdit', (saved) => ({
         input.blur();
     },
 }));
+
+/**
+ * プロジェクトのカレンダー（resources/views/projects/partials/calendar.blade.php）
+ *
+ * 期間のあるタスクを週ごとに帯にして並べる。週の中では重ならないよう段を分け、段の数だけ週の高さを伸ばす。
+ * ボードの絞り込み（$store.boardFilter）で外れるタスクは出さない。見ている月はタブの間だけ覚えておく。
+ */
+Alpine.data('taskCalendar', (projectId) => {
+    const key = `flow.calendar.${projectId}`;
+    const today = ymd(new Date());
+    const DAY_HEIGHT = 30;
+    const BAR_HEIGHT = 22;
+
+    let saved = null;
+
+    try {
+        saved = sessionStorage.getItem(key);
+    } catch {
+        // 覚えていなければ今月
+    }
+
+    const shown = saved ? new Date(`${saved}-01T00:00:00`) : new Date();
+
+    return {
+        tasks: [],
+        shownYear: shown.getFullYear(),
+        shownMonth: shown.getMonth(),
+
+        init() {
+            this.load();
+        },
+
+        load() {
+            try {
+                this.tasks = JSON.parse(this.$refs.data.textContent);
+            } catch {
+                this.tasks = [];
+            }
+        },
+
+        get label() {
+            return `${this.shownYear}年${this.shownMonth + 1}月`;
+        },
+
+        shift(months) {
+            this.show(new Date(this.shownYear, this.shownMonth + months, 1));
+        },
+
+        goToday() {
+            this.show(new Date());
+        },
+
+        show(date) {
+            this.shownYear = date.getFullYear();
+            this.shownMonth = date.getMonth();
+            remember(sessionStorage, key, `${this.shownYear}-${String(this.shownMonth + 1).padStart(2, '0')}`);
+        },
+
+        /** 絞り込みに合うタスク。ボードのカードと同じ判定にかける */
+        get visibleTasks() {
+            const filter = Alpine.store('boardFilter');
+            const ranges = filter.dueRanges();
+
+            return this.tasks.filter((task) => filter.matches({
+                dataset: {
+                    status: task.status,
+                    due: task.due ?? '',
+                    assignees: task.assignees.join(','),
+                    labels: task.labels.join(','),
+                },
+            }, ranges));
+        },
+
+        get weeks() {
+            const first = new Date(this.shownYear, this.shownMonth, 1);
+            const last = new Date(this.shownYear, this.shownMonth + 1, 0);
+            const tasks = [...this.visibleTasks].sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end) || a.number - b.number);
+            const weeks = [];
+
+            for (let start = daysFrom(first, -first.getDay()); start <= last; start = daysFrom(start, 7)) {
+                const days = Array.from({ length: 7 }, (_, index) => {
+                    const date = daysFrom(start, index);
+
+                    return { date: ymd(date), number: date.getDate(), weekday: index, inMonth: date.getMonth() === this.shownMonth };
+                });
+                const from = days[0].date;
+                const to = days[6].date;
+                const lanes = [];
+                const bars = [];
+
+                for (const task of tasks) {
+                    if (task.end < from || task.start > to) {
+                        continue;
+                    }
+
+                    const column = task.start < from ? 0 : days.findIndex((day) => day.date === task.start);
+                    const end = task.end > to ? 6 : days.findIndex((day) => day.date === task.end);
+                    // 空いている一番上の段に入れる（段ごとに、最後に埋まっている列を覚えておく）
+                    let lane = lanes.findIndex((used) => used < column);
+
+                    if (lane === -1) {
+                        lane = lanes.length;
+                    }
+
+                    lanes[lane] = end;
+                    bars.push({
+                        id: `${task.id}-${from}`,
+                        task,
+                        column,
+                        span: end - column + 1,
+                        lane,
+                        continuesBefore: task.start < from,
+                        continuesAfter: task.end > to,
+                    });
+                }
+
+                weeks.push({ start: from, days, bars, height: Math.max(96, DAY_HEIGHT + lanes.length * (BAR_HEIGHT + 2) + 8) });
+            }
+
+            return weeks;
+        },
+
+        barStyle(bar) {
+            return {
+                top: `${DAY_HEIGHT + bar.lane * (BAR_HEIGHT + 2)}px`,
+                left: `calc(${(bar.column / 7) * 100}% + 3px)`,
+                width: `calc(${(bar.span / 7) * 100}% - 6px)`,
+                backgroundColor: `${bar.task.color}26`,
+                borderLeftColor: bar.task.color,
+            };
+        },
+
+        dayClass(day) {
+            if (day.date === today) {
+                return 'bg-sky-500 font-bold text-white';
+            }
+
+            if (! day.inMonth) {
+                return 'text-slate-300';
+            }
+
+            return { 0: 'text-rose-500', 6: 'text-sky-600' }[day.weekday] ?? 'text-slate-600';
+        },
+
+        open(task) {
+            if (task.url) {
+                window.dispatchEvent(new CustomEvent('open-task', { detail: { url: task.url } }));
+            }
+        },
+    };
+});
 
 /**
  * タスクの期間のカレンダー

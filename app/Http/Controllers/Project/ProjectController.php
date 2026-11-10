@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Project;
 
 use App\Enums\ProjectRole;
+use App\Enums\TaskStatus;
 use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Project\StoreProjectRequest;
@@ -71,6 +72,7 @@ class ProjectController extends Controller
             'archive' => view('projects.partials.archive', $data)->render(),
             'archiveCount' => $data['archivedLists']->count() + $data['archivedTasks']->count(),
             'filterLabels' => view('projects.partials.filter-labels', $data)->render(),
+            'calendar' => $data['calendarTasks'],
         ]);
     }
 
@@ -81,7 +83,7 @@ class ProjectController extends Controller
      */
     private function boardData(Project $project): array
     {
-        return [
+        $data = [
             'project' => $project->load([
                 'users' => fn ($query) => $query->orderBy('users.id'),
                 'taskLists' => fn ($query) => $query->active(),
@@ -106,6 +108,49 @@ class ProjectController extends Controller
                 ->latest('archived_at')
                 ->get(),
         ];
+
+        return [...$data, 'calendarTasks' => $this->calendarTasks($data['project'])];
+    }
+
+    /**
+     * カレンダーに出すタスク（開始日か終了日のあるもの）。読み込み済みのボードから作る
+     *
+     * 開始日だけ・終了日だけのものは、その1日に出す。
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function calendarTasks(Project $project): array
+    {
+        $tasks = [];
+
+        foreach ($project->taskLists as $list) {
+            foreach ($list->tasks as $task) {
+                if (! $task->started_on && ! $task->ended_on) {
+                    continue;
+                }
+
+                $start = $task->started_on ?? $task->ended_on;
+                $end = $task->ended_on ?? $task->started_on;
+
+                $tasks[] = [
+                    'id' => $task->id,
+                    'number' => $task->number,
+                    'title' => $task->title,
+                    'start' => $start->min($end)->format('Y-m-d'),
+                    'end' => $end->max($start)->format('Y-m-d'),
+                    'status' => $task->status->value,
+                    'closed' => in_array($task->status, [TaskStatus::Done, TaskStatus::Canceled], true),
+                    'due' => $task->ended_on?->format('Y-m-d'),
+                    'list' => $list->name,
+                    'color' => $list->color,
+                    'assignees' => $task->assignees->modelKeys(),
+                    'labels' => $task->labels->modelKeys(),
+                    'url' => $project->isArchived() ? null : route('tasks.show', $task),
+                ];
+            }
+        }
+
+        return $tasks;
     }
 
     /**

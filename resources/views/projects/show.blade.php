@@ -19,6 +19,12 @@
                         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M14 17h2.75A2.25 2.25 0 0019 14.75V5.25A2.25 2.25 0 0016.75 3H14v14zM12.5 3h-5v14h5V3zM3.25 3H6v14H3.25A2.25 2.25 0 011 14.75v-9.5A2.25 2.25 0 013.25 3z" /></svg>
                         ボード
                     </button>
+                    <button type="button" @click="tab = 'calendar'"
+                            :class="tab === 'calendar' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
+                            class="inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" /></svg>
+                        カレンダー
+                    </button>
                     <button type="button" @click="tab = 'members'"
                             :class="tab === 'members' ? 'border-sky-600 text-sky-700' : 'border-transparent text-slate-500 hover:text-slate-800'"
                             class="inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition">
@@ -83,6 +89,11 @@
 
             <div x-show="tab === 'board'" data-live-board class="flex min-h-0 flex-1 flex-col">
                 @include($project->isArchived() ? 'projects.partials.board-readonly' : 'projects.partials.board')
+            </div>
+
+            {{-- カレンダー --}}
+            <div x-show="tab === 'calendar'" x-cloak class="flex min-h-0 flex-1 flex-col">
+                @include('projects.partials.calendar')
             </div>
 
             {{-- アーカイブ --}}

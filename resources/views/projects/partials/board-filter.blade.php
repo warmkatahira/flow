@@ -14,7 +14,7 @@
 @endphp
 
 {{-- ボードの絞り込み（resources/js/app.js の boardFilter）。画面の中で隠すだけで、データは変えない --}}
-<div x-data="{ filterOpen: false }" x-show="tab === 'board'" x-init="$store.boardFilter.load({{ $project->id }}, {{ auth()->id() }})"
+<div x-data="{ filterOpen: false }" x-show="['board', 'calendar'].includes(tab)" x-init="$store.boardFilter.load({{ $project->id }}, {{ auth()->id() }})"
      class="relative flex shrink-0 items-center gap-2" @click.outside="filterOpen = false" @keydown.escape.window="filterOpen = false">
     <button type="button" @click="filterOpen = ! filterOpen" :aria-expanded="filterOpen ? 'true' : 'false'"
             :class="$store.boardFilter.count > 0 ? 'border-sky-500 bg-sky-50 text-sky-600' : 'border-slate-300 text-slate-500 hover:bg-slate-50'"
@@ -35,7 +35,7 @@
         マイタスク
     </button>
 
-    <button type="button" @click="$store.cardView.toggle()" :aria-pressed="$store.cardView.expanded ? 'true' : 'false'"
+    <button type="button" x-show="tab === 'board'" @click="$store.cardView.toggle()" :aria-pressed="$store.cardView.expanded ? 'true' : 'false'"
             class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-500 transition hover:bg-slate-50">
         <svg class="h-4 w-4 transition-transform duration-200" :class="$store.cardView.expanded && 'rotate-180'" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
