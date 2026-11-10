@@ -53,6 +53,22 @@ class TaskComment extends Model
     }
 
     /**
+     * @return HasMany<TaskCommentAttachment, $this>
+     */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TaskCommentAttachment::class)->oldest('id');
+    }
+
+    /**
+     * 添付ファイルの中身も一緒に消す（行は外部キーの cascade で消える）
+     */
+    protected static function booted(): void
+    {
+        static::deleting(fn (self $comment) => $comment->attachments->each->deleteFile());
+    }
+
+    /**
      * @return HasMany<TaskCommentReaction, $this>
      */
     public function reactions(): HasMany

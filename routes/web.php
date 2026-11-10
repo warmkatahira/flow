@@ -10,6 +10,7 @@ use App\Http\Controllers\Project\ProjectFavoriteController;
 use App\Http\Controllers\Project\ProjectGroupAssignmentController;
 use App\Http\Controllers\Project\ProjectGroupController;
 use App\Http\Controllers\Project\TaskChecklistController;
+use App\Http\Controllers\Project\TaskCommentAttachmentController;
 use App\Http\Controllers\Project\TaskCommentController;
 use App\Http\Controllers\Project\TaskController;
 use App\Http\Controllers\Project\TaskDetailController;
@@ -104,6 +105,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
     Route::delete('comments/{comment}', [TaskCommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('comments/{comment}/reactions', [TaskCommentController::class, 'react'])->name('comments.react');
+    Route::get('attachments/{attachment}', [TaskCommentAttachmentController::class, 'show'])->name('attachments.show');
 
     Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
     Route::post('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');

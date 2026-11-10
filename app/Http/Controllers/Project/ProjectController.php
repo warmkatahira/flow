@@ -11,6 +11,7 @@ use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Models\Project;
 use App\Models\TaskChecklist;
 use App\Models\TaskChecklistItem;
+use App\Models\TaskCommentAttachment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
@@ -310,7 +311,11 @@ class ProjectController extends Controller
             Storage::disk('public')->delete($project->icon_path);
         }
 
-        // 参加者・リスト・タスクは外部キーの cascade で一緒に消える
+        // 参加者・リスト・タスクは外部キーの cascade で一緒に消える。コメントの添付ファイルの中身は先に消す
+        foreach ($project->tasks()->pluck('id') as $taskId) {
+            Storage::disk(TaskCommentAttachment::DISK)->deleteDirectory(TaskCommentAttachment::directoryFor($taskId));
+        }
+
         $project->delete();
 
         BoardChanged::notify($project, reload: true);

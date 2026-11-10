@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
 use App\Models\Task;
 use App\Models\TaskComment;
+use App\Models\TaskCommentAttachment;
 use App\Rules\RichTextLength;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -22,14 +23,27 @@ class TaskCommentController extends Controller
     {
         $this->authorizeDetail($task);
 
+        // ファイルだけを添付するなら、本文はなくてもよい
+        $hasFiles = $request->hasFile('attachments');
+
         $attributes = $request->validate([
-            'body' => ['required', 'string', 'max:100000', new RichTextLength(required: true)],
+            'body' => [$hasFiles ? 'nullable' : 'required', 'string', 'max:100000', new RichTextLength(required: ! $hasFiles)],
+            'attachments' => ['array', 'max:'.TaskCommentAttachment::MAX_FILES],
+            'attachments.*' => ['file', 'max:'.TaskCommentAttachment::MAX_KILOBYTES],
+        ], [
+            'attachments.max' => 'ファイルは1つのコメントに'.TaskCommentAttachment::MAX_FILES.'つまで添付できます。',
+            'attachments.*.max' => '添付できるファイルは1つ'.(TaskCommentAttachment::MAX_KILOBYTES / 1024).'MBまでです。',
+            'attachments.*.uploaded' => '添付できるファイルは1つ'.(TaskCommentAttachment::MAX_KILOBYTES / 1024).'MBまでです。',
         ]);
 
-        $comment = $task->comments()->make($attributes);
+        $comment = $task->comments()->make(['body' => $attributes['body'] ?? '']);
         $comment->user_id = $request->user()->getKey();
         $comment->save();
         $comment->syncMentions($task->project->users);
+
+        foreach ($request->file('attachments', []) as $file) {
+            TaskCommentAttachment::storeFor($comment, $file);
+        }
 
         $mentioned = $comment->mentions()->pluck('users.id')->reject(fn (int $id) => $id === $comment->user_id);
 
@@ -38,7 +52,10 @@ class TaskCommentController extends Controller
         }
 
         // メンションした人にはメンションとして届いているので、同じコメントを二重に知らせない
-        $task->recordActivity($request->user(), TaskActivity::Comment, $comment->bodyText(), $mentioned->all());
+        // 本文のないコメントは、添付したファイル名を出す
+        $summary = trim($comment->bodyText()) ?: '📎 '.$comment->attachments()->pluck('name')->join('、');
+
+        $task->recordActivity($request->user(), TaskActivity::Comment, $summary, $mentioned->all());
 
         return $this->changed($task);
     }

@@ -22,7 +22,7 @@ trait RendersTaskDetail
     protected function detail(Task $task): View
     {
         return view('projects.partials.task-detail', [
-            'task' => $task->fresh(['list', 'project.users', 'project.labels', 'labels', 'assignees', 'checklists.items.assignee', 'comments.user', 'comments.mentions', 'comments.reactions.user', 'creator', 'updater']),
+            'task' => $task->fresh(['list', 'project.users', 'project.labels', 'labels', 'assignees', 'checklists.items.assignee', 'comments.user', 'comments.mentions', 'comments.attachments', 'comments.reactions.user', 'creator', 'updater']),
         ]);
     }
 

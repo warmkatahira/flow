@@ -7,12 +7,14 @@ use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskCommentAttachment;
 use App\Models\TaskList;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class TaskController extends Controller
 {
@@ -264,6 +266,7 @@ class TaskController extends Controller
         abort_unless($task->isArchived(), 404);
 
         $task->delete();
+        Storage::disk(TaskCommentAttachment::DISK)->deleteDirectory(TaskCommentAttachment::directoryFor($task->id));
 
         BoardChanged::notify($task->project);
 

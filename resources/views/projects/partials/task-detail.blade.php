@@ -361,12 +361,27 @@
 
 {{-- コメント --}}
 <div class="space-y-4 px-6 pb-5">
-    {{-- 書式付きのエディタ。@ を打つとプロジェクトの参加者から選べる（resources/js/rich-text.js の commentEditor） --}}
-    <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.comments.store', $task) }}"
-          x-data="commentEditor(@js($task->project->users->map->only('id', 'name')->values()))" @submit="submit($event)"
-          class="relative rounded-xl border border-slate-300 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
+    {{--
+        書式付きのエディタ。@ を打つとプロジェクトの参加者から選べる（resources/js/rich-text.js の commentEditor）
+        ファイルはクリップのボタンで選ぶか、この枠にドラッグ＆ドロップして添付する
+    --}}
+    <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.comments.store', $task) }}" enctype="multipart/form-data"
+          x-data="commentEditor(@js($task->project->users->map->only('id', 'name')->values()), @js(['files' => App\Models\TaskCommentAttachment::MAX_FILES, 'bytes' => App\Models\TaskCommentAttachment::MAX_KILOBYTES * 1024]))"
+          @submit="submit($event)"
+          @dragenter="dragenter($event)" @dragleave="dragging = Math.max(dragging - 1, 0)" @dragover.prevent @drop.prevent="drop($event)"
+          :class="dragging > 0 ? 'border-sky-500 ring-2 ring-sky-500/30' : 'border-slate-300'"
+          class="relative rounded-xl border focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
         @csrf
         <input type="hidden" name="body" x-ref="input">
+        <input type="file" name="attachments[]" x-ref="files" multiple class="hidden" tabindex="-1" aria-hidden="true">
+        <input type="file" x-ref="picker" multiple class="hidden" @change="addFiles($event.target.files); $event.target.value = ''">
+
+        {{-- ドラッグ中の受け皿 --}}
+        <div x-show="dragging > 0" x-cloak
+             class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center gap-2 rounded-xl bg-sky-50/90 text-sm font-semibold text-sky-600">
+            <x-paperclip-icon class="h-5 w-5" />
+            ここにドロップして添付
+        </div>
 
         <div class="border-b border-slate-200 px-1.5 py-1">
             @include('projects.partials.rich-text-toolbar')
@@ -386,7 +401,30 @@
             </ul>
         </div>
 
-        <div class="flex justify-end px-3 pb-3 pt-1">
+        {{-- 添付するファイル --}}
+        <ul x-show="files.length > 0" x-cloak class="flex flex-wrap gap-1.5 px-3 pt-2">
+            <template x-for="(file, index) in files" :key="index">
+                <li class="flex max-w-full items-center gap-1.5 rounded-lg bg-slate-100 py-1 pl-2 pr-1 text-xs text-slate-600">
+                    <x-paperclip-icon class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    <span class="min-w-0 truncate" x-text="file.name"></span>
+                    <span class="shrink-0 text-slate-400" x-text="sizeLabel(file.size)"></span>
+                    <button type="button" @click="removeFile(index)" :aria-label="`${file.name} を外す`"
+                            class="shrink-0 rounded p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                        </svg>
+                    </button>
+                </li>
+            </template>
+        </ul>
+        <p x-show="fileError" x-cloak x-text="fileError" class="px-3 pt-2 text-xs text-rose-600"></p>
+
+        <div class="flex items-center justify-between gap-3 px-3 pb-3 pt-1">
+            <button type="button" @click="$refs.picker.click()" title="ファイルを添付（ドラッグ＆ドロップでも添付できます）"
+                    class="flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs text-slate-500 transition hover:bg-slate-100 hover:text-slate-700">
+                <x-paperclip-icon class="h-4 w-4" />
+                ファイルを添付
+            </button>
             <button type="submit" class="rounded-lg bg-sky-500 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-600">コメントを投稿</button>
         </div>
     </form>
@@ -410,7 +448,30 @@
                     @endif
                 </div>
 
-                <div class="rich-text mt-1 break-words text-sm text-slate-800">{{ $comment->bodyHtml() }}</div>
+                @if (trim($comment->bodyText()) !== '')
+                    <div class="rich-text mt-1 break-words text-sm text-slate-800">{{ $comment->bodyHtml() }}</div>
+                @endif
+
+                {{-- 添付ファイル。画像は小さく出し、押すと別のタブで開く。それ以外はダウンロード --}}
+                @if ($comment->attachments->isNotEmpty())
+                    <div class="mt-1.5 flex flex-wrap items-end gap-2">
+                        @foreach ($comment->attachments as $attachment)
+                            @if ($attachment->isInlineImage())
+                                <a href="{{ route('attachments.show', $attachment) }}" target="_blank" rel="noopener" title="{{ $attachment->name }}（{{ $attachment->humanSize() }}）"
+                                   class="block overflow-hidden rounded-lg ring-1 ring-slate-200 transition hover:ring-sky-400">
+                                    <img src="{{ route('attachments.show', $attachment) }}" alt="{{ $attachment->name }}" loading="lazy" class="h-24 max-w-48 object-cover">
+                                </a>
+                            @else
+                                <a href="{{ route('attachments.show', $attachment) }}" download="{{ $attachment->name }}"
+                                   class="flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 transition hover:border-sky-400 hover:bg-sky-50">
+                                    <x-paperclip-icon class="h-4 w-4 shrink-0 text-slate-400" />
+                                    <span class="min-w-0 truncate">{{ $attachment->name }}</span>
+                                    <span class="shrink-0 text-slate-400">{{ $attachment->humanSize() }}</span>
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
 
                 {{-- リアクション。押すたびに付け外しする --}}
                 <form data-task-form autocomplete="off" method="POST" action="{{ route('comments.react', $comment) }}"

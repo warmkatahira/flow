@@ -175,7 +175,7 @@ Alpine.data('richDescription', (saved) => {
  *
  * メンションは「@名前」という文字のまま入れる。誰へのメンションかはサーバーが本文の文字から決める。
  */
-Alpine.data('commentEditor', (members) => {
+Alpine.data('commentEditor', (members, limits = { files: 5, bytes: 10 * 1024 * 1024 }) => {
     let editor = null;
 
     return {
@@ -183,6 +183,10 @@ Alpine.data('commentEditor', (members) => {
         candidates: [],
         highlighted: 0,
         from: 0,
+        // 添付するファイル。ボタンで選んでも、ドラッグ＆ドロップしても、ここにためてから input へ写す
+        files: [],
+        fileError: '',
+        dragging: 0,
 
         editor: () => editor,
 
@@ -246,9 +250,61 @@ Alpine.data('commentEditor', (members) => {
         },
 
         /**
-         * 送る前にエディタの中身をフォームへ写す。空なら送らない
+         * 添付するファイルを足す。上限を超える分と大きすぎるものは足さずに知らせる
+         */
+        addFiles(list) {
+            const incoming = Array.from(list ?? []);
+            const tooLarge = incoming.filter((file) => file.size > limits.bytes);
+            const room = limits.files - this.files.length;
+            const accepted = incoming.filter((file) => file.size <= limits.bytes).slice(0, Math.max(room, 0));
+
+            this.fileError = tooLarge.length > 0
+                ? `添付できるファイルは1つ${Math.round(limits.bytes / 1024 / 1024)}MBまでです。`
+                : (incoming.length - tooLarge.length > accepted.length ? `ファイルは1つのコメントに${limits.files}つまで添付できます。` : '');
+
+            this.files = [...this.files, ...accepted];
+            this.syncFiles();
+        },
+
+        removeFile(index) {
+            this.files = this.files.filter((_, current) => current !== index);
+            this.fileError = '';
+            this.syncFiles();
+        },
+
+        /** ためたファイルを input[type=file] へ写す（フォームの送信で一緒に送られる） */
+        syncFiles() {
+            const transfer = new DataTransfer();
+
+            this.files.forEach((file) => transfer.items.add(file));
+            this.$refs.files.files = transfer.files;
+        },
+
+        dragenter(event) {
+            if (event.dataTransfer?.types.includes('Files')) {
+                this.dragging += 1;
+            }
+        },
+
+        drop(event) {
+            this.dragging = 0;
+            this.addFiles(event.dataTransfer?.files);
+        },
+
+        sizeLabel(bytes) {
+            return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+        },
+
+        /**
+         * 送る前にエディタの中身をフォームへ写す。本文もファイルもなければ送らない
          */
         submit(event) {
+            if (this.files.length > 0 && (editor.isEmpty || editor.getText().trim() === '')) {
+                this.$refs.input.value = '';
+
+                return;
+            }
+
             if (editor.isEmpty || editor.getText().trim() === '') {
                 event.preventDefault();
                 editor.commands.focus();
