@@ -33,19 +33,27 @@
         </a>
 
         <div class="mt-2 flex flex-wrap items-center gap-2">
-            @if ($role)
+            @if ($project->isPersonal())
+                <span class="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">My Project</span>
+                <span class="text-xs text-slate-500">自分専用</span>
+            @elseif ($role)
                 <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $role->badgeClass() }}">
                     {{ $role->label() }}
                 </span>
             @endif
-            <span class="text-xs text-slate-500">参加者 {{ $project->users_count ?? $project->users->count() }}人</span>
+            @unless ($project->isPersonal())
+                <span class="text-xs text-slate-500">参加者 {{ $project->users_count ?? $project->users->count() }}人</span>
+            @endunless
         </div>
     </div>
 
     <div class="relative z-10 flex shrink-0 items-center gap-0.5">
-        <x-favorite-button :project="$project" class="-mt-1" />
+        {{-- My Project はいつもいちばん上にあるので、お気に入りやグループには入れない --}}
+        @unless ($project->isPersonal())
+            <x-favorite-button :project="$project" class="-mt-1" />
+        @endunless
 
-        @if ($groups !== null)
+        @if ($groups !== null && ! $project->isPersonal())
             {{-- グループの割り当て。自分のダッシュボードでの分類なので他の人には影響しない --}}
             <div x-data="{ open: false }" class="relative -mt-1">
                 <button type="button" @click="open = ! open" :aria-expanded="open ? 'true' : 'false'"

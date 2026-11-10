@@ -229,27 +229,30 @@ class ProjectController extends Controller
             'icon_path' => $this->resolveIconPath($request, $project),
         ]);
 
-        // 削除済みのユーザーは画面に出ないので、そのまま同期すると参加が外れて復元しても戻らない
-        $deleted = $project->users()->onlyTrashed()->get()
-            ->mapWithKeys(fn (User $user) => [$user->getKey() => ['role' => $user->pivot->role]])
-            ->all();
+        // My Project は本人専用なので、参加者は送られてきても変えない
+        if (! $project->isPersonal()) {
+            // 削除済みのユーザーは画面に出ないので、そのまま同期すると参加が外れて復元しても戻らない
+            $deleted = $project->users()->onlyTrashed()->get()
+                ->mapWithKeys(fn (User $user) => [$user->getKey() => ['role' => $user->pivot->role]])
+                ->all();
 
-        $project->users()->sync($this->participants($request) + $deleted);
+            $project->users()->sync($this->participants($request) + $deleted);
 
-        // 参加者から外れた人は担当とフォローからも外す（チェックリストの項目の担当者も）
-        $participants = $project->users()->withTrashed()->pluck('users.id');
+            // 参加者から外れた人は担当とフォローからも外す（チェックリストの項目の担当者も）
+            $participants = $project->users()->withTrashed()->pluck('users.id');
 
-        foreach (['task_user', 'task_follows'] as $table) {
-            DB::table($table)
-                ->whereIn('task_id', $project->tasks()->select('id'))
-                ->whereNotIn('user_id', $participants)
-                ->delete();
+            foreach (['task_user', 'task_follows'] as $table) {
+                DB::table($table)
+                    ->whereIn('task_id', $project->tasks()->select('id'))
+                    ->whereNotIn('user_id', $participants)
+                    ->delete();
+            }
+
+            TaskChecklistItem::query()
+                ->whereIn('task_checklist_id', TaskChecklist::query()->whereIn('task_id', $project->tasks()->select('id'))->select('id'))
+                ->whereNotIn('assignee_id', $participants)
+                ->update(['assignee_id' => null]);
         }
-
-        TaskChecklistItem::query()
-            ->whereIn('task_checklist_id', TaskChecklist::query()->whereIn('task_id', $project->tasks()->select('id'))->select('id'))
-            ->whereNotIn('assignee_id', $participants)
-            ->update(['assignee_id' => null]);
 
         BoardChanged::notify($project, reload: true);
 

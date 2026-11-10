@@ -28,10 +28,25 @@
 - 作ると最初からリストが3つある: 開始前（青）/ 進行中（緑）/ 完了（赤）（`Project::createDefaultTaskLists`）
 - **参加していない人は見られない**（一覧にも詳細にも出さない）
 - **システム管理者も例外ではない**。秘匿性を優先し、参加していないプロジェクトは
-  システム管理者にも見せない
+  システム管理者にも見せない（My Project だけは閲覧専用の別画面で見られる。下記）
   - `AppServiceProvider` の `Gate::before` は、対象が `Project` のときだけ素通りさせて
     `ProjectPolicy` に判断を任せている
   - 存在を悟られないよう、403 ではなく 404 を返す（`Response::denyAsNotFound()`）
+
+## My Project（実装済み）
+
+ユーザーごとに1つある **本人専用のプロジェクト**（`projects.personal_user_id`。`Project::createPersonalFor`）。
+
+- ユーザーを作ると一緒に作る（ユーザー管理の登録・CSV 登録・`ProjectSeeder`）。名前は最初「My Project」で、本人がオーナー
+- アーカイブも削除もできない（`ProjectPolicy::archive` / `delete`）
+- 他の人は参加させられない。設定画面に参加者の欄を出さず、送られてきても無視する（名前とアイコンは変えられる）
+- ダッシュボードと左のリストでは、お気に入りやグループに混ぜずにいちばん上に固定で出す（星とグループのメニューは出さない）
+- **システム管理者はナビの「システム管理」→「みんなの My Project」（`/admin/my-projects`）で全員の My Project を見られる**
+  - 見るだけの別の入口（`Admin\PersonalProjectController`、Gate `view-personal-projects`）。ボードとタスクの詳細を読み取り専用で出す
+  - `ProjectPolicy` は通さないので、ふつうの画面や操作の URL は今まで通りシステム管理者にも 404
+  - 見たことが残らないよう何も書き込まない（通知の既読・最終更新者・フォローなど）。リアルタイム更新のチャンネルにも入らない
+  - 添付ファイルは名前だけ出す（中身を渡す `attachments.show` は参加者だけ）
+  - My Project 以外のプロジェクトはこの入口からも見られない
 
 ## アーカイブ（実装済み）
 
@@ -238,7 +253,7 @@
 | テーブル | 用途 | |
 | --- | --- | --- |
 | `project_groups` | プロジェクトをまとめる個人のグループ（`user_id`, `name`, `position`） | 実装済み |
-| `projects` | プロジェクト（`name`, `icon_path`, `archived_at`） | 実装済み |
+| `projects` | プロジェクト（`name`, `icon_path`, `personal_user_id`（My Project の持ち主）, `archived_at`） | 実装済み |
 | `project_user` | プロジェクトと参加者の中間テーブル（`role`, `is_favorite`, `group_id`） | 実装済み |
 | `task_lists` | リスト（列）。`name`, `color`（`#rrggbb`。プリセットは `ListColor`）, `position`, `archived_at` | 実装済み |
 | `tasks` | タスク。`number`(プロジェクトごとの連番), `title`, `description`, `status`, `started_on`, `ended_on`, `created_by`, `updated_by`, `position`, `archived_at` | 実装済み |

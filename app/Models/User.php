@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -51,6 +52,16 @@ class User extends Authenticatable
         return $this->belongsToMany(Project::class)
             ->withPivot('role', 'is_favorite', 'group_id')
             ->withTimestamps();
+    }
+
+    /**
+     * 自分専用の My Project（ユーザーを作ると一緒に作られる）
+     *
+     * @return HasOne<Project, $this>
+     */
+    public function personalProject(): HasOne
+    {
+        return $this->hasOne(Project::class, 'personal_user_id');
     }
 
     /**

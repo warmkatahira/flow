@@ -11,6 +11,15 @@
     if (auth()->user()->can('manage-users')) {
         $tools[] = ['label' => 'ユーザー管理', 'route' => 'users.index', 'active' => 'users.*'];
     }
+
+    // 「システム管理」のメニュー。項目はここに足していく（どれも見られる人がいなければメニューごと出さない）
+    $adminTools = [];
+
+    if (auth()->user()->can('view-personal-projects')) {
+        $adminTools[] = ['label' => 'みんなの My Project', 'route' => 'admin.my-projects.index', 'active' => 'admin.my-projects.*'];
+    }
+
+    $adminActive = collect($adminTools)->contains(fn ($tool) => request()->routeIs($tool['active']));
 @endphp
 
 <nav x-data="{ open: false }" class="bg-white border-b border-slate-200">
@@ -50,6 +59,30 @@
                         </a>
                     @endforeach
                 </div>
+
+                {{-- ツールバーは横にスクロールして中身を切り抜くので、開くメニューはその外に置く --}}
+                @if ($adminTools !== [])
+                    <div x-data="{ adminOpen: false }" class="relative shrink-0" @click.outside="adminOpen = false" @keydown.escape.window="adminOpen = false">
+                        <button type="button" @click="adminOpen = ! adminOpen" :aria-expanded="adminOpen ? 'true' : 'false'"
+                                class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium transition {{ $adminActive ? 'bg-sky-50 text-sky-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+                            システム管理
+                            <svg class="h-4 w-4 fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <div x-show="adminOpen" x-cloak x-transition
+                             class="absolute left-0 top-10 z-50 w-52 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                            @foreach ($adminTools as $tool)
+                                <a href="{{ route($tool['route']) }}"
+                                   @if (request()->routeIs($tool['active'])) aria-current="page" @endif
+                                   class="block px-4 py-2 text-sm transition {{ request()->routeIs($tool['active']) ? 'font-semibold text-sky-700' : 'text-slate-700 hover:bg-slate-100' }}">
+                                    {{ $tool['label'] }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <div class="flex shrink-0 items-center relative">

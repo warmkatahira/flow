@@ -17,6 +17,16 @@
     </x-slot:header>
 
     <div class="px-4 sm:px-6 lg:px-8 py-8">
+        {{-- 自分専用の My Project。お気に入りやグループには混ぜず、いつもいちばん上に置く --}}
+        @if ($personalProject)
+            <section class="mb-8">
+                <h2 class="mb-3 text-sm font-bold text-slate-500">My Project</h2>
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <x-project-card :project="$personalProject" class="h-full" />
+                </div>
+            </section>
+        @endif
+
         @if ($projects->isEmpty())
             <h2 class="mb-4 text-sm font-bold text-slate-500">参加しているプロジェクト</h2>
 

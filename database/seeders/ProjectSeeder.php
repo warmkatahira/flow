@@ -19,6 +19,9 @@ class ProjectSeeder extends Seeder
      */
     public function run(): void
     {
+        // 全員に My Project を用意する（画面からユーザーを作ったときと同じ。本番でも作る）
+        User::query()->orderBy('id')->each(fn (User $user) => Project::createPersonalFor($user));
+
         // 動作確認用のプロジェクトは本番では作らない
         if (app()->isProduction()) {
             return;

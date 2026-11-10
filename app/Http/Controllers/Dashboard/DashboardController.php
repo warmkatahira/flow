@@ -23,9 +23,14 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
+        // My Project はお気に入りやグループに混ぜず、いちばん上に固定で出す
+        [$personal, $projects] = $projects->partition(fn (Project $project) => $project->isPersonal());
+        $projects = $projects->values();
+
         $groups = $user->projectGroups()->ordered()->get();
 
         return view('dashboard', [
+            'personalProject' => $personal->first(),
             'projects' => $projects,
             'sections' => $user->projectSections($projects, $groups),
             'groups' => $groups,

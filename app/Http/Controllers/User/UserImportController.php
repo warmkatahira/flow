@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,9 @@ class UserImportController extends Controller
         $issued = DB::transaction(fn () => array_map(function (array $row) {
             $user = new User($row);
             $password = $user->issuePassword();
+
+            // 本人専用の My Project を最初から用意する
+            Project::createPersonalFor($user);
 
             return [...$user->only('name', 'email'), 'password' => $password];
         }, array_values($rows)));

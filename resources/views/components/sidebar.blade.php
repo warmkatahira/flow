@@ -21,6 +21,13 @@
         </a>
 
         <div data-sidebar-scroll class="flex-1 space-y-5 overflow-y-auto px-2 py-4 [scrollbar-width:thin]">
+            @if ($personalProject)
+                <section>
+                    <h2 class="px-2 pb-1 text-xs font-bold text-slate-400">My Project</h2>
+                    <x-sidebar-link :project="$personalProject" :current="$personalProject->id === $currentId" />
+                </section>
+            @endif
+
             <section>
                 <h2 class="px-2 pb-1 text-xs font-bold text-slate-400">お気に入り</h2>
 

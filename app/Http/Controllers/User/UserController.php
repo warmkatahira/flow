@@ -6,9 +6,11 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -41,8 +43,15 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): RedirectResponse
     {
-        $user = new User($request->validated());
-        $password = $user->issuePassword();
+        [$user, $password] = DB::transaction(function () use ($request) {
+            $user = new User($request->validated());
+            $password = $user->issuePassword();
+
+            // 本人専用の My Project を最初から用意する
+            Project::createPersonalFor($user);
+
+            return [$user, $password];
+        });
 
         return redirect()
             ->route('users.index')

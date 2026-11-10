@@ -39,6 +39,11 @@ class UpdateProjectRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
+                // My Project は参加者を変えられない（送られてきても無視する）ので確かめない
+                if ($this->route('project')->isPersonal()) {
+                    return;
+                }
+
                 $roles = $this->input('roles', []);
 
                 $hasOwner = collect($this->input('members', []))

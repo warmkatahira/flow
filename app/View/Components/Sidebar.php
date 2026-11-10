@@ -21,9 +21,14 @@ class Sidebar extends Component
         $projects = $user->projects()->orderBy('name')->get();
         $active = $projects->reject(fn (Project $project) => $project->isArchived())->values();
 
+        // My Project はお気に入りやグループに混ぜず、いちばん上に固定で出す
+        [$personal, $active] = $active->partition(fn (Project $project) => $project->isPersonal());
+        $active = $active->values();
+
         $current = $this->request->route('project');
 
         return view('components.sidebar', [
+            'personalProject' => $personal->first(),
             'projects' => $active,
             'sections' => $user->projectSections($active, $user->projectGroups()->ordered()->get()),
             // 星の初期状態。アーカイブ済みのプロジェクトの画面にも星があるので、それらも含める

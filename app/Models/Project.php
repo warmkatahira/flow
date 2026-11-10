@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
@@ -21,6 +22,64 @@ class Project extends Model
 
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
+
+    /**
+     * My Project の初期の名前
+     */
+    public const PERSONAL_NAME = 'My Project';
+
+    /**
+     * ユーザーの My Project を作る（すでにあればそれを返す）
+     *
+     * My Project はユーザーごとに1つの本人専用のプロジェクト。本人がオーナーで、
+     * 他の人は参加させられず、アーカイブ（＝削除）もできない。
+     */
+    public static function createPersonalFor(User $user): self
+    {
+        if ($existing = static::where('personal_user_id', $user->getKey())->first()) {
+            return $existing;
+        }
+
+        // personal_user_id はサーバーが決める値なので fillable に載せず、明示的に入れる
+        $project = new static(['name' => self::PERSONAL_NAME]);
+        $project->personal_user_id = $user->getKey();
+        $project->save();
+
+        $project->users()->attach($user, ['role' => ProjectRole::Owner->value]);
+        $project->createDefaultLabels();
+        $project->createDefaultTaskLists();
+
+        return $project;
+    }
+
+    /**
+     * My Project の持ち主（通常のプロジェクトは null）
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function personalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'personal_user_id')->withTrashed();
+    }
+
+    /**
+     * My Project か
+     */
+    public function isPersonal(): bool
+    {
+        return $this->personal_user_id !== null;
+    }
+
+    /**
+     * My Project だけに絞る
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopePersonal(Builder $query): Builder
+    {
+        return $query->whereNotNull('personal_user_id');
+    }
 
     /**
      * カンバンのリスト（列）。1プロジェクト＝1ボードなので直下に持つ

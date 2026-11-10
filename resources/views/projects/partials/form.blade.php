@@ -53,7 +53,13 @@
     @endif
 </div>
 
-{{-- 参加者 --}}
+{{-- 参加者。My Project は本人専用なので選ばせない --}}
+@if ($project?->isPersonal())
+<div>
+    <x-input-label value="参加者" />
+    <p class="text-sm text-slate-600">My Project はあなた専用のプロジェクトです。他の人は参加できません。</p>
+</div>
+@else
 <div>
     <x-input-label value="参加者" :required="true" />
     <p class="mb-2 text-xs text-slate-500">
@@ -116,6 +122,7 @@
 
     <x-input-error :messages="$errors->get('members')" />
 </div>
+@endif
 
 <div class="flex items-center gap-3 pt-2">
     <x-primary-button>{{ $submitLabel }}</x-primary-button>

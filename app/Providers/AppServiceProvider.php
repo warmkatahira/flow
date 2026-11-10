@@ -37,5 +37,8 @@ class AppServiceProvider extends ServiceProvider
 
         // ユーザー管理はシステム管理者のみ（管理者と一般の区分けは今後検討する）
         Gate::define('manage-users', fn (User $user) => $user->isSystemAdmin());
+
+        // 全員の My Project を見る（見るだけ。操作は ProjectPolicy が今まで通り拒否する）
+        Gate::define('view-personal-projects', fn (User $user) => $user->isSystemAdmin());
     }
 }

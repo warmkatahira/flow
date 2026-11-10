@@ -1,4 +1,10 @@
-{{-- アーカイブ中のプロジェクトのボード。見るだけなので操作の UI は持たない --}}
+{{--
+    アーカイブ中のプロジェクトのボード。見るだけなので操作の UI は持たない
+    （システム管理者の My Project の閲覧でも使う。$taskUrl を渡すとカードを押して詳細を見られる）
+--}}
+@php
+    $taskUrl ??= null;
+@endphp
 <div class="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-3 pr-4 sm:pr-6 lg:pr-8 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]" x-drag-scroll>
     @forelse ($project->taskLists as $list)
         <section class="flex min-h-0 w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
@@ -11,6 +17,7 @@
 
             <div class="min-h-8 flex-1 space-y-2 overflow-y-auto p-2 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
                 @foreach ($list->tasks as $task)
+                    @if ($taskUrl)<a href="{{ $taskUrl($task) }}" class="block rounded-lg transition hover:-translate-y-0.5 hover:shadow-md">@endif
                     <article data-status="{{ $task->status->value }}" data-due="{{ $task->ended_on?->format('Y-m-d') }}"
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
@@ -28,6 +35,7 @@
                             @include('projects.partials.task-label-bars')
                         </div>
                     </article>
+                    @if ($taskUrl)</a>@endif
                 @endforeach
             </div>
         </section>

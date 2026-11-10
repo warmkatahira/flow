@@ -15,6 +15,9 @@ use Illuminate\Auth\Access\Response;
  *
  * システム管理者も例外ではない。AppServiceProvider の Gate::before は
  * プロジェクトに対しては素通りするようにしてある。
+ * （システム管理者が全員の My Project を見る画面は、このポリシーを通さない閲覧専用の別の入口）
+ *
+ * My Project（本人専用）はアーカイブも削除もできない。参加者も変えられない（更新では無視する）。
  */
 class ProjectPolicy
 {
@@ -77,6 +80,10 @@ class ProjectPolicy
             return Response::denyAsNotFound();
         }
 
+        if ($project->isPersonal()) {
+            return Response::deny('My Project はアーカイブできません。');
+        }
+
         return $project->isOwner($user)
             ? Response::allow()
             : Response::deny('プロジェクトをアーカイブできるのはオーナーだけです。');
@@ -93,6 +100,10 @@ class ProjectPolicy
 
         if (! $project->isOwner($user)) {
             return Response::deny('プロジェクトを削除できるのはオーナーだけです。');
+        }
+
+        if ($project->isPersonal()) {
+            return Response::deny('My Project は削除できません。');
         }
 
         return $project->isArchived()

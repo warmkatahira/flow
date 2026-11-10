@@ -15,6 +15,8 @@
             </form>
         </div>
 
+        {{-- My Project はアーカイブできない --}}
+        @unless ($project->isPersonal())
         <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-6 py-5">
             <h2 class="text-sm font-bold text-amber-800">プロジェクトをアーカイブ</h2>
             <p class="mt-1 text-xs text-amber-700">
@@ -29,5 +31,6 @@
                 </button>
             </form>
         </div>
+        @endunless
     </div>
 </x-layouts.app>

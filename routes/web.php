@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\PersonalProjectController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\NotificationController;
@@ -125,5 +126,12 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
         Route::post('users/import', [UserImportController::class, 'store'])->name('users.import.store');
         Route::get('users/import/template', [UserImportController::class, 'template'])->name('users.import.template');
         Route::resource('users', UserController::class)->except('show');
+    });
+
+    // 全員の My Project を見るだけの画面（システム管理者のみ）。ここからは何も書き込まない
+    Route::middleware('can:view-personal-projects')->prefix('admin/my-projects')->name('admin.my-projects.')->group(function () {
+        Route::get('/', [PersonalProjectController::class, 'index'])->name('index');
+        Route::get('{project}', [PersonalProjectController::class, 'show'])->name('show');
+        Route::get('{project}/tasks/{task}', [PersonalProjectController::class, 'task'])->name('task');
     });
 });
