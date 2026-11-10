@@ -461,6 +461,38 @@
                                    class="block overflow-hidden rounded-lg ring-1 ring-slate-200 transition hover:ring-sky-400">
                                     <img src="{{ route('attachments.show', $attachment) }}" alt="{{ $attachment->name }}" loading="lazy" class="h-24 max-w-48 object-cover">
                                 </a>
+                            @elseif ($attachment->isPdf())
+                                {{-- PDF は押すとこの画面の上でプレビューする。読み込むのは開いたときだけ --}}
+                                <div x-data="{ src: '' }" class="max-w-full">
+                                    <button type="button" @click="src = @js(route('attachments.show', $attachment)); $nextTick(() => $refs.preview.showModal())"
+                                            class="flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 transition hover:border-sky-400 hover:bg-sky-50">
+                                        <span class="shrink-0 rounded bg-rose-500 px-1 text-[10px] font-bold leading-4 text-white">PDF</span>
+                                        <span class="min-w-0 truncate">{{ $attachment->name }}</span>
+                                        <span class="shrink-0 text-slate-400">{{ $attachment->humanSize() }}</span>
+                                    </button>
+
+                                    <dialog x-ref="preview" @close="src = ''" @click.self="$el.close()" @keydown.escape.stop
+                                            class="m-auto h-[90vh] w-[min(64rem,95vw)] max-w-none overflow-hidden rounded-xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/60">
+                                        <div class="flex h-full flex-col">
+                                            <div class="flex items-center gap-3 border-b border-slate-200 px-4 py-2.5">
+                                                <p class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-700">{{ $attachment->name }}</p>
+                                                <a href="{{ route('attachments.show', [$attachment, 'download' => 1]) }}"
+                                                   class="shrink-0 rounded-lg px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-100">ダウンロード</a>
+                                                <a href="{{ route('attachments.show', $attachment) }}" target="_blank" rel="noopener"
+                                                   class="shrink-0 rounded-lg px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-100">別のタブで開く</a>
+                                                <button type="button" @click="$refs.preview.close()" aria-label="プレビューを閉じる"
+                                                        class="shrink-0 rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-100">
+                                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <template x-if="src">
+                                                <iframe :src="src" title="{{ $attachment->name }} のプレビュー" class="min-h-0 w-full flex-1 bg-slate-100"></iframe>
+                                            </template>
+                                        </div>
+                                    </dialog>
+                                </div>
                             @else
                                 <a href="{{ route('attachments.show', $attachment) }}" download="{{ $attachment->name }}"
                                    class="flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 transition hover:border-sky-400 hover:bg-sky-50">

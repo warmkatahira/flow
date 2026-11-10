@@ -104,6 +104,22 @@ class CommentAttachmentTest extends TestCase
         $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
     }
 
+    public function test_PDFはプレビューでき_ダウンロードも選べる(): void
+    {
+        $this->comment([UploadedFile::fake()->create('見積書.pdf', 10, 'application/pdf')])
+            ->assertSee('見積書.pdf のプレビュー');
+
+        $pdf = TaskCommentAttachment::first();
+        $this->assertTrue($pdf->isPdf());
+
+        $response = $this->actingAs($this->owner)->get(route('attachments.show', $pdf))->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));
+
+        $download = $this->actingAs($this->owner)->get(route('attachments.show', [$pdf, 'download' => 1]))->assertOk();
+        $this->assertStringStartsWith('attachment', $download->headers->get('Content-Disposition'));
+    }
+
     public function test_参加していない人はダウンロードできない(): void
     {
         $this->comment([UploadedFile::fake()->create('秘密.pdf', 1)]);

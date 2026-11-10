@@ -188,7 +188,7 @@
 - コメントにはファイルを添付できる（`task_comment_attachments`）。クリップのボタンで選ぶか、コメント欄にドラッグ＆ドロップする
   - 1つのコメントに5つまで、1ファイル10MBまで（`TaskCommentAttachment::MAX_FILES` / `MAX_KILOBYTES`）。種類は問わない。ファイルだけなら本文はなくてよい
   - 秘匿性のため公開ディスクには置かない（`local` ディスクの `comment-attachments/{タスクの id}`）。`attachments.show` が参加者かを確かめてから渡す
-  - PNG・JPEG・GIF・WebP はコメントの中に小さく出す。それ以外（SVG・HTML も）は必ずダウンロードさせる（`nosniff`）
+  - PNG・JPEG・GIF・WebP はコメントの中に小さく出す。PDF は押すとその場のポップアップでプレビューする（`?download=1` でダウンロード）。それ以外（SVG・HTML も）は必ずダウンロードさせる（`nosniff`）
   - コメント・タスク・プロジェクトを消すと、ファイルの中身も消す
 - コメントには絵文字でリアクションできる（`App\Enums\Reaction` の8種から選ぶ）
   - 1つのコメントに1人1つまで。同じ絵文字をもう一度押すと外れ、別の絵文字を押すと付け替わる

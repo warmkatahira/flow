@@ -66,6 +66,22 @@ class TaskCommentAttachment extends Model
         return in_array($this->mime_type, self::INLINE_IMAGES, true);
     }
 
+    /**
+     * PDF は画面の中でプレビューする（ブラウザの PDF ビューアはスクリプトを動かさない）
+     */
+    public function isPdf(): bool
+    {
+        return $this->mime_type === 'application/pdf';
+    }
+
+    /**
+     * ブラウザで開いて見せられるか（それ以外は必ずダウンロードさせる）
+     */
+    public function isPreviewable(): bool
+    {
+        return $this->isInlineImage() || $this->isPdf();
+    }
+
     public function humanSize(): string
     {
         return Number::fileSize($this->size, maxPrecision: 1);

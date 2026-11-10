@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Project;
 
 use App\Http\Controllers\Controller;
 use App\Models\TaskCommentAttachment;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -13,7 +14,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class TaskCommentAttachmentController extends Controller
 {
-    public function show(TaskCommentAttachment $attachment): StreamedResponse
+    /**
+     * 画像と PDF はブラウザで開く（?download=1 ならダウンロード）。それ以外は必ずダウンロードさせる
+     */
+    public function show(Request $request, TaskCommentAttachment $attachment): StreamedResponse
     {
         $task = $attachment->comment->task;
 
@@ -23,13 +27,12 @@ class TaskCommentAttachmentController extends Controller
 
         abort_unless($disk->exists($attachment->path), 404);
 
-        // 画像は画面の中に出す。それ以外は、ブラウザに開かせず必ずダウンロードさせる
-        $disposition = $attachment->isInlineImage() ? 'inline' : 'attachment';
+        $inline = $attachment->isPreviewable() && ! $request->boolean('download');
 
         return $disk->response($attachment->path, $attachment->name, [
-            'Content-Type' => $attachment->isInlineImage() ? $attachment->mime_type : 'application/octet-stream',
+            'Content-Type' => $attachment->isPreviewable() ? $attachment->mime_type : 'application/octet-stream',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, max-age=3600',
-        ], $disposition);
+        ], $inline ? 'inline' : 'attachment');
     }
 }
