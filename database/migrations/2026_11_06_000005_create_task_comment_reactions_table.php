@@ -5,9 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * コメントへの絵文字のリアクション。1つのコメントに1人1つだけ付けられる
- *
- * 絵文字の列は utf8mb4_bin にする。utf8mb4_unicode_ci だと 👍 と 🎉 が同じ文字として比べられる
+ * コメントへのリアクション（1コメントに1人1つ）
  */
 return new class extends Migration
 {
@@ -17,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('task_comment_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            // utf8mb4_unicode_ci だと絵文字どうしが同じ文字として比べられる
             $table->string('emoji', 16)->collation('utf8mb4_bin');
             $table->timestamps();
 

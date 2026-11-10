@@ -14,6 +14,7 @@ return new class extends Migration
             // public ディスク上のパス。未設定なら頭文字のアバターを表示する
             $table->string('icon_path')->nullable();
             $table->timestamps();
+            $table->timestamp('archived_at')->nullable()->index();
         });
     }
 

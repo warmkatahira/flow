@@ -8,18 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('task_comment_mentions', function (Blueprint $table) {
+        Schema::create('task_comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('task_comment_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('task_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            // 書式付き（App\Support\RichText の HTML）。タグの分だけ長くなるので mediumText
+            $table->mediumText('body');
             $table->timestamps();
-
-            $table->unique(['task_comment_id', 'user_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('task_comment_mentions');
+        Schema::dropIfExists('task_comments');
     }
 };

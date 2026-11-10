@@ -16,9 +16,16 @@ return new class extends Migration
             // プロジェクトごとの連番（#74 のように表示する）
             $table->unsignedInteger('number');
             $table->string('title');
-            $table->text('description')->nullable();
+            // 書式付き（App\Support\RichText の HTML）。タグの分だけ長くなるので mediumText
+            $table->mediumText('description')->nullable();
+            // App\Enums\TaskStatus
+            $table->string('status')->default('todo');
+            $table->date('started_on')->nullable();
+            $table->date('ended_on')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedInteger('position');
             $table->timestamps();
+            $table->timestamp('archived_at')->nullable()->index();
 
             $table->unique(['project_id', 'number']);
             $table->index(['task_list_id', 'position']);

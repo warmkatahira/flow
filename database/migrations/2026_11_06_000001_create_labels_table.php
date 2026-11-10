@@ -4,30 +4,27 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * プロジェクトごとのラベルの種類
+ */
 return new class extends Migration
 {
-    /**
-     * カンバンのリスト（列）
-     *
-     * 1プロジェクト＝1ボードとして、リストはプロジェクト直下に置く。
-     * 複数ボードが必要になったら間に boards を挟む。
-     */
     public function up(): void
     {
-        Schema::create('task_lists', function (Blueprint $table) {
+        Schema::create('labels', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('color')->default('sky');
+            $table->string('color', 7);
             $table->unsignedInteger('position');
             $table->timestamps();
 
-            $table->index(['project_id', 'position']);
+            $table->unique(['project_id', 'name']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('task_lists');
+        Schema::dropIfExists('labels');
     }
 };
