@@ -4,8 +4,6 @@
     </x-slot:header>
 
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <x-session-status :status="session('status')" class="mb-0" />
-
         <div class="rounded-xl bg-white px-6 py-6 shadow-sm">
             <h2 class="text-sm font-bold text-slate-700">アイコン画像</h2>
 

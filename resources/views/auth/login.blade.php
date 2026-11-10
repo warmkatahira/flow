@@ -1,8 +1,6 @@
 <x-layouts.guest>
     <h1 class="text-lg font-bold text-slate-800 mb-6">ログイン</h1>
 
-    <x-session-status :status="session('status')" />
-
     <form autocomplete="off" method="POST" action="{{ route('login') }}" class="space-y-5">
         @csrf
 

@@ -17,8 +17,6 @@
     </x-slot:header>
 
     <div class="px-4 sm:px-6 lg:px-8 py-8">
-        <x-session-status :status="session('status')" />
-
         @if ($projects->isEmpty())
             <h2 class="mb-4 text-sm font-bold text-slate-500">参加しているプロジェクト</h2>
 

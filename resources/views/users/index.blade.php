@@ -17,8 +17,6 @@
     </x-slot:header>
 
     <div class="px-4 sm:px-6 lg:px-8 py-8">
-        <x-session-status :status="session('status')" />
-
         @include('users.partials.issued-passwords')
 
         @if (session('error'))

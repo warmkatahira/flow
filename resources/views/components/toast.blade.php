@@ -1,10 +1,15 @@
 {{--
-    アーカイブ・削除をしたことを知らせる。5秒で消える。
+    操作の結果を知らせる。5秒で消える。
     しゃぼん玉のように浮かんで出てきて、消えるときははじけて小さな泡が散る（resources/css/app.css の toast-bubble）。
     session('toast') = ['message' => 文言, 'url' => 取り消しの送信先, 'ids' => まとめて取り消すときの id]
     取り消せない操作（完全な削除など）は url を渡さない。
+    session('status')（->with('status', 文言)）も同じトーストで出す。
 --}}
-@if ($toast = session('toast'))
+@php
+    $toast = session('toast') ?? (session('status') ? ['message' => session('status')] : null);
+@endphp
+
+@if ($toast)
     <div x-data="{
             show: true,
             popping: false,
@@ -15,7 +20,7 @@
             },
          }"
          x-init="setTimeout(() => pop(), 5000)" x-show="show"
-         class="fixed bottom-6 left-4 right-4 z-50 sm:right-auto">
+         class="fixed bottom-6 left-4 right-4 z-50 sm:right-auto sm:max-w-lg">
         <div role="status" :class="popping && 'is-popping'"
              class="toast-bubble flex items-center gap-4 rounded-xl bg-sky-500 py-2.5 pl-4 pr-3 text-sm text-white shadow-lg">
             <span class="min-w-0 flex-1">{{ $toast['message'] }}</span>

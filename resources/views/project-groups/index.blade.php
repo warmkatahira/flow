@@ -10,8 +10,6 @@
     </x-slot:header>
 
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <x-session-status :status="session('status')" />
-
         <p class="mb-4 text-xs text-slate-500">
             グループはプロジェクトをまとめるための名前です。所属は任意で、グループを削除しても
             所属していたプロジェクトは「グループなし」として残ります。<br>

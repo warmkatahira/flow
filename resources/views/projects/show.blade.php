@@ -24,8 +24,6 @@
         {{-- ボードは画面の右端まで見せるので、右の余白は中身ごとに持たせる --}}
         <div class="flex min-h-0 flex-1 flex-col pl-4 pt-4 sm:pl-6 lg:pl-8">
             <div class="shrink-0 pr-4 sm:pr-6 lg:pr-8">
-            <x-session-status :status="session('status')" />
-
             @if ($project->isArchived())
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
                     <p>{{ $project->name }} は {{ $project->archived_at->format('Y/m/d') }} にアーカイブされました。読み取り専用です。</p>

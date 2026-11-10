@@ -8,8 +8,6 @@
     </x-slot:header>
 
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <x-session-status :status="session('status')" />
-
         @if ($projects->isEmpty())
             <p class="rounded-xl bg-white p-10 text-center text-sm text-slate-500 shadow-sm">
                 アーカイブ済みのプロジェクトはありません。
