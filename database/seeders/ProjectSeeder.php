@@ -101,6 +101,8 @@ class ProjectSeeder extends Seeder
         ];
 
         $number = 0;
+        // 作成者と最終更新者は、最初のオーナーにしておく
+        $ownerId = $project->users()->wherePivot('role', ProjectRole::Owner->value)->orderBy('users.id')->value('users.id');
 
         foreach ($lists as $position => [$name, $color, $titles]) {
             $list = $project->taskLists()->create([
@@ -117,6 +119,8 @@ class ProjectSeeder extends Seeder
 
                 $task->project_id = $project->getKey();
                 $task->number = ++$number;
+                $task->created_by = $ownerId;
+                $task->updated_by = $ownerId;
                 $task->save();
             }
         }
