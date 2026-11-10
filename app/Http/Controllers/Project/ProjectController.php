@@ -187,7 +187,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * プロジェクト編集画面を表示する
+     * プロジェクトの設定画面（名前・アイコン・参加者・アーカイブ）を表示する
      */
     public function edit(Project $project): View
     {
@@ -195,6 +195,9 @@ class ProjectController extends Controller
 
         return view('projects.edit', [
             'project' => $project->load('users'),
+            // タブに出す件数（プロジェクトの画面のアーカイブタブと同じ数え方）
+            'archiveCount' => $project->taskLists()->archived()->count()
+                + $project->tasks()->archived()->whereHas('list', fn ($query) => $query->active())->count(),
             'users' => $this->selectableUsers(),
             'roles' => ProjectRole::options(),
         ]);

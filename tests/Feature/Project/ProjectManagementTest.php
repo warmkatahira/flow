@@ -52,6 +52,23 @@ class ProjectManagementTest extends TestCase
         $this->assertSame([0, 1, 2], $lists->pluck('position')->all());
     }
 
+    public function test_設定画面にもプロジェクトのタブがあり各タブへ戻れる(): void
+    {
+        $owner = User::factory()->create();
+        $project = Project::factory()->ownedBy($owner)->create();
+
+        $this->actingAs($owner)
+            ->get(route('projects.edit', $project))
+            ->assertOk()
+            ->assertSee(route('projects.show', [$project, 'tab' => 'calendar']), false)
+            ->assertSee(route('projects.show', [$project, 'tab' => 'members']), false);
+
+        $this->actingAs($owner)
+            ->get(route('projects.show', [$project, 'tab' => 'calendar']))
+            ->assertOk()
+            ->assertSee("tab: 'calendar'", false);
+    }
+
     public function test_参加者に選ばれていなくても作成者は必ず参加する(): void
     {
         $creator = User::factory()->create();
