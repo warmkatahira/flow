@@ -138,7 +138,7 @@ class ProjectController extends Controller
 
         return redirect()
             ->route('projects.show', $project)
-            ->with('status', 'プロジェクトを作成しました。');
+            ->with('toast', ['message' => 'プロジェクトを作成しました']);
     }
 
     /**

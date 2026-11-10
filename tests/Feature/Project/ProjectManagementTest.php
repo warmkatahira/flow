@@ -39,7 +39,8 @@ class ProjectManagementTest extends TestCase
     {
         $this->actingAs(User::factory()->create())
             ->post(route('projects.store'), ['name' => 'リスト付き'])
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHas('toast', ['message' => 'プロジェクトを作成しました']);
 
         $lists = Project::firstWhere('name', 'リスト付き')->taskLists;
 
