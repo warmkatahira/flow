@@ -44,6 +44,172 @@ html[data-sidebar-moving] .sidebar-wave {
     }
 }
 
+/*
+ * ダッシュボードのプロジェクトカード。ホバー（キーボードで選んだとき）に下から水が満ち、その中を魚が泳いで抜ける。
+ * カードは isolate にしてあるので、-z-10 の層は白い地の上・中身の下に描かれる
+ */
+.project-card-water-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.project-card-water {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 44%;
+    background: var(--color-sky-100);
+    /* 水面の波（上に15pxはみ出す）まで隠れるところに沈めておく */
+    transform: translateY(calc(100% + 16px));
+    transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 水面。奥の濃い波と手前の薄い波を逆向きに流す（1周期＝40px） */
+.project-card-water::before,
+.project-card-water::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: calc(100% + 40px);
+    height: 12px;
+    background-repeat: repeat-x;
+    background-size: 40px 12px;
+}
+
+.project-card-water::before {
+    top: -15px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12'%3E%3Cpath d='M0 6Q10 0 20 6T40 6V12H0z' fill='%23bae6fd'/%3E%3C/svg%3E");
+    animation: project-card-wave 2.6s linear infinite reverse;
+}
+
+.project-card-water::after {
+    top: -11px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12'%3E%3Cpath d='M0 6Q10 0 20 6T40 6V12H0z' fill='%23e0f2fe'/%3E%3C/svg%3E");
+    animation: project-card-wave 1.7s linear infinite;
+}
+
+.project-card-fish {
+    position: absolute;
+    bottom: 10px;
+    left: -44px;
+    width: 30px;
+    fill: var(--color-sky-400);
+    opacity: 0;
+}
+
+.project-card-bubble {
+    position: absolute;
+    bottom: 18px;
+    width: 7px;
+    height: 7px;
+    border: 1.5px solid var(--color-sky-400);
+    border-radius: 9999px;
+    opacity: 0;
+}
+.project-card-bubble:nth-of-type(1) {
+    left: 30%;
+}
+.project-card-bubble:nth-of-type(2) {
+    left: 52%;
+    width: 5px;
+    height: 5px;
+}
+.project-card-bubble:nth-of-type(3) {
+    left: 74%;
+}
+
+:is(.project-card:hover, .project-card:has(:focus-visible)) {
+    .project-card-water {
+        transform: translateY(0);
+    }
+    .project-card-fish {
+        animation:
+            project-card-swim 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards,
+            project-card-wiggle 0.5s ease-in-out infinite alternate;
+    }
+    .project-card-bubble {
+        animation: project-card-bubble 1.2s ease-out forwards;
+    }
+    .project-card-bubble:nth-of-type(1) {
+        animation-delay: 0.55s;
+    }
+    .project-card-bubble:nth-of-type(2) {
+        animation-delay: 0.9s;
+    }
+    .project-card-bubble:nth-of-type(3) {
+        animation-delay: 1.25s;
+    }
+}
+
+@keyframes project-card-wave {
+    from {
+        transform: translateX(-40px);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* 横に泳ぎながら少し上下する。泳ぎ切ったら右の外に出たまま（外すと最初に戻る） */
+@keyframes project-card-swim {
+    0% {
+        left: -44px;
+        opacity: 1;
+        translate: 0 0;
+    }
+    30% {
+        translate: 0 -8px;
+    }
+    60% {
+        translate: 0 2px;
+    }
+    100% {
+        left: calc(100% + 14px);
+        opacity: 1;
+        translate: 0 -6px;
+    }
+}
+
+@keyframes project-card-wiggle {
+    from {
+        rotate: -6deg;
+    }
+    to {
+        rotate: 6deg;
+    }
+}
+
+@keyframes project-card-bubble {
+    0% {
+        opacity: 0;
+        transform: translate(0, 0) scale(0.6);
+    }
+    20% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(4px, -46px) scale(1.1);
+    }
+}
+
+/* 動きを控える設定では、水を満たすだけにして波・魚・泡は出さない */
+@media (prefers-reduced-motion: reduce) {
+    .project-card-water,
+    .project-card-water::before,
+    .project-card-water::after {
+        animation: none !important;
+        transition: none !important;
+    }
+    .project-card-fish,
+    .project-card-bubble {
+        display: none;
+    }
+}
+
 /* カンバンで複数選択したタスク。Sortable に渡せるクラスは1つだけなのでまとめておく */
 .task-selected {
     @apply bg-sky-50 ring-2 ring-sky-500;
