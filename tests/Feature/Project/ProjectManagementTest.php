@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Project;
 
+use App\Enums\ListColor;
 use App\Enums\ProjectRole;
 use App\Models\Project;
 use App\Models\User;
@@ -32,6 +33,22 @@ class ProjectManagementTest extends TestCase
         $this->assertNotNull($project);
         $this->assertSame(ProjectRole::Owner, $project->roleOf($creator));
         $this->assertSame(ProjectRole::Member, $project->roleOf($member));
+    }
+
+    public function test_プロジェクトを作成すると最初のリストが3つできる(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('projects.store'), ['name' => 'リスト付き'])
+            ->assertRedirect();
+
+        $lists = Project::firstWhere('name', 'リスト付き')->taskLists;
+
+        $this->assertSame(['開始前', '進行中', '完了'], $lists->pluck('name')->all());
+        $this->assertSame(
+            [ListColor::Sky->value, ListColor::Emerald->value, ListColor::Rose->value],
+            $lists->pluck('color')->all(),
+        );
+        $this->assertSame([0, 1, 2], $lists->pluck('position')->all());
     }
 
     public function test_参加者に選ばれていなくても作成者は必ず参加する(): void

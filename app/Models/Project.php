@@ -70,6 +70,28 @@ class Project extends Model
     }
 
     /**
+     * 最初から用意するリスト（列）を作る（すでにリストがあれば何もしない）
+     */
+    public function createDefaultTaskLists(): void
+    {
+        if ($this->taskLists()->exists()) {
+            return;
+        }
+
+        $defaults = [
+            '開始前' => ListColor::Sky,
+            '進行中' => ListColor::Emerald,
+            '完了' => ListColor::Rose,
+        ];
+
+        $position = 0;
+
+        foreach ($defaults as $name => $color) {
+            $this->taskLists()->create(['name' => $name, 'color' => $color->value, 'position' => $position++]);
+        }
+    }
+
+    /**
      * アーカイブ済みも含む（番号はアーカイブ済みのタスクとも重複させない）
      *
      * @return HasMany<Task, $this>

@@ -134,6 +134,7 @@ class ProjectController extends Controller
         // 作った人は必ずオーナーになる
         $project->users()->sync($this->participants($request, $request->user()));
         $project->createDefaultLabels();
+        $project->createDefaultTaskLists();
 
         return redirect()
             ->route('projects.show', $project)
