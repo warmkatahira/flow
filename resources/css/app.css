@@ -244,6 +244,31 @@ html[data-sidebar-moving] .sidebar-wave {
     }
 }
 
+/*
+ * ボードのカードにマウスを乗せたとき。少し浮き上がり、青い枠と薄い水色の背景になる
+ * 選択中（.task-selected）より枠を淡くして区別する。ドラッグ中のカードと置き場所は動かさない
+ */
+.task-card {
+    transition:
+        translate 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+        background-color 0.15s;
+}
+
+@media (hover: hover) {
+    .task-card:hover:not(.sortable-chosen, .sortable-ghost, .task-selected) {
+        @apply -translate-y-[3px] shadow-lg ring-2 ring-sky-400;
+        /* 半透明にするとリストの色が透けるので、白に混ぜた不透明な色にする */
+        background-color: color-mix(in oklab, var(--color-sky-50) 55%, white);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .task-card:hover {
+        translate: none !important;
+    }
+}
+
 /* カンバンで複数選択したタスク。Sortable に渡せるクラスは1つだけなのでまとめておく */
 .task-selected {
     @apply bg-sky-50 ring-2 ring-sky-500;
