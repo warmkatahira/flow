@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
 use App\Models\Task;
 use App\Models\TaskComment;
+use App\Rules\RichTextLength;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -21,7 +22,7 @@ class TaskCommentController extends Controller
         $this->authorizeDetail($task);
 
         $attributes = $request->validate([
-            'body' => ['required', 'string', 'max:10000'],
+            'body' => ['required', 'string', 'max:100000', new RichTextLength(required: true)],
         ]);
 
         $comment = $task->comments()->make($attributes);

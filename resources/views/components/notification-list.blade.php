@@ -7,7 +7,7 @@
         <span class="min-w-0 flex-1">
             <span class="block text-sm text-slate-700">{{ $comment->user->name }} さんがメンションしました</span>
             <span class="block truncate text-xs text-slate-500">{{ $comment->task->project->name }} / {{ $comment->task->title }}</span>
-            <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $comment->body }}</span>
+            <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $comment->bodyText() }}</span>
             <span class="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
                 {{ $comment->created_at->format('Y/m/d H:i') }}
                 @if ($comment->pivot->read_at)

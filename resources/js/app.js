@@ -2,6 +2,7 @@ import collapse from '@alpinejs/collapse';
 import Alpine from 'alpinejs';
 import Sortable, { MultiDrag } from 'sortablejs';
 import './echo';
+import './rich-text';
 
 Sortable.mount(new MultiDrag());
 
@@ -914,58 +915,6 @@ Alpine.data('notifications', (initialCount, userId, url, readAllUrl) => ({
     async readAll() {
         await post(readAllUrl, {});
         await this.refresh();
-    },
-}));
-
-/**
- * コメントのメンション
- *
- * 文字カーソルの直前が「@文字列」のとき、一致する参加者を出す。選んだら「@名前 」に置き換える。
- * 実際に誰へのメンションになるかはサーバーが本文から決める。
- */
-Alpine.data('mentionBox', (members) => ({
-    candidates: [],
-    active: 0,
-    start: 0,
-
-    update() {
-        const { body } = this.$refs;
-        const match = body.value.slice(0, body.selectionStart).match(/[@＠]([^\s@＠]*)$/);
-
-        this.active = 0;
-        this.start = match?.index ?? 0;
-        this.candidates = match ? members.filter((member) => member.name.includes(match[1])) : [];
-    },
-
-    keydown(event) {
-        // 変換の確定の Enter は候補の決定にしない
-        if (this.candidates.length === 0 || event.isComposing) {
-            return;
-        }
-
-        const count = this.candidates.length;
-
-        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            this.active = (this.active + (event.key === 'ArrowDown' ? 1 : count - 1)) % count;
-        } else if (event.key === 'Enter' || event.key === 'Tab') {
-            this.choose(this.candidates[this.active]);
-        } else if (event.key === 'Escape') {
-            this.candidates = [];
-        } else {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-    },
-
-    choose(member) {
-        const { body } = this.$refs;
-        const before = `${body.value.slice(0, this.start)}@${member.name} `;
-
-        body.value = before + body.value.slice(body.selectionStart);
-        body.setSelectionRange(before.length, before.length);
-        this.candidates = [];
     },
 }));
 

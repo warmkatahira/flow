@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use App\Enums\Reaction;
+use App\Support\RichText;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,6 +16,14 @@ use Illuminate\Support\HtmlString;
 #[Fillable(['body'])]
 class TaskComment extends Model
 {
+    /**
+     * 本文は書式付き（RichText）。保存するときに許可した書式だけに整える
+     */
+    protected function body(): Attribute
+    {
+        return Attribute::make(set: fn (?string $value) => RichText::sanitize($value));
+    }
+
     /**
      * @return BelongsTo<Task, $this>
      */
@@ -79,7 +89,7 @@ class TaskComment extends Model
      */
     public function syncMentions(Collection $participants): void
     {
-        $body = $this->body;
+        $body = $this->bodyText();
         $ids = [];
 
         foreach ($participants->groupBy('name')->sortByDesc(fn ($users, $name) => mb_strlen($name)) as $name => $users) {
@@ -93,7 +103,7 @@ class TaskComment extends Model
     }
 
     /**
-     * 本文を HTML にする。全体をエスケープしてから、メンションの部分だけ色を付ける
+     * 本文を HTML にする。書式を組み立て直しながら、メンションの部分だけ色を付ける
      */
     public function bodyHtml(): HtmlString
     {
@@ -101,7 +111,14 @@ class TaskComment extends Model
             e("@{$user->name}") => '<span class="rounded bg-sky-50 px-0.5 text-sky-600">'.e("@{$user->name}").'</span>',
         ]);
 
-        // strtr は長い方から置き換えるので、名前が前方一致していても壊れない
-        return new HtmlString(strtr(e($this->body), $tags->all()));
+        return new HtmlString(RichText::render($this->body, $tags->all()));
+    }
+
+    /**
+     * 書式を外した本文（通知の一覧、メンションの判定）
+     */
+    public function bodyText(): string
+    {
+        return RichText::toPlainText($this->body);
     }
 }

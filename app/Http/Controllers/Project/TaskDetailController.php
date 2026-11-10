@@ -6,6 +6,7 @@ use App\Enums\TaskStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Project\Concerns\RendersTaskDetail;
 use App\Models\Task;
+use App\Rules\RichTextLength;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -35,7 +36,7 @@ class TaskDetailController extends Controller
 
         $task->update($request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:100000', new RichTextLength],
         ]));
 
         return $this->changed($task);

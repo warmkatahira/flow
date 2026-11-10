@@ -92,7 +92,7 @@ class TaskDetailTest extends TestCase
 
         $this->task->refresh();
         $this->assertSame('新しい名前', $this->task->title);
-        $this->assertSame('説明', $this->task->description);
+        $this->assertSame('<p>説明</p>', $this->task->description);
     }
 
     public function test_期間を設定して消せる(): void
@@ -494,6 +494,44 @@ class TaskDetailTest extends TestCase
             ->assertOk()
             ->assertDontSee('<script>alert(1)', false)
             ->assertDontSee('@<b>', false);
+    }
+
+    public function test_書式付きのコメントを投稿できる(): void
+    {
+        $member = $this->participant();
+        $member->update(['name' => '田中太郎']);
+
+        $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), [
+            'body' => '<p><strong>@田中太郎 確認</strong><span style="color: #dc2626">して</span><img src=x onerror=alert(1)></p>',
+        ])
+            ->assertOk()
+            ->assertSee('<strong><span class="rounded bg-sky-50 px-0.5 text-sky-600">@田中太郎</span> 確認</strong><span style="color: #dc2626">して</span>', false)
+            ->assertDontSee('onerror', false);
+
+        $this->assertTrue(TaskComment::first()->mentions->contains($member));
+    }
+
+    public function test_文字のないコメントは投稿できない(): void
+    {
+        $this->actingAs($this->user)->postJson(route('tasks.comments.store', $this->task), ['body' => '<p></p><p><strong></strong></p>'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('body');
+    }
+
+    public function test_説明の長さは書式を外した文字数で数える(): void
+    {
+        $long = '<p><strong>'.str_repeat('あ', 10000).'</strong></p>';
+
+        $this->actingAs($this->user)->putJson(route('tasks.update', $this->task), ['description' => $long])->assertOk();
+        $this->actingAs($this->user)->putJson(route('tasks.update', $this->task), ['description' => $long.'<p>い</p>'])
+            ->assertJsonValidationErrors('description');
+    }
+
+    public function test_説明を空にするとnullになる(): void
+    {
+        $this->actingAs($this->user)->put(route('tasks.update', $this->task), ['description' => '<p></p>'])->assertOk();
+
+        $this->assertNull($this->task->refresh()->description);
     }
 
     public function test_削除済みのユーザーのコメントも読める(): void

@@ -4,12 +4,15 @@ namespace App\Models;
 
 use App\Enums\TaskStatus;
 use App\Models\Concerns\Archivable;
+use App\Support\RichText;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\HtmlString;
 
 #[Fillable(['title', 'description', 'task_list_id', 'position', 'status', 'started_on', 'ended_on'])]
 class Task extends Model
@@ -97,6 +100,27 @@ class Task extends Model
     public function checklistItems(): HasManyThrough
     {
         return $this->hasManyThrough(TaskChecklistItem::class, TaskChecklist::class);
+    }
+
+    /**
+     * 説明は書式付き（RichText）。保存するときに許可した書式だけに整え、中身がなければ null にする
+     */
+    protected function description(): Attribute
+    {
+        return Attribute::make(set: fn (?string $value) => RichText::sanitize($value) ?: null);
+    }
+
+    public function descriptionHtml(): HtmlString
+    {
+        return new HtmlString(RichText::render($this->description));
+    }
+
+    /**
+     * 書式を外した説明（カードの抜粋など）
+     */
+    public function descriptionText(): string
+    {
+        return RichText::toPlainText($this->description);
     }
 
     /**

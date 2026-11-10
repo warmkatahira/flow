@@ -75,17 +75,28 @@
         </form>
     </div>
 
-    {{-- 説明 --}}
-    <div x-data="blurEdit(@js($task->description ?? ''))" class="mt-2">
-        <button type="button" x-show="! editing" @click="editing = true; $nextTick(() => $refs.description.focus())"
-                class="block w-full whitespace-pre-wrap break-words text-left text-sm {{ $task->description ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600' }}">{{ $task->description ?: '説明を編集' }}</button>
+    {{-- 説明。押すと書式付きのエディタになり、外へフォーカスが出ると保存する（resources/js/rich-text.js の richDescription） --}}
+    <div x-data="richDescription(@js($task->description ?? ''))" @focusout="focusout($event)" class="mt-2">
+        <div x-show="! editing" role="button" tabindex="0" aria-label="説明を編集"
+             @click="start()" @keydown.enter.prevent="start()"
+             class="block w-full cursor-text break-words rounded-md text-left text-sm {{ $task->description ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600' }}">
+            @if ($task->description)
+                <div class="rich-text">{{ $task->descriptionHtml() }}</div>
+            @else
+                説明を編集
+            @endif
+        </div>
 
-        <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak>
+        <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak
+              class="rounded-lg border border-slate-300 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
             @csrf
             @method('PUT')
-            <textarea name="description" x-ref="description" rows="4" maxlength="10000" aria-label="説明"
-                      @blur="finish($el)" @keydown.escape.prevent.stop="cancel($el)"
-                      class="{{ $inputClass }}">{{ $task->description }}</textarea>
+            <input type="hidden" name="description" x-ref="input">
+
+            <div class="border-b border-slate-200 px-1.5 py-1">
+                @include('projects.partials.rich-text-toolbar')
+            </div>
+            <div x-ref="editor" class="px-3 py-2 text-sm text-slate-700"></div>
         </form>
     </div>
 </div>
@@ -338,26 +349,32 @@
 
 {{-- コメント --}}
 <div class="space-y-4 px-6 pb-5">
-    {{-- @ を打つとプロジェクトの参加者から選べる（resources/js/app.js の mentionBox） --}}
+    {{-- 書式付きのエディタ。@ を打つとプロジェクトの参加者から選べる（resources/js/rich-text.js の commentEditor） --}}
     <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.comments.store', $task) }}"
-          x-data="mentionBox(@js($task->project->users->map->only('id', 'name')->values()))"
-          class="relative rounded-xl border border-slate-300 p-3 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
+          x-data="commentEditor(@js($task->project->users->map->only('id', 'name')->values()))" @submit="submit($event)"
+          class="relative rounded-xl border border-slate-300 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
         @csrf
-        <textarea name="body" x-ref="body" rows="2" required maxlength="10000" placeholder="コメントを書く（@ でメンション）" aria-label="コメント"
-                  @input="update()" @click="update()" @keydown="keydown($event)" @blur="candidates = []"
-                  class="block w-full resize-none text-sm text-slate-800 focus:outline-none"></textarea>
+        <input type="hidden" name="body" x-ref="input">
 
-        <ul x-show="candidates.length > 0" x-cloak role="listbox" aria-label="メンションする人"
-            class="absolute left-3 top-full z-20 -mt-8 max-h-48 w-64 overflow-y-auto rounded-xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200">
-            <template x-for="(member, index) in candidates" :key="member.id">
-                <li role="option" :aria-selected="index === active ? 'true' : 'false'"
-                    @mousedown.prevent="choose(member)" @mouseenter="active = index"
-                    :class="index === active && 'bg-sky-50'"
-                    class="cursor-pointer truncate px-3 py-1.5 text-sm text-slate-700" x-text="member.name"></li>
-            </template>
-        </ul>
+        <div class="border-b border-slate-200 px-1.5 py-1">
+            @include('projects.partials.rich-text-toolbar')
+        </div>
 
-        <div class="mt-1 flex justify-end">
+        <div class="relative px-3 pt-2">
+            <div x-ref="editor" class="text-sm text-slate-800"></div>
+
+            <ul x-show="candidates.length > 0" x-cloak role="listbox" aria-label="メンションする人"
+                class="absolute left-3 top-full z-20 mt-1 max-h-48 w-64 overflow-y-auto rounded-xl bg-white py-1.5 shadow-xl ring-1 ring-slate-200">
+                <template x-for="(member, index) in candidates" :key="member.id">
+                    <li role="option" :aria-selected="index === highlighted ? 'true' : 'false'"
+                        @mousedown.prevent="choose(member)" @mouseenter="highlighted = index"
+                        :class="index === highlighted && 'bg-sky-50'"
+                        class="cursor-pointer truncate px-3 py-1.5 text-sm text-slate-700" x-text="member.name"></li>
+                </template>
+            </ul>
+        </div>
+
+        <div class="flex justify-end px-3 pb-3 pt-1">
             <button type="submit" class="rounded-lg bg-sky-500 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-600">コメントを投稿</button>
         </div>
     </form>
@@ -381,7 +398,7 @@
                     @endif
                 </div>
 
-                <p class="mt-1 whitespace-pre-wrap break-words text-sm text-slate-800">{{ $comment->bodyHtml() }}</p>
+                <div class="rich-text mt-1 break-words text-sm text-slate-800">{{ $comment->bodyHtml() }}</div>
 
                 {{-- リアクション。押すたびに付け外しする --}}
                 <form data-task-form autocomplete="off" method="POST" action="{{ route('comments.react', $comment) }}"

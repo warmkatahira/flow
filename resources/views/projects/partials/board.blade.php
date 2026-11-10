@@ -105,7 +105,7 @@
 
                                 {{-- 詳細は「拡張する」で出す --}}
                                 @if ($task->description)
-                                    <p class="mt-1 line-clamp-2 hidden break-words text-xs text-slate-500 cards-expanded:[display:-webkit-box]">{{ $task->description }}</p>
+                                    <p class="mt-1 line-clamp-2 hidden break-words text-xs text-slate-500 cards-expanded:[display:-webkit-box]">{{ $task->descriptionText() }}</p>
                                 @endif
 
                                 @if ($task->started_on || $task->ended_on || $task->checklist_items_count || $task->assignees->isNotEmpty())
