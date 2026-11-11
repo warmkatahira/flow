@@ -106,6 +106,6 @@ return [
         'started_on' => '開始日',
         'ended_on' => '終了日',
         'body' => 'コメント',
-        'labels' => 'ラベル',
+        'labels' => 'タグ',
     ],
 ];

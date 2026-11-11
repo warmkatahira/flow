@@ -32,7 +32,7 @@ enum TaskActivity: string
             self::Restored => 'アーカイブから戻しました',
             self::Period => $detail ? "期間を {$detail} にしました" : '期間を外しました',
             self::Assignee => '担当者を変更しました',
-            self::Label => 'ラベルを変更しました',
+            self::Label => 'タグを変更しました',
             self::Title => 'タイトルを変更しました',
             self::Description => '説明を変更しました',
             self::Checklist => 'チェックリストを変更しました',

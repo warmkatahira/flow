@@ -169,7 +169,7 @@
         </form>
     </div>
 
-    {{-- ラベル --}}
+    {{-- タグ --}}
     @include('projects.partials.task-labels')
 
     {{-- チェックリスト --}}
@@ -579,7 +579,7 @@
     @endforeach
 </div>
 
-{{-- ラベルの文字数が違っても日時と名前の位置が揃うよう、表の形に並べる。最終更新は並べ替えとコメントでは変わらない --}}
+{{-- タグの文字数が違っても日時と名前の位置が揃うよう、表の形に並べる。最終更新は並べ替えとコメントでは変わらない --}}
 <dl class="grid grid-cols-[max-content_max-content_1fr] gap-x-3 gap-y-0.5 border-t border-slate-200 px-6 py-3 text-xs text-slate-400">
     <dt>作成</dt>
     <dd>{{ $task->created_at->format('Y年m月d日 H:i') }}</dd>

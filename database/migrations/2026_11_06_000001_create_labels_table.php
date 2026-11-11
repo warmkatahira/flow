@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * プロジェクトごとのラベルの種類
+ * プロジェクトごとのタグの種類
  */
 return new class extends Migration
 {

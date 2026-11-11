@@ -3,11 +3,11 @@
     use App\Models\Label;
 @endphp
 
-{{-- ラベルの欄とポップアップ（resources/js/app.js の labelPicker） --}}
+{{-- タグの欄とポップアップ（resources/js/app.js の labelPicker） --}}
 <div x-data="labelPicker(@js($task->labels->pluck('id')->values()), {{ Label::MAX_PER_TASK }}, { store: @js(route('tasks.labels.store', $task)) }, @js(ListColor::Sky->value))"
      class="{{ $rowClass }}">
     <svg class="mt-0.5 h-5 w-5 shrink-0 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 001.075.676L10 15.082l5.925 2.844A.75.75 0 0017 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0010 2z" />
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M4.5 2A2.5 2.5 0 002 4.5v3.879a2.5 2.5 0 00.732 1.767l7.5 7.5a2.5 2.5 0 003.536 0l3.878-3.878a2.5 2.5 0 000-3.536l-7.5-7.5A2.5 2.5 0 008.38 2H4.5zM5 6a1 1 0 100-2 1 1 0 000 2z" />
     </svg>
 
     <button type="button" @click="open()" class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 text-left hover:text-slate-800">
@@ -17,7 +17,7 @@
                 {{ $label->name }}
             </span>
         @empty
-            ラベル: 指定なし
+            タグ: 指定なし
         @endforelse
     </button>
 
@@ -26,8 +26,8 @@
         {{-- 選ぶ画面 --}}
         <div x-show="view === 'pick'">
             <div class="relative px-5 pt-4 text-center">
-                <h3 class="text-sm text-slate-700">ラベル</h3>
-                <button type="button" @click="add()" class="absolute right-5 top-4 text-xs text-sky-600 hover:text-sky-800">＋新規ラベル追加</button>
+                <h3 class="text-sm text-slate-700">タグ</h3>
+                <button type="button" @click="add()" class="absolute right-5 top-4 text-xs text-sky-600 hover:text-sky-800">＋新規タグ追加</button>
             </div>
 
             {{-- 並びはドラッグで変えられる。指定なしは動かさない --}}
@@ -65,21 +65,21 @@
                 <template x-for="id in selected" :key="id">
                     <input type="hidden" name="labels[]" :value="id">
                 </template>
-                <p class="text-xs text-sky-600">ラベル選択数 <span x-text="selected.length"></span>/{{ Label::MAX_PER_TASK }}</p>
+                <p class="text-xs text-sky-600">タグ選択数 <span x-text="selected.length"></span>/{{ Label::MAX_PER_TASK }}</p>
                 <button type="submit" class="rounded-lg bg-sky-50 px-6 py-1.5 text-sm text-sky-600 transition hover:bg-sky-100">保存</button>
             </form>
         </div>
 
         {{-- 追加・編集の画面 --}}
         <div x-show="view === 'form'" x-cloak class="p-5">
-            <h3 class="text-sm text-slate-700" x-text="form.editing ? 'ラベルを編集' : 'オリジナルラベルを追加'"></h3>
+            <h3 class="text-sm text-slate-700" x-text="form.editing ? 'タグを編集' : 'オリジナルタグを追加'"></h3>
 
             <form data-task-form autocomplete="off" method="POST" :action="form.action" class="mt-3 space-y-4">
                 @csrf
                 <input type="hidden" name="_method" :value="form.method">
 
                 <div>
-                    <label for="label-name" class="block text-sm text-slate-600">ラベル名</label>
+                    <label for="label-name" class="block text-sm text-slate-600">タグ名</label>
                     <input autocomplete="off" id="label-name" type="text" name="name" x-ref="labelName" x-model="form.name" required maxlength="50"
                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
                 </div>
@@ -90,7 +90,7 @@
                 </div>
 
                 <div class="flex items-center justify-between">
-                    <p class="text-xs text-sky-600">ラベル選択数 <span x-text="selected.length"></span>/{{ Label::MAX_PER_TASK }}</p>
+                    <p class="text-xs text-sky-600">タグ選択数 <span x-text="selected.length"></span>/{{ Label::MAX_PER_TASK }}</p>
                     <div class="flex gap-3">
                         <button type="button" @click="view = 'pick'" class="rounded-lg bg-sky-50 px-5 py-1.5 text-sm text-sky-600 transition hover:bg-sky-100">キャンセル</button>
                         <button type="submit" class="rounded-lg bg-sky-500 px-6 py-1.5 text-sm text-white transition hover:bg-sky-600" x-text="form.editing ? '変更' : '追加'"></button>
@@ -99,10 +99,10 @@
             </form>
 
             <form data-task-form autocomplete="off" method="POST" :action="form.destroy" x-show="form.editing" class="mt-2"
-                  onsubmit="return confirm('このラベルを削除します。付けているタスクからも外れます。よろしいですか？');">
+                  onsubmit="return confirm('このタグを削除します。付けているタスクからも外れます。よろしいですか？');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="text-xs text-rose-500 hover:text-rose-700">このラベルを削除</button>
+                <button type="submit" class="text-xs text-rose-500 hover:text-rose-700">このタグを削除</button>
             </form>
         </div>
     </dialog>

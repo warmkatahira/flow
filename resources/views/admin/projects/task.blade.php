@@ -42,7 +42,7 @@
                     @endif
                 </dd>
 
-                <dt class="text-slate-500">ラベル</dt>
+                <dt class="text-slate-500">タグ</dt>
                 <dd class="flex flex-wrap gap-1">
                     @forelse ($task->labels as $label)
                         <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-slate-700" style="background-color: {{ $label->color }}1f">

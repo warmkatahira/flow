@@ -92,7 +92,7 @@ class Project extends Model
     }
 
     /**
-     * タスクに付けられるラベルの種類
+     * タスクに付けられるタグの種類
      *
      * @return HasMany<Label, $this>
      */
@@ -102,7 +102,7 @@ class Project extends Model
     }
 
     /**
-     * 最初から用意するラベルを作る（すでにラベルがあれば何もしない）
+     * 最初から用意するタグを作る（すでにタグがあれば何もしない）
      */
     public function createDefaultLabels(): void
     {

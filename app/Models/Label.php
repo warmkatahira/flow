@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * タスクに付けるラベル（種類はプロジェクトごと）
+ * タスクに付けるタグ（種類はプロジェクトごと）
  */
 #[Fillable(['name', 'color'])]
 class Label extends Model

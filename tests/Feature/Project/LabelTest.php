@@ -45,7 +45,7 @@ class LabelTest extends TestCase
         return $label;
     }
 
-    public function test_プロジェクトを作ると既定のラベルが入る(): void
+    public function test_プロジェクトを作ると既定のタグが入る(): void
     {
         $this->actingAs($this->user)->post(route('projects.store'), ['name' => '新しい案件'])->assertRedirect();
 
@@ -55,16 +55,16 @@ class LabelTest extends TestCase
         );
     }
 
-    public function test_既定のラベルはラベルがあるプロジェクトには足さない(): void
+    public function test_既定のタグはタグがあるプロジェクトには足さない(): void
     {
-        $this->label('自分のラベル');
+        $this->label('自分のタグ');
 
         $this->project->createDefaultLabels();
 
-        $this->assertSame(['自分のラベル'], $this->project->labels()->pluck('name')->all());
+        $this->assertSame(['自分のタグ'], $this->project->labels()->pluck('name')->all());
     }
 
-    public function test_ラベルを追加できる(): void
+    public function test_タグを追加できる(): void
     {
         $this->actingAs($this->user)
             ->post(route('tasks.labels.store', $this->task), ['name' => '優先度:高', 'color' => '#FF0000'])
@@ -95,7 +95,7 @@ class LabelTest extends TestCase
             ->assertOk();
     }
 
-    public function test_ラベルをタスクに付け外しできる(): void
+    public function test_タグをタスクに付け外しできる(): void
     {
         $first = $this->label('一');
         $second = $this->label('二');
@@ -109,7 +109,7 @@ class LabelTest extends TestCase
 
     public function test_付けられるのは5つまで(): void
     {
-        $ids = collect(range(1, 6))->map(fn (int $i) => $this->label("ラベル{$i}")->id);
+        $ids = collect(range(1, 6))->map(fn (int $i) => $this->label("タグ{$i}")->id);
 
         $this->actingAs($this->user)->put(route('tasks.labels.sync', $this->task), ['labels' => $ids->take(5)->all()])->assertOk();
 
@@ -120,7 +120,7 @@ class LabelTest extends TestCase
         $this->assertCount(5, $this->task->labels);
     }
 
-    public function test_他のプロジェクトのラベルは付けられない(): void
+    public function test_他のプロジェクトのタグは付けられない(): void
     {
         $other = $this->label('別', Project::factory()->ownedBy($this->user)->create());
 
@@ -129,7 +129,7 @@ class LabelTest extends TestCase
             ->assertJsonValidationErrors('labels.0');
     }
 
-    public function test_ラベルを編集できる(): void
+    public function test_タグを編集できる(): void
     {
         $label = $this->label('元');
 
@@ -140,7 +140,7 @@ class LabelTest extends TestCase
         $this->assertSame('#00ff00', $label->refresh()->color);
     }
 
-    public function test_ラベルを消すとタスクからも外れる(): void
+    public function test_タグを消すとタスクからも外れる(): void
     {
         $label = $this->label('消す');
         $this->task->labels()->attach($label);
@@ -151,7 +151,7 @@ class LabelTest extends TestCase
         $this->assertCount(0, $this->task->fresh()->labels);
     }
 
-    public function test_他のプロジェクトのラベルは編集できない(): void
+    public function test_他のプロジェクトのタグは編集できない(): void
     {
         $other = $this->label('別', Project::factory()->ownedBy($this->user)->create());
 
@@ -163,7 +163,7 @@ class LabelTest extends TestCase
         $this->assertSame('別', $other->refresh()->name);
     }
 
-    public function test_ラベルを並べ替えられる(): void
+    public function test_タグを並べ替えられる(): void
     {
         $first = $this->label('一');
         $second = $this->label('二');
@@ -189,7 +189,7 @@ class LabelTest extends TestCase
         $this->assertModelExists($label);
     }
 
-    public function test_複製するとラベルも写る(): void
+    public function test_複製するとタグも写る(): void
     {
         $this->task->labels()->attach($this->label('メモ'));
 
@@ -198,7 +198,7 @@ class LabelTest extends TestCase
         $this->assertCount(1, Task::firstWhere('title', 'タスク のコピー')->labels);
     }
 
-    public function test_他のプロジェクトへ動かすとラベルは外れる(): void
+    public function test_他のプロジェクトへ動かすとタグは外れる(): void
     {
         $this->task->labels()->attach($this->label('メモ'));
         $target = Project::factory()->ownedBy($this->user)->create();
@@ -209,16 +209,16 @@ class LabelTest extends TestCase
         $this->assertCount(0, $this->task->fresh()->labels);
     }
 
-    public function test_ボードの取り直しでフィルターのラベルも更新される(): void
+    public function test_ボードの取り直しでフィルターのタグも更新される(): void
     {
-        $this->label('新しいラベル');
+        $this->label('新しいタグ');
 
         $html = $this->actingAs($this->user)->getJson(route('projects.board', $this->project))->assertOk()->json('filterLabels');
 
-        $this->assertStringContainsString('新しいラベル', $html);
+        $this->assertStringContainsString('新しいタグ', $html);
     }
 
-    public function test_カードにラベルが出る(): void
+    public function test_カードにタグが出る(): void
     {
         $label = $this->label('メモ');
         $this->task->labels()->attach($label);

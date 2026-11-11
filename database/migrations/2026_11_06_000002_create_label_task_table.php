@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * タスクに付けたラベル
+ * タスクに付けたタグ
  */
 return new class extends Migration
 {

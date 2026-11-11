@@ -160,7 +160,7 @@ class TaskFollowTest extends TestCase
             '説明を変更しました',
             '期間を 11/10〜11/20 にしました',
             '担当者を変更しました',
-            'ラベルを変更しました',
+            'タグを変更しました',
             'チェックリストを変更しました',
             '「進行中」へ移動しました',
         ], $messages);
@@ -260,7 +260,7 @@ class TaskFollowTest extends TestCase
             ->assertSeeInOrder(['作成', '持ち主', '最終更新', 'フォロワー']);
     }
 
-    public function test_チェックリストやラベルの変更でも最終更新者が変わる(): void
+    public function test_チェックリストやタグの変更でも最終更新者が変わる(): void
     {
         $this->actingAs($this->follower)->post(route('tasks.checklists.store', $this->task), ['title' => '手順']);
 

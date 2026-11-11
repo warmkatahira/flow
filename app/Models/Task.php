@@ -222,7 +222,7 @@ class Task extends Model
     }
 
     /**
-     * 複製先へ担当者・ラベル・チェックリストを写す（コメントは写さない）
+     * 複製先へ担当者・タグ・チェックリストを写す（コメントは写さない）
      */
     public function copyDetailsTo(self $copy): void
     {

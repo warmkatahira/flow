@@ -119,7 +119,7 @@ class TaskController extends Controller
                 $task->project_id = $to->getKey();
                 $task->number = $to->nextTaskNumber();
                 $task->keepAssigneesIn($to);
-                // ラベルの種類はプロジェクトごとなので持っていけない
+                // タグの種類はプロジェクトごとなので持っていけない
                 $task->labels()->detach();
             }
 

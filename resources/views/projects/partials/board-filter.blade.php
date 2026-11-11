@@ -83,8 +83,8 @@
         </div>
 
         <div class="p-3">
-            <p class="mb-1 px-2 text-sm font-bold text-slate-600">ラベル</p>
-            {{-- ラベルは増減するので、ボードと一緒に取り直す --}}
+            <p class="mb-1 px-2 text-sm font-bold text-slate-600">タグ</p>
+            {{-- タグは増減するので、ボードと一緒に取り直す --}}
             <div data-live-filter-labels class="max-h-60 overflow-y-auto [scrollbar-width:thin]">
                 @include('projects.partials.filter-labels')
             </div>

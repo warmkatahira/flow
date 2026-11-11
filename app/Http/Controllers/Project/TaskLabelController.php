@@ -15,14 +15,14 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * ラベル。種類の管理もタスクの詳細画面から行うので、どれもタスクを通して受ける
+ * タグ。種類の管理もタスクの詳細画面から行うので、どれもタスクを通して受ける
  */
 class TaskLabelController extends Controller
 {
     use RendersTaskDetail;
 
     /**
-     * タスクに付けるラベルを保存する
+     * タスクに付けるタグを保存する
      */
     public function sync(Request $request, Task $task): View
     {
@@ -72,7 +72,7 @@ class TaskLabelController extends Controller
     }
 
     /**
-     * ラベルの並び順を保存する
+     * タグの並び順を保存する
      */
     public function reorder(Request $request, Task $task): Response
     {
