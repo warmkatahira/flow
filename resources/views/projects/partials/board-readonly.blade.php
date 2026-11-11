@@ -33,6 +33,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="text-sm text-slate-800">{{ $task->title }}</p>
                             @include('projects.partials.task-label-bars')
+                            <x-due-chip :task="$task" />
                         </div>
                     </article>
                     @if ($taskUrl)</a>@endif

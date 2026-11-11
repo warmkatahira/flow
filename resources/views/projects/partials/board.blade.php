@@ -95,6 +95,8 @@
 
                                 @include('projects.partials.task-label-bars')
 
+                                <x-due-chip :task="$task" />
+
                                 {{-- 詳細は「拡張する」で出す --}}
                                 @if ($task->description)
                                     <p class="mt-1 line-clamp-2 hidden break-words text-xs text-slate-500 cards-expanded:[display:-webkit-box]">{{ $task->descriptionText() }}</p>

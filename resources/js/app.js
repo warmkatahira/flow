@@ -565,6 +565,68 @@ const daysFrom = (date, days) => {
     return result;
 };
 
+/**
+ * 今日の日付（YYYY-MM-DD）。画面を開いたまま日付が変わったら更新する（期限の印が切り替わる）
+ */
+Alpine.store('today', {
+    value: ymd(new Date()),
+
+    init() {
+        const refresh = () => {
+            this.value = ymd(new Date());
+        };
+
+        setInterval(refresh, 60 * 1000);
+        document.addEventListener('visibilitychange', refresh);
+    },
+});
+
+/**
+ * 期限が近いタスクの印（x-due-chip）
+ *
+ * 今日を1日目と数え、3日目（明後日）までを「近い」とする。
+ * 期限切れ＝overdue / 今日＝today / 残り2日・残り3日＝soon。それより先は出さない。
+ */
+const DUE_SOON_DAYS = 3;
+
+Alpine.data('dueChip', (due, classes) => ({
+    classes,
+
+    // 終了日 - 今日 の日数（時刻やタイムゾーンに左右されないよう日付だけで比べる）
+    get diff() {
+        const toDay = (value) => {
+            const [y, m, d] = value.split('-').map(Number);
+
+            return Date.UTC(y, m - 1, d) / 86400000;
+        };
+
+        return toDay(due) - toDay(this.$store.today.value);
+    },
+
+    get tone() {
+        if (this.diff < 0) {
+            return 'overdue';
+        }
+
+        if (this.diff === 0) {
+            return 'today';
+        }
+
+        return this.diff < DUE_SOON_DAYS ? 'soon' : null;
+    },
+
+    get text() {
+        const [, m, d] = due.split('-').map(Number);
+        const date = `${m}/${d}`;
+
+        return {
+            overdue: `期限切れ ${date}`,
+            today: '今日まで',
+            soon: `残り${this.diff + 1}日（${date}）`,
+        }[this.tone] ?? '';
+    },
+}));
+
 Alpine.store('boardFilter', {
     key: null,
     me: null,
