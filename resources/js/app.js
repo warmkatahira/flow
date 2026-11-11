@@ -1207,9 +1207,9 @@ Alpine.data('taskCalendar', (projectId) => {
             return NAME_WIDTH + (dayNumber(today) - dayNumber(ymd(this.from))) * DAY_WIDTH;
         },
 
-        /** 月の初日は「12/1」のように月も出す */
+        /** カレンダーの日付は「11/12」のように月も出す（月の境目が分かるよう、1日は太字にする。dayClass） */
         dayLabel(day) {
-            return day.number === 1 ? `${day.month}/1` : day.number;
+            return `${day.month}/${day.number}`;
         },
 
         weekdayLabel(day) {
