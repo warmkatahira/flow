@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\TaskCommentAttachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -23,16 +22,6 @@ class TaskCommentAttachmentController extends Controller
 
         Gate::authorize('view', $task->project);
 
-        $disk = Storage::disk(TaskCommentAttachment::DISK);
-
-        abort_unless($disk->exists($attachment->path), 404);
-
-        $inline = $attachment->isPreviewable() && ! $request->boolean('download');
-
-        return $disk->response($attachment->path, $attachment->name, [
-            'Content-Type' => $attachment->isPreviewable() ? $attachment->mime_type : 'application/octet-stream',
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'private, max-age=3600',
-        ], $inline ? 'inline' : 'attachment');
+        return $attachment->toDownloadResponse($request->boolean('download'));
     }
 }

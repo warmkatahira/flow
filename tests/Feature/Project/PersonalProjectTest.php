@@ -9,7 +9,6 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -135,85 +134,5 @@ class PersonalProjectTest extends TestCase
             $this->actingAs($viewer)->get(route('projects.show', $project))->assertNotFound();
             $this->actingAs($viewer)->post(route('lists.store', $project), ['name' => '追加'])->assertNotFound();
         }
-    }
-
-    public function test_システム管理者は全員の_my_projectを一覧で見られる(): void
-    {
-        $admin = User::factory()->systemAdmin()->create();
-        $owner = User::factory()->create(['name' => '山田']);
-        $project = $this->personalOf($owner);
-        $this->taskIn($project, $owner, '山田の作業');
-
-        $this->actingAs($admin)->get(route('admin.my-projects.index'))
-            ->assertOk()
-            ->assertSee('山田')
-            ->assertSee(route('admin.my-projects.show', $project));
-
-        $this->actingAs($admin)->get(route('admin.my-projects.show', $project))
-            ->assertOk()
-            ->assertSee('山田の作業')
-            ->assertSee('閲覧専用');
-
-        $task = Task::firstWhere('title', '山田の作業');
-        $this->actingAs($admin)->get(route('admin.my-projects.task', [$project, $task]))
-            ->assertOk()
-            ->assertSee('山田の作業');
-    }
-
-    public function test_システム管理のメニューはシステム管理者にだけ出る(): void
-    {
-        $this->actingAs(User::factory()->systemAdmin()->create())->get(route('dashboard'))
-            ->assertSee('システム管理')
-            ->assertSee(route('admin.my-projects.index'));
-
-        $this->actingAs(User::factory()->admin()->create())->get(route('dashboard'))
-            ->assertDontSee('システム管理')
-            ->assertDontSee(route('admin.my-projects.index'));
-    }
-
-    public function test_システム管理者以外は閲覧画面を使えない(): void
-    {
-        $project = $this->personalOf(User::factory()->create());
-
-        foreach ([User::factory()->admin()->create(), User::factory()->create()] as $viewer) {
-            $this->actingAs($viewer)->get(route('admin.my-projects.index'))->assertForbidden();
-            $this->actingAs($viewer)->get(route('admin.my-projects.show', $project))->assertForbidden();
-        }
-    }
-
-    public function test_閲覧画面からは_my_project以外は見られない(): void
-    {
-        $admin = User::factory()->systemAdmin()->create();
-        $other = User::factory()->create();
-        $project = Project::factory()->ownedBy($other)->create();
-        $project->createDefaultTaskLists();
-        $personal = $this->personalOf($other);
-        $task = $this->taskIn($project, $other, '別の案件の作業');
-
-        $this->actingAs($admin)->get(route('admin.my-projects.show', $project))->assertNotFound();
-        // 別のプロジェクトのタスクを My Project の下として開いても見せない
-        $this->actingAs($admin)->get(route('admin.my-projects.task', [$personal, $task]))->assertNotFound();
-    }
-
-    public function test_閲覧しても何も書き込まない(): void
-    {
-        $admin = User::factory()->systemAdmin()->create();
-        $owner = User::factory()->create();
-        $project = $this->personalOf($owner);
-        $task = $this->taskIn($project, $owner);
-        $this->actingAs($owner)->post(route('tasks.comments.store', $task), ['body' => 'メモ']);
-
-        $writes = [];
-        DB::listen(function ($query) use (&$writes) {
-            if (! preg_match('/^\s*select/i', $query->sql)) {
-                $writes[] = $query->sql;
-            }
-        });
-
-        $this->actingAs($admin)->get(route('admin.my-projects.index'))->assertOk();
-        $this->actingAs($admin)->get(route('admin.my-projects.show', $project))->assertOk();
-        $this->actingAs($admin)->get(route('admin.my-projects.task', [$project, $task]))->assertOk();
-
-        $this->assertSame([], $writes);
     }
 }

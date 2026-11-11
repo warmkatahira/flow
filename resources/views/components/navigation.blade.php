@@ -15,8 +15,8 @@
     // 「システム管理」のメニュー。項目はここに足していく（どれも見られる人がいなければメニューごと出さない）
     $adminTools = [];
 
-    if (auth()->user()->can('view-personal-projects')) {
-        $adminTools[] = ['label' => 'みんなの My Project', 'route' => 'admin.my-projects.index', 'active' => 'admin.my-projects.*'];
+    if (auth()->user()->can('browse-projects')) {
+        $adminTools[] = ['label' => 'プロジェクト管理', 'route' => 'admin.projects.index', 'active' => 'admin.projects.*'];
     }
 
     $adminActive = collect($adminTools)->contains(fn ($tool) => request()->routeIs($tool['active']));

@@ -1,14 +1,13 @@
-{{-- My Project のタスクの詳細（システム管理者の閲覧用）。何も書き込まない --}}
+{{-- タスクの詳細（システム管理者の閲覧用）。何も書き込まない --}}
 <x-layouts.app :title="'#'.$task->number.' '.$task->title">
     <div class="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
-        <a href="{{ route('admin.my-projects.show', $project) }}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800">
-            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" />
-            </svg>
-            {{ $project->name }} のボード
-        </a>
+        @include('admin.projects.partials.breadcrumb', ['items' => [
+            [$user->name, route('admin.projects.user', $user)],
+            [$project->name, route('admin.projects.show', [$user, $project])],
+            ['#'.$task->number, null],
+        ]])
 
-        @include('admin.my-projects.partials.notice')
+        @include('admin.projects.partials.notice')
 
         <article class="rounded-xl bg-white p-6 shadow-sm">
             <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -111,14 +110,35 @@
                                 @if ($comment->body)
                                     <div class="rich-text mt-1 break-words text-sm text-slate-700">{{ $comment->bodyHtml() }}</div>
                                 @endif
-                                {{-- 添付ファイルは名前だけ出す（中身を渡す入口は参加者だけ） --}}
+                                {{-- 添付ファイル。画像は小さく出し、PDF は押すとプレビュー、それ以外はダウンロード --}}
                                 @if ($comment->attachments->isNotEmpty())
-                                    <ul class="mt-1 flex flex-wrap gap-1.5">
+                                    <ul class="mt-1.5 flex flex-wrap items-start gap-1.5">
                                         @foreach ($comment->attachments as $attachment)
-                                            <li class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                                                <x-paperclip-icon class="h-3.5 w-3.5" />
-                                                {{ $attachment->name }}
-                                                <span class="text-slate-400">{{ $attachment->humanSize() }}</span>
+                                            @php
+                                                $url = route('admin.projects.attachment', $attachment);
+                                            @endphp
+                                            <li class="max-w-full">
+                                                @if ($attachment->isInlineImage())
+                                                    <a href="{{ $url }}" target="_blank" rel="noopener" title="{{ $attachment->name }}（{{ $attachment->humanSize() }}）"
+                                                       class="block overflow-hidden rounded-md ring-1 ring-slate-200">
+                                                        <img src="{{ $url }}" alt="{{ $attachment->name }}" loading="lazy" class="h-24 max-w-48 object-cover">
+                                                    </a>
+                                                @elseif ($attachment->isPdf())
+                                                    <x-pdf-preview :attachment="$attachment" :url="$url">
+                                                        <span class="inline-flex max-w-full items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs text-sky-700 hover:bg-slate-200">
+                                                            <x-paperclip-icon class="h-3.5 w-3.5 shrink-0" />
+                                                            <span class="truncate">{{ $attachment->name }}</span>
+                                                            <span class="shrink-0 text-slate-400">{{ $attachment->humanSize() }}</span>
+                                                        </span>
+                                                    </x-pdf-preview>
+                                                @else
+                                                    <a href="{{ $url }}?download=1" download="{{ $attachment->name }}"
+                                                       class="inline-flex max-w-full items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs text-sky-700 hover:bg-slate-200">
+                                                        <x-paperclip-icon class="h-3.5 w-3.5 shrink-0" />
+                                                        <span class="truncate">{{ $attachment->name }}</span>
+                                                        <span class="shrink-0 text-slate-400">{{ $attachment->humanSize() }}</span>
+                                                    </a>
+                                                @endif
                                             </li>
                                         @endforeach
                                     </ul>

@@ -2,7 +2,12 @@
     プロジェクトのファイル（コメントに添付されたもの）の一覧。新しい順
     他の人の変更で差し替えるので、絞り込みの文字（fileQuery）は外側に持つ
     タスク名を押すと詳細を開く（ボードに出ていないタスクと、アーカイブ中のプロジェクトでは開けない）
+    システム管理者の閲覧画面では $fileUrl（ファイルの URL）と $taskUrl（タスクの詳細のページ）を渡す
 --}}
+@php
+    $fileUrl ??= fn ($file) => route('attachments.show', $file);
+    $taskUrl ??= null;
+@endphp
 @if ($files->isEmpty())
     <div class="rounded-xl bg-white px-6 py-12 text-center shadow-sm">
         <x-paperclip-icon class="mx-auto h-8 w-8 text-slate-300" />
@@ -33,7 +38,7 @@
                         <td class="px-4 py-2.5">
                             <div class="flex min-w-0 items-center gap-3">
                                 @if ($file->isInlineImage())
-                                    <img src="{{ route('attachments.show', $file) }}" alt="" loading="lazy" class="h-9 w-9 shrink-0 rounded-md object-cover ring-1 ring-slate-200">
+                                    <img src="{{ $fileUrl($file) }}" alt="" loading="lazy" class="h-9 w-9 shrink-0 rounded-md object-cover ring-1 ring-slate-200">
                                 @else
                                     <span @class([
                                         'flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[10px] font-bold',
@@ -43,7 +48,7 @@
                                 @endif
                                 @if ($file->isPdf())
                                     {{-- PDF はファイル名を押すとプレビューする --}}
-                                    <x-pdf-preview :attachment="$file" class="min-w-0">
+                                    <x-pdf-preview :attachment="$file" :url="$fileUrl($file)" class="min-w-0">
                                         <span class="block truncate text-sky-700 hover:underline" title="{{ $file->name }}（押すとプレビュー）">{{ $file->name }}</span>
                                     </x-pdf-preview>
                                 @else
@@ -52,7 +57,14 @@
                             </div>
                         </td>
                         <td class="hidden px-4 py-2.5 md:table-cell">
-                            @if ($openable)
+                            @if ($taskUrl)
+                                <a href="{{ $taskUrl($task) }}" class="block truncate text-sky-700 hover:underline" title="{{ $task->title }}">
+                                    <span class="text-xs text-slate-400">#{{ $task->number }}</span> {{ $task->title }}
+                                </a>
+                                @unless ($task->isOnBoard())
+                                    <span class="text-[11px] text-amber-600">アーカイブ中</span>
+                                @endunless
+                            @elseif ($openable)
                                 <button type="button" @click="$dispatch('open-task', { url: @js(route('tasks.show', $task)) })"
                                         class="block w-full truncate text-left text-sky-700 hover:underline" title="{{ $task->title }}">
                                     <span class="text-xs text-slate-400">#{{ $task->number }}</span> {{ $task->title }}
@@ -76,7 +88,7 @@
                         <td class="hidden whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-500 sm:table-cell">{{ $file->humanSize() }}</td>
                         <td class="px-4 py-2.5">
                             <div class="flex items-center justify-end gap-1.5">
-                                <a href="{{ route('attachments.show', [$file, 'download' => 1]) }}" download="{{ $file->name }}"
+                                <a href="{{ $fileUrl($file).(str_contains($fileUrl($file), '?') ? '&' : '?').'download=1' }}" download="{{ $file->name }}"
                                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition group-hover:bg-sky-500 group-hover:text-white hover:bg-sky-600!">
                                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                         <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />

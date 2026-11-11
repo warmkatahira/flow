@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\PersonalProjectController;
+use App\Http\Controllers\Admin\ProjectBrowseController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\NotificationController;
@@ -128,10 +128,13 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
         Route::resource('users', UserController::class)->except('show');
     });
 
-    // 全員の My Project を見るだけの画面（システム管理者のみ）。ここからは何も書き込まない
-    Route::middleware('can:view-personal-projects')->prefix('admin/my-projects')->name('admin.my-projects.')->group(function () {
-        Route::get('/', [PersonalProjectController::class, 'index'])->name('index');
-        Route::get('{project}', [PersonalProjectController::class, 'show'])->name('show');
-        Route::get('{project}/tasks/{task}', [PersonalProjectController::class, 'task'])->name('task');
+    // プロジェクト管理（システム管理者のみ）。全員のプロジェクトを見るだけで、ここからは何も書き込まない
+    // 削除済みのユーザーのプロジェクトも辿れるようにする
+    Route::middleware('can:browse-projects')->prefix('admin/projects')->name('admin.projects.')->group(function () {
+        Route::get('/', [ProjectBrowseController::class, 'index'])->name('index');
+        Route::get('attachments/{attachment}', [ProjectBrowseController::class, 'attachment'])->name('attachment');
+        Route::get('users/{user}', [ProjectBrowseController::class, 'user'])->withTrashed()->name('user');
+        Route::get('users/{user}/{project}', [ProjectBrowseController::class, 'show'])->withTrashed()->name('show');
+        Route::get('users/{user}/{project}/tasks/{task}', [ProjectBrowseController::class, 'task'])->withTrashed()->name('task');
     });
 });

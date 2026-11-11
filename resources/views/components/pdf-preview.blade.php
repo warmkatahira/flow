@@ -2,10 +2,16 @@
     添付した PDF のプレビュー。中身（$slot）を押すと、画面の上にポップアップで開く。PDF を読み込むのは開いたときだけ
     （コメントの添付と「ファイル」タブで使う）
 --}}
-@props(['attachment'])
+@props(['attachment', 'url' => null])
+
+@php
+    // システム管理者の閲覧画面では、そちらの入口の URL を渡す
+    $url ??= route('attachments.show', $attachment);
+    $downloadUrl = $url.(str_contains($url, '?') ? '&' : '?').'download=1';
+@endphp
 
 <div x-data="{ src: '' }" {{ $attributes }}>
-    <button type="button" @click="src = @js(route('attachments.show', $attachment)); $nextTick(() => $refs.preview.showModal())"
+    <button type="button" @click="src = @js($url); $nextTick(() => $refs.preview.showModal())"
             class="block max-w-full text-left">
         {{ $slot }}
     </button>
@@ -15,9 +21,9 @@
         <div class="flex h-full flex-col">
             <div class="flex items-center gap-3 border-b border-slate-200 px-4 py-2.5">
                 <p class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-700">{{ $attachment->name }}</p>
-                <a href="{{ route('attachments.show', [$attachment, 'download' => 1]) }}"
+                <a href="{{ $downloadUrl }}"
                    class="shrink-0 rounded-lg px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-100">ダウンロード</a>
-                <a href="{{ route('attachments.show', $attachment) }}" target="_blank" rel="noopener"
+                <a href="{{ $url }}" target="_blank" rel="noopener"
                    class="shrink-0 rounded-lg px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-100">別のタブで開く</a>
                 <button type="button" @click="$refs.preview.close()" aria-label="プレビューを閉じる"
                         class="shrink-0 rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-100">

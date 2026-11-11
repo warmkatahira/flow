@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * コメントの添付ファイル
@@ -35,6 +36,26 @@ class TaskCommentAttachment extends Model
     public function comment(): BelongsTo
     {
         return $this->belongsTo(TaskComment::class, 'task_comment_id');
+    }
+
+    /**
+     * 中身を返す。画像と PDF はブラウザで開き（$download なら保存させる）、それ以外は必ずダウンロードさせる
+     *
+     * 見てよいかは呼ぶ側で確かめる（参加者の入口と、システム管理者の閲覧の入口がある）。
+     */
+    public function toDownloadResponse(bool $download = false): StreamedResponse
+    {
+        $disk = Storage::disk(self::DISK);
+
+        abort_unless($disk->exists($this->path), 404);
+
+        $inline = $this->isPreviewable() && ! $download;
+
+        return $disk->response($this->path, $this->name, [
+            'Content-Type' => $this->isPreviewable() ? $this->mime_type : 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, max-age=3600',
+        ], $inline ? 'inline' : 'attachment');
     }
 
     /**
