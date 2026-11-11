@@ -11,17 +11,9 @@
     リンクを入れ子にできないので、擬似要素をカード全面に敷いて上に重ねる。
 --}}
 <div {{ $attributes->merge(['class' => 'project-card relative isolate flex items-start gap-4 rounded-xl bg-white p-5 shadow-sm transition hover:shadow-md']) }}>
-    {{-- ホバーで水が満ちて魚が泳ぐ。⋯ のメニューまで切れないよう、切り抜くのはこの層だけにする --}}
+    {{-- ホバーで水が満ちる。⋯ のメニューまで切れないよう、切り抜くのはこの層だけにする --}}
     <div class="project-card-water-layer" aria-hidden="true">
         <div class="project-card-water"></div>
-        <span class="project-card-bubble"></span>
-        <span class="project-card-bubble"></span>
-        <span class="project-card-bubble"></span>
-        <svg class="project-card-fish" viewBox="0 0 32 18">
-            <path d="M5 9C11 1.5 22 1.5 28 9 22 16.5 11 16.5 5 9Z" />
-            <path d="M7 9 0 3v12Z" />
-            <circle cx="23" cy="7.5" r="1.4" class="fill-slate-900" />
-        </svg>
     </div>
 
     <x-project-icon :project="$project" />
