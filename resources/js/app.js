@@ -848,6 +848,7 @@ Alpine.data('blurEdit', (saved) => ({
 /**
  * プロジェクトのカレンダー（resources/views/projects/partials/calendar.blade.php）
  *
+ * 月で区切らず、週が縦に続く。スクロールで前後の月へ進み、端に近づくと数か月ずつ描き足す。
  * 期間のあるタスクを週ごとに帯にして並べる。週の中では重ならないよう段を分け、段の数だけ週の高さを伸ばす。
  * ボードの絞り込み（$store.boardFilter）で外れるタスクは出さない。見ている月はタブの間だけ覚えておく。
  */
@@ -856,6 +857,12 @@ Alpine.data('taskCalendar', (projectId) => {
     const today = ymd(new Date());
     const DAY_HEIGHT = 30;
     const BAR_HEIGHT = 22;
+    // 描いておく範囲（見ている月の何か月前から何か月後まで）と、端に近づいたときに足す月数
+    const BEFORE = 3;
+    const AFTER = 6;
+    const EXTEND = 3;
+    // 曜日の見出し（スクロールしても上に残る）の高さ
+    const HEADER_HEIGHT = 33;
 
     let saved = null;
 
@@ -866,18 +873,32 @@ Alpine.data('taskCalendar', (projectId) => {
     }
 
     const shown = saved ? new Date(`${saved}-01T00:00:00`) : new Date();
+    const monthStart = (year, month) => new Date(year, month, 1);
 
     return {
         tasks: [],
+        // いちばん上に見えている月（見出しに出す）
+        shownYear: shown.getFullYear(),
+        shownMonth: shown.getMonth(),
+        // 描いている範囲（月の初日）
+        from: monthStart(shown.getFullYear(), shown.getMonth() - BEFORE),
+        to: monthStart(shown.getFullYear(), shown.getMonth() + AFTER),
         // 端をドラッグしている間の期間（{ id, edge, start, end, moved }）
         resizing: null,
         // ドラッグを終えた直後のクリックで詳細が開かないようにする
         suppressClick: false,
-        shownYear: shown.getFullYear(),
-        shownMonth: shown.getMonth(),
+        // 上に描き足している最中（スクロール位置を戻し終えるまで次を足さない）
+        extendingBefore: false,
 
         init() {
             this.load();
+            // タブを開いたとき（最初は隠れていて高さがない）に、見ている月の頭へスクロールする
+            this.$watch('tab', (tab) => {
+                if (tab === 'calendar') {
+                    this.$nextTick(() => this.scrollToMonth(this.shownYear, this.shownMonth, 'instant'));
+                }
+            });
+            this.$nextTick(() => this.scrollToMonth(this.shownYear, this.shownMonth, 'instant'));
         },
 
         load() {
@@ -893,24 +914,86 @@ Alpine.data('taskCalendar', (projectId) => {
         },
 
         shift(months) {
-            this.show(new Date(this.shownYear, this.shownMonth + months, 1));
+            this.scrollToMonth(this.shownYear, this.shownMonth + months);
         },
 
         goToday() {
-            this.show(new Date());
+            const now = new Date();
+
+            this.scrollToMonth(now.getFullYear(), now.getMonth(), 'smooth', ymd(now));
         },
 
-        show(date) {
+        /**
+         * その月の1日（target を渡せばその日）を含む週を、曜日の見出しのすぐ下まで送る。描いていなければ描き足す
+         */
+        async scrollToMonth(year, month, behavior = 'smooth', target = null) {
+            const first = monthStart(year, month);
+
+            if (first < this.from) {
+                this.from = monthStart(year, month - EXTEND);
+            }
+
+            if (first >= this.to) {
+                this.to = monthStart(year, month + EXTEND);
+            }
+
+            await this.$nextTick();
+
+            const date = target ?? ymd(first);
+            const week = [...this.$refs.scroller.querySelectorAll('[data-week]')]
+                .find((element) => element.dataset.week <= date && date <= element.dataset.weekEnd);
+
+            if (week) {
+                this.$refs.scroller.scrollTo({ top: week.offsetTop - HEADER_HEIGHT, behavior });
+            }
+
+            this.setShown(first);
+        },
+
+        setShown(date) {
             this.shownYear = date.getFullYear();
             this.shownMonth = date.getMonth();
             remember(sessionStorage, key, `${this.shownYear}-${String(this.shownMonth + 1).padStart(2, '0')}`);
+        },
+
+        /**
+         * スクロールしたら、いちばん上に見えている週の月を見出しにする。端に近づいたら描き足す
+         */
+        async scrolled() {
+            const scroller = this.$refs.scroller;
+            const top = scroller.scrollTop + HEADER_HEIGHT + 1;
+            const week = [...scroller.querySelectorAll('[data-week]')]
+                .find((element) => element.offsetTop + element.offsetHeight > top);
+
+            if (week) {
+                // 週の真ん中（水曜）の月にする。7日のうち4日以上がその月になる
+                const [y, m] = week.dataset.weekMiddle.split('-').map(Number);
+
+                if (y !== this.shownYear || m - 1 !== this.shownMonth) {
+                    this.setShown(new Date(y, m - 1, 1));
+                }
+            }
+
+            if (scroller.scrollTop + scroller.clientHeight > scroller.scrollHeight - 400) {
+                this.to = monthStart(this.to.getFullYear(), this.to.getMonth() + EXTEND);
+            }
+
+            // 上に描き足すと中身が下へずれるので、増えた高さの分だけスクロール位置を戻す
+            if (scroller.scrollTop < 400 && ! this.extendingBefore) {
+                this.extendingBefore = true;
+                const height = scroller.scrollHeight;
+
+                this.from = monthStart(this.from.getFullYear(), this.from.getMonth() - EXTEND);
+                await this.$nextTick();
+                scroller.scrollTop += scroller.scrollHeight - height;
+                this.extendingBefore = false;
+            }
         },
 
         /** 絞り込みに合うタスク。ボードのカードと同じ判定にかける */
         get visibleTasks() {
             const filter = Alpine.store('boardFilter');
             const ranges = filter.dueRanges();
-
             const resizing = this.resizing;
 
             return this.tasks.map((task) => (resizing?.id === task.id ? { ...task, start: resizing.start, end: resizing.end } : task)).filter((task) => filter.matches({
@@ -926,16 +1009,22 @@ Alpine.data('taskCalendar', (projectId) => {
         },
 
         get weeks() {
-            const first = new Date(this.shownYear, this.shownMonth, 1);
-            const last = new Date(this.shownYear, this.shownMonth + 1, 0);
+            const last = new Date(this.to.getFullYear(), this.to.getMonth() + 1, 0);
             const tasks = [...this.visibleTasks].sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end) || a.number - b.number);
             const weeks = [];
 
-            for (let start = daysFrom(first, -first.getDay()); start <= last; start = daysFrom(start, 7)) {
+            for (let start = daysFrom(this.from, -this.from.getDay()); start <= last; start = daysFrom(start, 7)) {
                 const days = Array.from({ length: 7 }, (_, index) => {
                     const date = daysFrom(start, index);
 
-                    return { date: ymd(date), number: date.getDate(), weekday: index, inMonth: date.getMonth() === this.shownMonth };
+                    return {
+                        date: ymd(date),
+                        number: date.getDate(),
+                        month: date.getMonth() + 1,
+                        weekday: index,
+                        // 月の境目が分かるよう、1か月おきに地の色を変える
+                        shaded: date.getMonth() % 2 === 1,
+                    };
                 });
                 const from = days[0].date;
                 const to = days[6].date;
@@ -968,7 +1057,14 @@ Alpine.data('taskCalendar', (projectId) => {
                     });
                 }
 
-                weeks.push({ start: from, days, bars, height: Math.max(96, DAY_HEIGHT + lanes.length * (BAR_HEIGHT + 2) + 8) });
+                weeks.push({
+                    start: from,
+                    end: to,
+                    middle: days[3].date,
+                    days,
+                    bars,
+                    height: Math.max(96, DAY_HEIGHT + lanes.length * (BAR_HEIGHT + 2) + 8),
+                });
             }
 
             return weeks;
@@ -984,21 +1080,25 @@ Alpine.data('taskCalendar', (projectId) => {
             };
         },
 
+        /** 月の初日は「12/1」のように月も出す */
+        dayLabel(day) {
+            return day.number === 1 ? `${day.month}/1` : day.number;
+        },
+
         dayClass(day) {
             if (day.date === today) {
                 return 'bg-sky-500 font-bold text-white';
             }
 
-            if (! day.inMonth) {
-                return 'text-slate-300';
-            }
+            const color = { 0: 'text-rose-500', 6: 'text-sky-600' }[day.weekday] ?? 'text-slate-600';
 
-            return { 0: 'text-rose-500', 6: 'text-sky-600' }[day.weekday] ?? 'text-slate-600';
+            return day.number === 1 ? `${color} font-bold` : color;
         },
 
         /**
          * 帯の端を掴む。動かした先の日のマスに合わせて開始日／終了日を変え、離したら保存する
          * 開始日は終了日を越えられない（逆も同じ）
+         * カレンダーの上下の端に寄せると、寄せている間スクロールし続ける（月をまたいで伸ばせる）
          */
         startResize(event, task, edge) {
             if (! task.periodUrl || event.button !== 0) {
@@ -1012,59 +1112,12 @@ Alpine.data('taskCalendar', (projectId) => {
             this.resizing = { id: task.id, edge, start: task.start, end: task.end, moved: false };
             document.documentElement.classList.add('calendar-resizing');
 
-            // 月をまたぐときは「◀ ▶」かカレンダーの上下の端に寄せる。少し待つとめくれ、寄せたままなら続けてめくる
-            // カレンダーが縦にスクロールできるうちは、めくらずにスクロールする
-            let flipDirection = 0;
-            let flipTimer = null;
+            const scroller = this.$refs.scroller;
+            let pointer = null;
+            let scrollTimer = null;
 
-            const flipTo = (direction) => {
-                if (direction === flipDirection) {
-                    return;
-                }
-
-                flipDirection = direction;
-                clearInterval(flipTimer);
-                flipTimer = direction ? setInterval(() => this.shift(direction), 700) : null;
-            };
-
-            const edgeDirection = (moveEvent) => {
-                const button = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY)
-                    .find((element) => element.dataset?.calendarFlip);
-
-                if (button) {
-                    return Number(button.dataset.calendarFlip);
-                }
-
-                const scroller = this.$refs.scroller;
-                const { top, bottom } = scroller.getBoundingClientRect();
-
-                if (moveEvent.clientY < top + 32) {
-                    if (scroller.scrollTop > 0) {
-                        scroller.scrollTop -= 16;
-
-                        return 0;
-                    }
-
-                    return -1;
-                }
-
-                if (moveEvent.clientY > bottom - 20) {
-                    if (scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1) {
-                        scroller.scrollTop += 16;
-
-                        return 0;
-                    }
-
-                    return 1;
-                }
-
-                return 0;
-            };
-
-            const onMove = (moveEvent) => {
-                flipTo(edgeDirection(moveEvent));
-
-                const cell = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY)
+            const pick = () => {
+                const cell = document.elementsFromPoint(pointer.x, pointer.y)
                     .find((element) => element.dataset?.calendarDate);
 
                 if (! cell) {
@@ -1079,8 +1132,39 @@ Alpine.data('taskCalendar', (projectId) => {
                 Object.assign(this.resizing, next, { moved: true });
             };
 
+            // 端の帯（EDGE px）に深く入るほど速くスクロールする
+            const EDGE = 48;
+            let speed = 0;
+
+            const autoScroll = () => {
+                const { top, bottom } = scroller.getBoundingClientRect();
+                const upper = top + HEADER_HEIGHT + EDGE - pointer.y;
+                const lower = pointer.y - (bottom - EDGE);
+                const depth = Math.min(1, Math.max(upper, lower, 0) / EDGE);
+
+                speed = depth === 0 ? 0 : Math.sign(lower > 0 ? 1 : -1) * Math.round(2 + depth * 8);
+
+                if (speed === 0) {
+                    clearInterval(scrollTimer);
+                    scrollTimer = null;
+
+                    return;
+                }
+
+                scrollTimer ??= setInterval(() => {
+                    scroller.scrollTop += speed;
+                    pick();
+                }, 16);
+            };
+
+            const onMove = (moveEvent) => {
+                pointer = { x: moveEvent.clientX, y: moveEvent.clientY };
+                autoScroll();
+                pick();
+            };
+
             const onUp = () => {
-                flipTo(0);
+                clearInterval(scrollTimer);
                 window.removeEventListener('pointermove', onMove);
                 window.removeEventListener('pointerup', onUp);
                 window.removeEventListener('pointercancel', onUp);
