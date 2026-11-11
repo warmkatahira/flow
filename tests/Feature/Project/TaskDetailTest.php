@@ -4,6 +4,7 @@ namespace Tests\Feature\Project;
 
 use App\Enums\ListColor;
 use App\Enums\TaskStatus;
+use App\Events\NotificationReceived;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskChecklist;
@@ -12,6 +13,7 @@ use App\Models\TaskComment;
 use App\Models\TaskList;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class TaskDetailTest extends TestCase
@@ -487,12 +489,12 @@ class TaskDetailTest extends TestCase
         $this->actingAs($this->user)->post(route('tasks.comments.store', $this->task), ['body' => '@田中 確認して']);
         $comment = TaskComment::first();
 
-        \Illuminate\Support\Facades\Event::fake([\App\Events\NotificationReceived::class]);
+        Event::fake([NotificationReceived::class]);
 
         $this->actingAs($this->user)->put(route('comments.update', $comment), ['body' => '@田中 @佐藤 確認して']);
 
-        \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\NotificationReceived::class, 1);
-        \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\NotificationReceived::class, fn ($event) => $event->userId === $other->id);
+        Event::assertDispatchedTimes(NotificationReceived::class, 1);
+        Event::assertDispatched(NotificationReceived::class, fn ($event) => $event->userId === $other->id);
         $this->assertEqualsCanonicalizing([$member->id, $other->id], $comment->mentions()->pluck('users.id')->all());
     }
 
@@ -658,12 +660,14 @@ class TaskDetailTest extends TestCase
 
     public function test_ボードのカードに状態が出る(): void
     {
+        // 今年の期間は年を省くので、日付を固定する
+        $this->travelTo('2026-11-11');
         $this->task->update(['started_on' => '2026-11-01', 'ended_on' => '2026-11-10']);
         $this->actingAs($this->user)->post(route('checklists.items.store', $this->checklist()), ['title' => '項目']);
 
         $this->actingAs($this->user)->get(route('projects.show', $this->project))
             ->assertOk()
-            ->assertSee('11/1〜11/10')
+            ->assertSee('11/1(日) 〜 11/10(火)')
             ->assertSee('☑ 0/1');
     }
 

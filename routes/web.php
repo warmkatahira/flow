@@ -17,6 +17,7 @@ use App\Http\Controllers\Project\TaskController;
 use App\Http\Controllers\Project\TaskDetailController;
 use App\Http\Controllers\Project\TaskLabelController;
 use App\Http\Controllers\Project\TaskListController;
+use App\Http\Controllers\Task\MyTaskController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\User\UserImportController;
 use App\Http\Middleware\EnsurePasswordIsChanged;
@@ -35,6 +36,9 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
 
     // ダッシュボード（自分が参加しているプロジェクトの一覧）
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // タスク一覧（参加しているプロジェクト全体で、自分が担当者になっているタスク）
+    Route::get('tasks', [MyTaskController::class, 'index'])->name('my-tasks.index');
 
     // 通知（自分へのメンションと、フォローしたタスクの動き）
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

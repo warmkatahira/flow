@@ -28,7 +28,7 @@
                 <dt class="text-slate-500">期間</dt>
                 <dd class="text-slate-700">
                     @if ($task->started_on || $task->ended_on)
-                        {{ $task->started_on?->format('Y/m/d') }} 〜 {{ $task->ended_on?->format('Y/m/d') }}
+                        {{ $task->started_on?->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }} 〜 {{ $task->ended_on?->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }}
                     @else
                         <span class="text-slate-400">なし</span>
                     @endif

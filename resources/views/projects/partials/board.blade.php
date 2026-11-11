@@ -105,7 +105,7 @@
                                 @if ($task->started_on || $task->ended_on || $task->checklist_items_count || $task->assignees->isNotEmpty())
                                     <div class="mt-1.5 hidden flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 cards-expanded:flex">
                                         @if ($task->started_on || $task->ended_on)
-                                            <span>{{ $task->started_on?->format('n/j') }}〜{{ $task->ended_on?->format('n/j') }}</span>
+                                            <span>{{ $task->periodLabel() }}</span>
                                         @endif
                                         @if ($task->checklist_items_count)
                                             <span title="チェックリスト">☑ {{ $task->done_checklist_items_count }}/{{ $task->checklist_items_count }}</span>

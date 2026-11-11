@@ -3,6 +3,7 @@
 @php
     $tools = [
         ['label' => 'ダッシュボード', 'route' => 'dashboard', 'active' => 'dashboard'],
+        ['label' => 'タスク一覧', 'route' => 'my-tasks.index', 'active' => 'my-tasks.*'],
         ['label' => 'アーカイブ', 'route' => 'projects.archived', 'active' => 'projects.archived'],
         ['label' => 'グループ', 'route' => 'project-groups.index', 'active' => 'project-groups.*'],
     ];

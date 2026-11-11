@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 
 #[Fillable(['title', 'description', 'task_list_id', 'position', 'status', 'started_on', 'ended_on'])]
@@ -256,6 +257,20 @@ class Task extends Model
             ->whereIn('task_checklist_id', $this->checklists()->select('id'))
             ->whereNotIn('assignee_id', $participants)
             ->update(['assignee_id' => null]);
+    }
+
+    /**
+     * カードや一覧に出す短い期間。今年なら年を省く（例: 11/9(月) 〜 11/13(金)）
+     */
+    public function periodLabel(): ?string
+    {
+        if (! $this->started_on && ! $this->ended_on) {
+            return null;
+        }
+
+        $format = fn (?Carbon $date) => $date?->locale('ja')->isoFormat($date->isCurrentYear() ? 'M/D(ddd)' : 'YYYY/M/D(ddd)');
+
+        return trim($format($this->started_on).' 〜 '.$format($this->ended_on));
     }
 
     /**
