@@ -1156,6 +1156,24 @@ Alpine.data('taskCalendar', (projectId) => {
             return days;
         },
 
+        /** タイムラインの月の行（月ごとの日数） */
+        get months() {
+            const months = [];
+
+            for (const day of this.days) {
+                const key = day.date.slice(0, 7);
+                const last = months.at(-1);
+
+                if (last?.key === key) {
+                    last.days += 1;
+                } else {
+                    months.push({ key, label: `${key.slice(0, 4)}年${day.month}月`, days: 1 });
+                }
+            }
+
+            return months;
+        },
+
         /** タイムラインの行。リストの見出しと、その中のタスク（ボードと同じ並び） */
         get rows() {
             const rows = [];

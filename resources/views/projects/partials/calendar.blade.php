@@ -103,34 +103,51 @@
          class="relative min-h-0 flex-1 overflow-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 {{ $scrollbar }}">
         <template x-if="view === 'timeline'">
             <div class="relative flex min-h-full flex-col" :style="{ width: `${nameWidth + days.length * dayWidth}px` }">
-                {{-- 日付の見出し。上に残し、左のタスク名の見出しはさらに左にも残す --}}
-                <div class="sticky top-0 z-20 flex h-[33px] border-b border-slate-200 bg-white">
-                    <div class="sticky left-0 z-30 flex shrink-0 items-center border-r border-slate-200 bg-white px-3 text-xs font-medium text-slate-500"
+                {{-- 見出し（上の行に月、下の行に日付と曜日）。上に残し、左のタスク名の見出しはさらに左にも残す --}}
+                <div class="sticky top-0 z-20 flex h-[57px] border-b border-slate-200 bg-white">
+                    <div class="sticky left-0 z-30 flex shrink-0 items-end border-r border-slate-200 bg-white px-3 pb-2 text-xs font-medium text-slate-500"
                          :style="{ width: `${nameWidth}px` }">タスク</div>
-                    <template x-for="day in days" :key="day.date">
-                        <div :class="day.shaded ? 'bg-slate-50' : 'bg-white'" class="flex shrink-0 flex-col items-center justify-center border-l border-slate-100 leading-none"
-                             :style="{ width: `${dayWidth}px` }">
-                            <span :class="dayClass(day)" class="rounded-full px-1 text-[11px] leading-4" x-text="dayLabel(day)"></span>
-                            <span :class="day.weekday === 0 ? 'text-rose-400' : (day.weekday === 6 ? 'text-sky-500' : 'text-slate-400')" class="text-[10px]" x-text="weekdayLabel(day)"></span>
+
+                    <div class="flex flex-col">
+                        {{-- 月の行。月の名前は、その月が見えている間は左端に残す --}}
+                        <div class="flex h-6 border-b border-slate-100">
+                            <template x-for="month in months" :key="month.key">
+                                <div class="shrink-0 border-l border-slate-200" :style="{ width: `${month.days * dayWidth}px` }">
+                                    <span class="sticky inline-block whitespace-nowrap px-2 text-xs font-semibold leading-6 text-slate-600"
+                                          :style="{ left: `${nameWidth}px` }" x-text="month.label"></span>
+                                </div>
+                            </template>
                         </div>
-                    </template>
+
+                        <div class="flex h-[33px]">
+                            <template x-for="day in days" :key="day.date">
+                                <div :class="[day.shaded ? 'bg-slate-50' : 'bg-white', day.number === 1 ? 'border-slate-200' : 'border-slate-100']"
+                                     class="flex shrink-0 flex-col items-center justify-center border-l leading-none"
+                                     :style="{ width: `${dayWidth}px` }">
+                                    <span :class="dayClass(day)" class="rounded-full px-1 text-[11px] leading-4" x-text="day.number"></span>
+                                    <span :class="day.weekday === 0 ? 'text-rose-400' : (day.weekday === 6 ? 'text-sky-500' : 'text-slate-400')" class="text-[10px]" x-text="weekdayLabel(day)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- 日付の列（帯を動かした先の日を調べるのにも使う）と今日の線 --}}
-                <div class="absolute bottom-0 top-[33px] flex" :style="{ left: `${nameWidth}px` }">
+                <div class="absolute bottom-0 top-[57px] flex" :style="{ left: `${nameWidth}px` }">
                     <template x-for="day in days" :key="day.date">
                         <div :data-calendar-date="day.date"
-                             :class="day.weekday === 0 || day.weekday === 6 ? 'bg-slate-100/70' : (day.shaded ? 'bg-slate-50' : '')"
-                             class="h-full shrink-0 border-l border-slate-100" :style="{ width: `${dayWidth}px` }"></div>
+                             :class="[day.weekday === 0 || day.weekday === 6 ? 'bg-slate-100/70' : (day.shaded ? 'bg-slate-50' : ''), day.number === 1 ? 'border-slate-200' : 'border-slate-100']"
+                             class="h-full shrink-0 border-l" :style="{ width: `${dayWidth}px` }"></div>
                     </template>
                 </div>
-                <div class="pointer-events-none absolute bottom-0 top-[33px] z-[5] w-0.5 bg-sky-400/70" :style="{ left: `${todayLeft + dayWidth / 2}px` }"></div>
+                <div class="pointer-events-none absolute bottom-0 top-[57px] z-[5] w-0.5 bg-sky-400/70" :style="{ left: `${todayLeft + dayWidth / 2}px` }"></div>
 
                 {{-- 行（リストの見出しとタスク） --}}
                 <template x-for="row in rows" :key="row.key">
                     <div class="relative flex h-8 items-center border-b border-slate-100">
                         <template x-if="row.list">
-                            <div class="sticky left-0 z-10 flex h-full shrink-0 items-center gap-2 border-r border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-600"
+                            {{-- 行の区切り線の上も覆う（今日の線が区切り線のところで透けないように） --}}
+                            <div class="sticky left-0 z-10 flex h-full shrink-0 items-center gap-2 border-r border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-600 shadow-[0_1px_0_var(--color-slate-100)]"
                                  :style="{ width: `${nameWidth}px` }">
                                 <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: row.list.color }"></span>
                                 <span class="truncate" x-text="row.list.name"></span>
@@ -140,7 +157,7 @@
                         <template x-if="row.task">
                             <button type="button" @click="open(row.task)" :disabled="! row.task.url"
                                     :title="`#${row.task.number} ${row.task.title}`"
-                                    class="sticky left-0 z-10 flex h-full shrink-0 items-center gap-1.5 border-r border-slate-200 bg-white px-3 text-left text-xs text-slate-700 enabled:hover:text-sky-700"
+                                    class="sticky left-0 z-10 flex h-full shrink-0 items-center gap-1.5 border-r border-slate-200 bg-white px-3 text-left text-xs text-slate-700 shadow-[0_1px_0_var(--color-slate-100)] enabled:hover:text-sky-700"
                                     :style="{ width: `${nameWidth}px` }">
                                 <span x-show="$store.unread.hasTask(row.task.id)" data-unread-dot title="未読の通知あり"
                                       class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
