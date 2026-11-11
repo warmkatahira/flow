@@ -21,7 +21,7 @@
         @if ($personalProject)
             <section class="mb-8">
                 <h2 class="mb-3 text-sm font-bold text-slate-500">My Project</h2>
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <x-project-card :project="$personalProject" class="h-full" />
                 </div>
             </section>
@@ -112,7 +112,7 @@
                         お気に入り
                     </h3>
 
-                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" x-show="favoriteHits > 0">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" x-show="favoriteHits > 0">
                         {{--
                             x-show はコンポーネントの属性として渡すと Blade が @js() を展開しないので、
                             必ず外側の div に付ける。
@@ -183,7 +183,7 @@
                                             このグループにプロジェクトはありません。カードの ⋯ から入れられます。
                                         </p>
                                     @else
-                                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                             @foreach ($groupProjects as $project)
                                                 <div x-show="matches(@js($project->name))">
                                                     <x-project-card :project="$project" :groups="$groups" class="h-full" />
