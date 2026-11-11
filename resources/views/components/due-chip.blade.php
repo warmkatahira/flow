@@ -2,7 +2,7 @@
 
 {{--
     期限が近いタスクの印（カードのタイトルの下。折り畳んでいても出す）
-    期限切れ＝赤 / 今日まで＝オレンジ / 残り2日・残り3日＝黄（今日を1日目と数える）。完了・中止には出さない。
+    期限切れ＝赤 / 今日まで＝オレンジ / あと1日・あと2日＝黄（範囲は今日を1日目として3日目まで）。完了・中止には出さない。
     日付が変わっても開いたままの画面で切り替わるよう、判定はブラウザ側（resources/js/app.js の dueChip）で行う。
 --}}
 @if ($task->ended_on && ! in_array($task->status, [\App\Enums\TaskStatus::Done, \App\Enums\TaskStatus::Canceled], true))

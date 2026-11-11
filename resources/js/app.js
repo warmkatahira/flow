@@ -585,7 +585,7 @@ Alpine.store('today', {
  * 期限が近いタスクの印（x-due-chip）
  *
  * 今日を1日目と数え、3日目（明後日）までを「近い」とする。
- * 期限切れ＝overdue / 今日＝today / 残り2日・残り3日＝soon。それより先は出さない。
+ * 期限切れ＝overdue / 今日＝today / 明日・明後日＝soon（「あと1日」「あと2日」）。それより先は出さない。
  */
 const DUE_SOON_DAYS = 3;
 
@@ -622,7 +622,8 @@ Alpine.data('dueChip', (due, classes) => ({
         return {
             overdue: `期限切れ ${date}`,
             today: '今日まで',
-            soon: `残り${this.diff + 1}日（${date}）`,
+            // 「あと○日」は一般的な数え方（終了日 - 今日）。明日なら「あと1日」
+            soon: `あと${this.diff}日（${date}）`,
         }[this.tone] ?? '';
     },
 }));
