@@ -166,7 +166,8 @@ class NotificationTest extends TestCase
 
         $this->actingAs($this->member)->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('notifications(1, '.$this->member->id, false);
+            ->assertSee('notifications(1, ', false)
+            ->assertSee(', '.$this->member->id.', ', false);
     }
 
     public function test_本人だけが自分のチャンネルを購読できる(): void

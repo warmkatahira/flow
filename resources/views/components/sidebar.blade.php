@@ -24,7 +24,7 @@
             @if ($personalProject)
                 <section>
                     <h2 class="px-2 pb-1 text-xs font-bold text-slate-400">My Project</h2>
-                    <x-sidebar-link :project="$personalProject" :current="$personalProject->id === $currentId" />
+                    <x-sidebar-link :project="$personalProject" :current="$personalProject->id === $currentId" :unread="in_array($personalProject->id, $unreadProjectIds, true)" />
                 </section>
             @endif
 
@@ -35,7 +35,7 @@
                     {{-- 星を押したらその場で増減させるので、全件を置いて出し分ける --}}
                     <div x-show="$store.favorites.has({{ $project->id }})"
                          @unless ($project->pivot->is_favorite) style="display: none" @endunless>
-                        <x-sidebar-link :project="$project" :current="$project->id === $currentId" />
+                        <x-sidebar-link :project="$project" :current="$project->id === $currentId" :unread="in_array($project->id, $unreadProjectIds, true)" />
                     </div>
                 @endforeach
 
@@ -63,7 +63,13 @@
                             <svg class="h-5 w-5 shrink-0 text-sky-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path d="M2 5.5A1.5 1.5 0 013.5 4h4.38a1.5 1.5 0 011.06.44L10.5 6h6A1.5 1.5 0 0118 7.5v7a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 012 14.5v-9z" />
                             </svg>
-                            <span class="min-w-0 flex-1 truncate">{{ $groupName === '' ? 'グループなし' : $groupName }}</span>
+                            <span class="min-w-0 flex-1 truncate"
+                                  :class="! open && $store.unread.hasAnyProject(@js($groupProjects->pluck('id')->all())) && 'text-white'">{{ $groupName === '' ? 'グループなし' : $groupName }}</span>
+                            {{-- 畳んでいると中の印が見えないので、見出しに出す --}}
+                            <span x-show="! open && $store.unread.hasAnyProject(@js($groupProjects->pluck('id')->all()))" style="display: none" data-unread-dot
+                                  class="h-2 w-2 shrink-0 rounded-full bg-sky-400">
+                                <span class="sr-only">未読の通知あり</span>
+                            </span>
                             <svg class="h-4 w-4 shrink-0 rotate-90 text-slate-400 transition-transform duration-300 group-data-[closed]:rotate-0"
                                  viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" clip-rule="evenodd"
@@ -75,7 +81,7 @@
                         <div data-sidebar-group-body x-show="open" x-collapse.duration.300ms>
                             <div class="pl-3">
                                 @forelse ($groupProjects as $project)
-                                    <x-sidebar-link :project="$project" :current="$project->id === $currentId" />
+                                    <x-sidebar-link :project="$project" :current="$project->id === $currentId" :unread="in_array($project->id, $unreadProjectIds, true)" />
                                 @empty
                                     <p class="px-2 py-1 text-xs text-slate-500">プロジェクトはありません。</p>
                                 @endforelse

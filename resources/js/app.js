@@ -548,7 +548,7 @@ Alpine.store('cardView', {
 /**
  * ボードの絞り込み
  *
- * カードに持たせた data-status / data-due / data-assignees / data-labels / data-followed を見て、画面の中で隠すだけ。
+ * カードに持たせた data-status / data-due / data-assignees / data-labels / data-followed（と未読の store）を見て、画面の中で隠すだけ。
  * 種類どうしは AND、同じ種類の中は OR。フォームの送信で読み込み直しても消えないよう、タブの間は覚えておく。
  */
 const ymd = (date) => [
@@ -640,6 +640,7 @@ Alpine.store('boardFilter', {
     labels: [],
     mine: false,
     followed: false,
+    unread: false,
 
     get count() {
         return this.statuses.length + this.assignees.length + this.dues.length + this.labels.length;
@@ -659,9 +660,9 @@ Alpine.store('boardFilter', {
     },
 
     changed() {
-        const { statuses, dues, from, to, assignees, labels, mine, followed } = this;
+        const { statuses, dues, from, to, assignees, labels, mine, followed, unread } = this;
 
-        remember(sessionStorage, this.key, JSON.stringify({ statuses, dues, from, to, assignees, labels, mine, followed }));
+        remember(sessionStorage, this.key, JSON.stringify({ statuses, dues, from, to, assignees, labels, mine, followed, unread }));
         this.apply();
     },
 
@@ -682,8 +683,13 @@ Alpine.store('boardFilter', {
         this.changed();
     },
 
+    toggleUnread() {
+        this.unread = ! this.unread;
+        this.changed();
+    },
+
     clear() {
-        Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], labels: [], mine: false, followed: false });
+        Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], labels: [], mine: false, followed: false, unread: false });
         this.changed();
     },
 
@@ -706,7 +712,7 @@ Alpine.store('boardFilter', {
     },
 
     matches(card, ranges) {
-        const { status, due, assignees, labels, followed } = card.dataset;
+        const { taskId, status, due, assignees, labels, followed } = card.dataset;
         const ids = assignees ? assignees.split(',').map(Number) : [];
         const labelIds = labels ? labels.split(',').map(Number) : [];
 
@@ -719,6 +725,10 @@ Alpine.store('boardFilter', {
         }
 
         if (this.followed && followed !== '1') {
+            return false;
+        }
+
+        if (this.unread && ! Alpine.store('unread').hasTask(taskId)) {
             return false;
         }
 
@@ -905,6 +915,7 @@ Alpine.data('taskCalendar', (projectId) => {
 
             return this.tasks.map((task) => (resizing?.id === task.id ? { ...task, start: resizing.start, end: resizing.end } : task)).filter((task) => filter.matches({
                 dataset: {
+                    taskId: String(task.id),
                     status: task.status,
                     due: task.due ?? '',
                     assignees: task.assignees.join(','),
@@ -1001,7 +1012,58 @@ Alpine.data('taskCalendar', (projectId) => {
             this.resizing = { id: task.id, edge, start: task.start, end: task.end, moved: false };
             document.documentElement.classList.add('calendar-resizing');
 
+            // 月をまたぐときは「◀ ▶」かカレンダーの上下の端に寄せる。少し待つとめくれ、寄せたままなら続けてめくる
+            // カレンダーが縦にスクロールできるうちは、めくらずにスクロールする
+            let flipDirection = 0;
+            let flipTimer = null;
+
+            const flipTo = (direction) => {
+                if (direction === flipDirection) {
+                    return;
+                }
+
+                flipDirection = direction;
+                clearInterval(flipTimer);
+                flipTimer = direction ? setInterval(() => this.shift(direction), 700) : null;
+            };
+
+            const edgeDirection = (moveEvent) => {
+                const button = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY)
+                    .find((element) => element.dataset?.calendarFlip);
+
+                if (button) {
+                    return Number(button.dataset.calendarFlip);
+                }
+
+                const scroller = this.$refs.scroller;
+                const { top, bottom } = scroller.getBoundingClientRect();
+
+                if (moveEvent.clientY < top + 32) {
+                    if (scroller.scrollTop > 0) {
+                        scroller.scrollTop -= 16;
+
+                        return 0;
+                    }
+
+                    return -1;
+                }
+
+                if (moveEvent.clientY > bottom - 20) {
+                    if (scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1) {
+                        scroller.scrollTop += 16;
+
+                        return 0;
+                    }
+
+                    return 1;
+                }
+
+                return 0;
+            };
+
             const onMove = (moveEvent) => {
+                flipTo(edgeDirection(moveEvent));
+
                 const cell = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY)
                     .find((element) => element.dataset?.calendarDate);
 
@@ -1018,6 +1080,7 @@ Alpine.data('taskCalendar', (projectId) => {
             };
 
             const onUp = () => {
+                flipTo(0);
                 window.removeEventListener('pointermove', onMove);
                 window.removeEventListener('pointerup', onUp);
                 window.removeEventListener('pointercancel', onUp);
@@ -1197,16 +1260,50 @@ Alpine.data('moveDialog', (targetsUrl, currentProjectId) => ({
 }));
 
 /**
+ * 未読の通知があるタスクとプロジェクト
+ *
+ * 左のリスト・ボードのカード・カレンダーの帯に印を出すのに使う。ベル（notifications）が件数と一緒に取り直す。
+ * タスクを開くと既読になり、取り直したところで印が消える。
+ */
+Alpine.store('unread', {
+    tasks: [],
+    projects: [],
+
+    set({ tasks, projects }) {
+        this.tasks = tasks;
+        this.projects = projects;
+
+        // 「未読あり」で絞り込んでいるときは、カードの出し分けもやり直す
+        if (Alpine.store('boardFilter').unread) {
+            Alpine.store('boardFilter').apply();
+        }
+    },
+
+    hasTask(id) {
+        return this.tasks.includes(Number(id));
+    },
+
+    hasProject(id) {
+        return this.projects.includes(Number(id));
+    },
+
+    hasAnyProject(ids) {
+        return ids.some((id) => this.hasProject(id));
+    },
+});
+
+/**
  * 通知のベル
  *
  * メンションやフォローしたタスクの動きがあると合図が届くので、件数を取り直す。
  */
-Alpine.data('notifications', (initialCount, userId, url, readAllUrl) => ({
+Alpine.data('notifications', (initialCount, initialUnread, userId, url, readAllUrl) => ({
     count: initialCount,
     bellOpen: false,
     html: '',
 
     init() {
+        Alpine.store('unread').set(initialUnread);
         window.Echo.private(`users.${userId}`).listen('.notification.received', () => this.refresh());
     },
 
@@ -1214,7 +1311,10 @@ Alpine.data('notifications', (initialCount, userId, url, readAllUrl) => ({
         const response = await fetch(url, { headers: { Accept: 'application/json' } });
 
         if (response.ok) {
-            Object.assign(this, await response.json());
+            const { unread, ...data } = await response.json();
+
+            Object.assign(this, data);
+            Alpine.store('unread').set(unread);
         }
     },
 

@@ -37,6 +37,8 @@ class Sidebar extends Component
                 ->pluck('id')
                 ->values(),
             'currentId' => $current instanceof Project ? $current->id : null,
+            // 未読の印の最初の状態。以降はベルが取り直す $store.unread で切り替える
+            'unreadProjectIds' => $user->unreadMarks()['projects'],
         ]);
     }
 }

@@ -130,6 +130,31 @@ class User extends Authenticatable
     }
 
     /**
+     * 未読の通知があるタスクとそのプロジェクト（左のリスト・ボードのカード・カレンダーの印に使う）
+     *
+     * 印を押して開けるものだけにするため、ボードに出ているタスク（アーカイブ中でない）に限る。
+     * アーカイブされたタスクの通知はベルの一覧から開く。
+     *
+     * @return array{tasks: list<int>, projects: list<int>}
+     */
+    public function unreadMarks(): array
+    {
+        $mentioned = $this->mentionedComments()->wherePivotNull('read_at')->pluck('task_comments.task_id');
+        $followed = $this->taskNotifications()->whereNull('read_at')->pluck('task_id');
+
+        $tasks = Task::query()
+            ->whereKey($mentioned->merge($followed)->unique()->values())
+            ->active()
+            ->whereHas('list', fn ($lists) => $lists->active())
+            ->pluck('project_id', 'id');
+
+        return [
+            'tasks' => $tasks->keys()->sort()->values()->all(),
+            'projects' => $tasks->values()->unique()->sort()->values()->all(),
+        ];
+    }
+
+    /**
      * メンションとフォローの通知を既読にする（タスクを渡すとそのタスクの分だけ）
      */
     public function markNotificationsRead(?Task $task = null): void

@@ -80,7 +80,10 @@
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
                              data-followed="{{ $followedTaskIds->contains($task->id) ? '1' : '' }}"
-                             class="task-card cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
+                             class="task-card relative cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
+                        {{-- 未読の通知があるタスク。開くと既読になって消える --}}
+                        <span x-show="$store.unread.hasTask({{ $task->id }})" x-cloak data-unread-dot title="未読の通知あり"
+                              class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-sky-500 ring-2 ring-white"></span>
                         <div class="flex items-start gap-2">
                             <div class="flex shrink-0 flex-col items-center gap-1">
                                 <span class="text-[10px] font-medium leading-4 text-slate-400">#{{ $task->number }}</span>

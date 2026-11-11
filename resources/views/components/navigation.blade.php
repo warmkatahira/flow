@@ -89,7 +89,7 @@
             <div class="flex shrink-0 items-center relative">
                 {{-- パスワードの変更が済むまでは他の画面へ行けないので出さない --}}
                 @unless (auth()->user()->must_change_password)
-                    <div x-data="notifications({{ auth()->user()->unreadNotificationCount() }}, {{ auth()->id() }}, @js(route('notifications.index')), @js(route('notifications.read-all')))"
+                    <div x-data="notifications({{ auth()->user()->unreadNotificationCount() }}, @js(auth()->user()->unreadMarks()), {{ auth()->id() }}, @js(route('notifications.index')), @js(route('notifications.read-all')))"
                          class="relative mr-1" @notifications-refresh.window="refresh()" @click.outside="bellOpen = false" @keydown.escape.window="bellOpen = false">
                         <button type="button" @click="toggle()" aria-label="通知" :aria-expanded="bellOpen ? 'true' : 'false'"
                                 class="relative block rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">

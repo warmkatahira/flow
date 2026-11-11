@@ -13,7 +13,10 @@
     $checkClass = 'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition hover:bg-slate-100';
 @endphp
 
-{{-- ボードの絞り込み（resources/js/app.js の boardFilter）。画面の中で隠すだけで、データは変えない --}}
+{{--
+    ボードの絞り込み（resources/js/app.js の boardFilter）。画面の中で隠すだけで、データは変えない
+    タブと1行に収まらないので、広い画面（2xl）未満では切り替えのボタンを文字なしのアイコンだけにする
+--}}
 <div x-data="{ filterOpen: false }" x-show="['board', 'calendar'].includes(tab)" x-init="$store.boardFilter.load({{ $project->id }}, {{ auth()->id() }})"
      class="relative flex shrink-0 items-center gap-2" @click.outside="filterOpen = false" @keydown.escape.window="filterOpen = false">
     <button type="button" @click="filterOpen = ! filterOpen" :aria-expanded="filterOpen ? 'true' : 'false'"
@@ -26,20 +29,27 @@
         <span x-show="$store.boardFilter.count > 0" x-cloak x-text="$store.boardFilter.count"></span>
     </button>
 
-    <button type="button" @click="$store.boardFilter.toggleMine()" :aria-pressed="$store.boardFilter.mine ? 'true' : 'false'"
+    <button type="button" @click="$store.boardFilter.toggleMine()" title="マイタスク" :aria-pressed="$store.boardFilter.mine ? 'true' : 'false'"
             :class="$store.boardFilter.mine ? 'border-sky-500 bg-sky-50 text-sky-600' : 'border-slate-300 text-slate-500 hover:bg-slate-50'"
             class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm transition">
         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" />
         </svg>
-        マイタスク
+        <span class="max-2xl:sr-only">マイタスク</span>
     </button>
 
-    <button type="button" @click="$store.boardFilter.toggleFollowed()" :aria-pressed="$store.boardFilter.followed ? 'true' : 'false'"
+    <button type="button" @click="$store.boardFilter.toggleFollowed()" title="フォロー中" :aria-pressed="$store.boardFilter.followed ? 'true' : 'false'"
             :class="$store.boardFilter.followed ? 'border-sky-500 bg-sky-50 text-sky-600' : 'border-slate-300 text-slate-500 hover:bg-slate-50'"
             class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm transition">
         <x-follow-icon class="h-4 w-4" />
-        フォロー中
+        <span class="max-2xl:sr-only">フォロー中</span>
+    </button>
+
+    <button type="button" @click="$store.boardFilter.toggleUnread()" title="未読あり" :aria-pressed="$store.boardFilter.unread ? 'true' : 'false'"
+            :class="$store.boardFilter.unread ? 'border-sky-500 bg-sky-50 text-sky-600' : 'border-slate-300 text-slate-500 hover:bg-slate-50'"
+            class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm transition">
+        <span class="h-2 w-2 rounded-full bg-sky-500" aria-hidden="true"></span>
+        <span class="max-2xl:sr-only">未読あり</span>
     </button>
 
     <button type="button" x-show="tab === 'board'" @click="$store.cardView.toggle()" :aria-pressed="$store.cardView.expanded ? 'true' : 'false'"
@@ -111,7 +121,7 @@
 
             {{-- 絞り込んでいないときは押せない --}}
             <button type="button" @click="$store.boardFilter.clear()"
-                    :disabled="$store.boardFilter.count === 0 && ! $store.boardFilter.mine && ! $store.boardFilter.followed"
+                    :disabled="$store.boardFilter.count === 0 && ! $store.boardFilter.mine && ! $store.boardFilter.followed && ! $store.boardFilter.unread"
                     class="group mt-auto inline-flex items-center gap-1.5 self-end rounded-full bg-rose-50 py-1 pl-1.5 pr-3 text-xs font-semibold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-500 hover:text-white hover:ring-rose-500 disabled:cursor-default disabled:bg-slate-50 disabled:text-slate-300 disabled:ring-slate-200">
                 <svg class="h-4 w-4 transition-transform duration-300 group-enabled:group-hover:rotate-90" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" />

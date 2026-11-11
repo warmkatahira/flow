@@ -10,7 +10,7 @@
         <h2 class="min-w-32 text-lg font-bold text-slate-800" x-text="label" aria-live="polite"></h2>
 
         <div class="flex items-center gap-1">
-            <button type="button" @click="shift(-1)" aria-label="前の月"
+            <button type="button" @click="shift(-1)" data-calendar-flip="-1" aria-label="前の月"
                     class="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M12.5 4.5v11L6 10z" /></svg>
             </button>
@@ -18,16 +18,17 @@
                     class="rounded-md px-2.5 py-1 text-sm text-slate-600 ring-1 ring-slate-300 transition hover:bg-white">
                 今日
             </button>
-            <button type="button" @click="shift(1)" aria-label="次の月"
+            <button type="button" @click="shift(1)" data-calendar-flip="1" aria-label="次の月"
                     class="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800">
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.5 4.5v11L14 10z" /></svg>
             </button>
         </div>
 
-        <p class="ml-auto text-xs text-slate-400">開始日か終了日を入れたタスクだけを出します。帯の端をドラッグすると期間を変えられます</p>
+        <p x-show="! resizing" class="ml-auto text-xs text-slate-400">開始日か終了日を入れたタスクだけを出します。帯の端をドラッグすると期間を変えられます</p>
+        <p x-show="resizing" x-cloak class="ml-auto text-xs font-semibold text-sky-600">「◀ ▶」かカレンダーの上下の端に重ねると、前後の月へ移れます</p>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
+    <div x-ref="scroller" class="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
         <div class="sticky top-0 z-10 grid grid-cols-7 border-b border-slate-200 bg-white text-center text-xs font-medium">
             @foreach (['日', '月', '火', '水', '木', '金', '土'] as $index => $weekday)
                 <span @class(['py-2', 'text-rose-500' => $index === 0, 'text-sky-600' => $index === 6, 'text-slate-500' => $index > 0 && $index < 6])>{{ $weekday }}</span>
@@ -57,6 +58,8 @@
                                 bar.task.url ? 'cursor-pointer hover:brightness-95' : 'cursor-default',
                             ]"
                             class="group/bar absolute flex h-5 items-center gap-1 overflow-hidden border-l-[3px] px-1.5 text-left text-xs leading-5 text-slate-800 transition">
+                        <span x-show="$store.unread.hasTask(bar.task.id)" data-unread-dot title="未読の通知あり"
+                              class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
                         <span class="shrink-0 text-[10px] text-slate-500" x-text="`#${bar.task.number}`"></span>
                         <span class="truncate" x-text="bar.task.title"></span>
 
