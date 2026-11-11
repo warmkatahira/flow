@@ -160,6 +160,7 @@ class ProjectController extends Controller
                     'startedOn' => $task->started_on?->format('Y-m-d'),
                     'endedOn' => $task->ended_on?->format('Y-m-d'),
                     'periodUrl' => $project->isArchived() ? null : route('tasks.period', $task),
+                    'listId' => $list->id,
                     'list' => $list->name,
                     'color' => $list->color,
                     'assignees' => $task->assignees->modelKeys(),

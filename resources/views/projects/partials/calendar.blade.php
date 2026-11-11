@@ -1,9 +1,14 @@
 {{--
     期間のあるタスクをカレンダーに帯で出す（resources/js/app.js の taskCalendar）。
-    月で区切らずに週が縦に続き、スクロールで前後の月へ進む。見出しはいちばん上に見えている月。
-    押すとタスクの詳細が開き、帯の端をドラッグすると開始日・終了日を変えられる。ボードの絞り込みもそのまま効く。
-    中身の JSON は他の人の変更で差し替わる（x-project-live）。
+    表示は2つから選べる。
+    - カレンダー: 月で区切らずに週が縦に続き、スクロールで前後の月へ進む。見出しはいちばん上に見えている月
+    - タイムライン: 日付を横に並べ、1タスク＝1行でリストごとにまとめる。見出しは左端に見えている月
+    押すとタスクの詳細が開く。帯の端のドラッグで開始日・終了日を、帯そのもののドラッグで期間を保ったまま日をずらせる。
+    ボードの絞り込みもそのまま効く。中身の JSON は他の人の変更で差し替わる（x-project-live）。
 --}}
+@php
+    $scrollbar = '[scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]';
+@endphp
 <div x-data="taskCalendar({{ $project->id }})" @calendar-refresh.window="load()" class="flex min-h-0 flex-1 flex-col pb-6 pr-4 sm:pr-6 lg:pr-8">
     <script type="application/json" x-ref="data" data-live-calendar>@json($calendarTasks)</script>
 
@@ -25,57 +30,149 @@
             </button>
         </div>
 
-        <p x-show="! resizing" class="ml-auto text-xs text-slate-400">開始日か終了日を入れたタスクだけを出します。帯の端をドラッグすると期間を変えられます</p>
-        <p x-show="resizing" x-cloak class="ml-auto text-xs font-semibold text-sky-600">カレンダーの上下の端に寄せると、スクロールして前後の月へ伸ばせます</p>
+        {{-- 表示の切り替え --}}
+        <div class="inline-flex rounded-lg bg-slate-200/70 p-0.5 text-sm" role="group" aria-label="表示">
+            @foreach (['month' => 'カレンダー', 'timeline' => 'タイムライン'] as $value => $text)
+                <button type="button" @click="view = @js($value)" :aria-pressed="view === @js($value) ? 'true' : 'false'"
+                        :class="view === @js($value) ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+                        class="rounded-md px-3 py-1 font-medium transition">{{ $text }}</button>
+            @endforeach
+        </div>
+
+        <p x-show="! resizing" class="ml-auto text-xs text-slate-400">開始日か終了日を入れたタスクだけを出します。帯の端で期間を、帯そのもので日をずらせます</p>
+        <p x-show="resizing" x-cloak class="ml-auto text-xs font-semibold text-sky-600"
+           x-text="view === 'timeline' ? '左右の端に寄せると、スクロールして前後の月へ動かせます' : '上下の端に寄せると、スクロールして前後の月へ動かせます'"></p>
     </div>
 
-    <div x-ref="scroller" @scroll.passive="scrolled()" class="relative min-h-0 flex-1 overflow-y-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
+    {{-- カレンダー（週が縦に続く） --}}
+    <div x-show="view === 'month'" x-ref="scroller" @scroll.passive="view === 'month' && scrolled()"
+         class="relative min-h-0 flex-1 overflow-y-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 {{ $scrollbar }}">
         <div class="sticky top-0 z-10 grid grid-cols-7 border-b border-slate-200 bg-white text-center text-xs font-medium">
             @foreach (['日', '月', '火', '水', '木', '金', '土'] as $index => $weekday)
                 <span @class(['py-2', 'text-rose-500' => $index === 0, 'text-sky-600' => $index === 6, 'text-slate-500' => $index > 0 && $index < 6])>{{ $weekday }}</span>
             @endforeach
         </div>
 
-        <template x-for="week in weeks" :key="week.start">
-            <div :data-week="week.start" :data-week-end="week.end" :data-week-middle="week.middle"
-                 class="relative border-b border-slate-100 last:border-b-0" :style="{ minHeight: `${week.height}px` }">
-                {{-- 日付のマス --}}
-                <div class="absolute inset-0 grid grid-cols-7">
-                    <template x-for="day in week.days" :key="day.date">
-                        <div :data-calendar-date="day.date" :class="day.shaded ? 'bg-slate-50' : ''" class="border-l border-slate-100 px-1.5 pt-1 first:border-l-0">
-                            <span :class="dayClass(day)" class="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs" x-text="dayLabel(day)"></span>
+        <template x-if="view === 'month'">
+            <div>
+                <template x-for="week in weeks" :key="week.start">
+                    <div :data-week="week.start" :data-week-end="week.end" :data-week-middle="week.middle"
+                         class="relative border-b border-slate-100 last:border-b-0" :style="{ minHeight: `${week.height}px` }">
+                        {{-- 日付のマス --}}
+                        <div class="absolute inset-0 grid grid-cols-7">
+                            <template x-for="day in week.days" :key="day.date">
+                                <div :data-calendar-date="day.date" :class="day.shaded ? 'bg-slate-50' : ''" class="border-l border-slate-100 px-1.5 pt-1 first:border-l-0">
+                                    <span :class="dayClass(day)" class="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs" x-text="dayLabel(day)"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        {{-- タスクの帯 --}}
+                        <template x-for="bar in week.bars" :key="bar.id">
+                            <button type="button" @click="open(bar.task)" @pointerdown="startDrag($event, bar.task, 'move')" :disabled="! bar.task.url"
+                                    :title="`#${bar.task.number} ${bar.task.title}（${bar.task.list}）`"
+                                    :style="barStyle(bar)"
+                                    :class="[
+                                        bar.task.closed ? 'opacity-50 line-through' : '',
+                                        bar.continuesBefore ? 'rounded-l-none border-l-0' : 'rounded-l-md',
+                                        bar.continuesAfter ? 'rounded-r-none' : 'rounded-r-md',
+                                        bar.task.periodUrl ? 'cursor-grab hover:brightness-95' : (bar.task.url ? 'cursor-pointer hover:brightness-95' : 'cursor-default'),
+                                    ]"
+                                    class="group/bar absolute flex h-5 items-center gap-1 overflow-hidden border-l-[3px] px-1.5 text-left text-xs leading-5 text-slate-800 transition">
+                                @include('projects.partials.calendar-bar-body', ['task' => 'bar.task'])
+
+                                {{-- 端を掴むと期間を変えられる。週をまたいで続く側の端には出さない --}}
+                                <template x-if="bar.task.periodUrl && ! bar.continuesBefore">
+                                    <span @pointerdown="startDrag($event, bar.task, 'start')" title="ドラッグで開始日を変更"
+                                          class="absolute inset-y-0 left-0 w-2 cursor-ew-resize group-hover/bar:bg-slate-900/15"></span>
+                                </template>
+                                <template x-if="bar.task.periodUrl && ! bar.continuesAfter">
+                                    <span @pointerdown="startDrag($event, bar.task, 'end')" title="ドラッグで終了日を変更"
+                                          class="absolute inset-y-0 right-0 w-2 cursor-ew-resize group-hover/bar:bg-slate-900/15"></span>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    {{-- タイムライン（日付が横に並ぶ） --}}
+    <div x-show="view === 'timeline'" x-cloak x-ref="timeline" @scroll.passive="view === 'timeline' && scrolled()"
+         class="relative min-h-0 flex-1 overflow-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 {{ $scrollbar }}">
+        <template x-if="view === 'timeline'">
+            <div class="relative flex min-h-full flex-col" :style="{ width: `${nameWidth + days.length * dayWidth}px` }">
+                {{-- 日付の見出し。上に残し、左のタスク名の見出しはさらに左にも残す --}}
+                <div class="sticky top-0 z-20 flex h-[33px] border-b border-slate-200 bg-white">
+                    <div class="sticky left-0 z-30 flex shrink-0 items-center border-r border-slate-200 bg-white px-3 text-xs font-medium text-slate-500"
+                         :style="{ width: `${nameWidth}px` }">タスク</div>
+                    <template x-for="day in days" :key="day.date">
+                        <div :class="day.shaded ? 'bg-slate-50' : 'bg-white'" class="flex shrink-0 flex-col items-center justify-center border-l border-slate-100 leading-none"
+                             :style="{ width: `${dayWidth}px` }">
+                            <span :class="dayClass(day)" class="rounded-full px-1 text-[11px] leading-4" x-text="dayLabel(day)"></span>
+                            <span :class="day.weekday === 0 ? 'text-rose-400' : (day.weekday === 6 ? 'text-sky-500' : 'text-slate-400')" class="text-[10px]" x-text="weekdayLabel(day)"></span>
                         </div>
                     </template>
                 </div>
 
-                {{-- タスクの帯 --}}
-                <template x-for="bar in week.bars" :key="bar.id">
-                    <button type="button" @click="open(bar.task)" :disabled="! bar.task.url"
-                            :title="`#${bar.task.number} ${bar.task.title}（${bar.task.list}）`"
-                            :style="barStyle(bar)"
-                            :class="[
-                                bar.task.closed ? 'opacity-50 line-through' : '',
-                                bar.continuesBefore ? 'rounded-l-none border-l-0' : 'rounded-l-md',
-                                bar.continuesAfter ? 'rounded-r-none' : 'rounded-r-md',
-                                bar.task.url ? 'cursor-pointer hover:brightness-95' : 'cursor-default',
-                            ]"
-                            class="group/bar absolute flex h-5 items-center gap-1 overflow-hidden border-l-[3px] px-1.5 text-left text-xs leading-5 text-slate-800 transition">
-                        <span x-show="$store.unread.hasTask(bar.task.id)" data-unread-dot title="未読の通知あり"
-                              class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
-                        <span class="shrink-0 text-[10px] text-slate-500" x-text="`#${bar.task.number}`"></span>
-                        <span class="truncate" x-text="bar.task.title"></span>
+                {{-- 日付の列（帯を動かした先の日を調べるのにも使う）と今日の線 --}}
+                <div class="absolute bottom-0 top-[33px] flex" :style="{ left: `${nameWidth}px` }">
+                    <template x-for="day in days" :key="day.date">
+                        <div :data-calendar-date="day.date"
+                             :class="day.weekday === 0 || day.weekday === 6 ? 'bg-slate-100/70' : (day.shaded ? 'bg-slate-50' : '')"
+                             class="h-full shrink-0 border-l border-slate-100" :style="{ width: `${dayWidth}px` }"></div>
+                    </template>
+                </div>
+                <div class="pointer-events-none absolute bottom-0 top-[33px] z-[5] w-0.5 bg-sky-400/70" :style="{ left: `${todayLeft + dayWidth / 2}px` }"></div>
 
-                        {{-- 端を掴むと期間を変えられる。週をまたいで続く側の端には出さない --}}
-                        <template x-if="bar.task.periodUrl && ! bar.continuesBefore">
-                            <span @pointerdown="startResize($event, bar.task, 'start')" title="ドラッグで開始日を変更"
-                                  class="absolute left-0 inset-y-0 w-2 cursor-ew-resize group-hover/bar:bg-slate-900/15"></span>
+                {{-- 行（リストの見出しとタスク） --}}
+                <template x-for="row in rows" :key="row.key">
+                    <div class="relative flex h-8 items-center border-b border-slate-100">
+                        <template x-if="row.list">
+                            <div class="sticky left-0 z-10 flex h-full shrink-0 items-center gap-2 border-r border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-600"
+                                 :style="{ width: `${nameWidth}px` }">
+                                <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: row.list.color }"></span>
+                                <span class="truncate" x-text="row.list.name"></span>
+                            </div>
                         </template>
-                        <template x-if="bar.task.periodUrl && ! bar.continuesAfter">
-                            <span @pointerdown="startResize($event, bar.task, 'end')" title="ドラッグで終了日を変更"
-                                  class="absolute right-0 inset-y-0 w-2 cursor-ew-resize group-hover/bar:bg-slate-900/15"></span>
+
+                        <template x-if="row.task">
+                            <button type="button" @click="open(row.task)" :disabled="! row.task.url"
+                                    :title="`#${row.task.number} ${row.task.title}`"
+                                    class="sticky left-0 z-10 flex h-full shrink-0 items-center gap-1.5 border-r border-slate-200 bg-white px-3 text-left text-xs text-slate-700 enabled:hover:text-sky-700"
+                                    :style="{ width: `${nameWidth}px` }">
+                                <span x-show="$store.unread.hasTask(row.task.id)" data-unread-dot title="未読の通知あり"
+                                      class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500"></span>
+                                <span class="shrink-0 text-[10px] text-slate-400" x-text="`#${row.task.number}`"></span>
+                                <span class="truncate" :class="row.task.closed && 'text-slate-400 line-through'" x-text="row.task.title"></span>
+                            </button>
                         </template>
-                    </button>
+
+                        <template x-if="row.task">
+                            <button type="button" @click="open(row.task)" @pointerdown="startDrag($event, row.task, 'move')" :disabled="! row.task.url"
+                                    :title="`#${row.task.number} ${row.task.title}（${row.task.list}）`"
+                                    :style="timelineBarStyle(row.task)"
+                                    :class="[
+                                        row.task.closed ? 'opacity-50 line-through' : '',
+                                        row.task.periodUrl ? 'cursor-grab hover:brightness-95' : (row.task.url ? 'cursor-pointer hover:brightness-95' : 'cursor-default'),
+                                    ]"
+                                    class="group/bar absolute top-1.5 z-[6] flex h-5 items-center gap-1 overflow-hidden rounded-md border-l-[3px] px-1.5 text-left text-xs leading-5 text-slate-800 transition">
+                                @include('projects.partials.calendar-bar-body', ['task' => 'row.task'])
+
+                                <span x-show="row.task.periodUrl" @pointerdown="startDrag($event, row.task, 'start')" title="ドラッグで開始日を変更"
+                                      class="absolute inset-y-0 left-0 w-2 cursor-ew-resize group-hover/bar:bg-slate-900/15"></span>
+                                <span x-show="row.task.periodUrl" @pointerdown="startDrag($event, row.task, 'end')" title="ドラッグで終了日を変更"
+                                      class="absolute inset-y-0 right-0 w-2 cursor-ew-resize group-hover/bar:bg-slate-900/15"></span>
+                            </button>
+                        </template>
+                    </div>
                 </template>
+
+                {{-- 行の下の余白も、左のタスク名の列は白く埋める（横にずれた日付の列が透けないように） --}}
+                <div class="sticky left-0 z-10 flex-1 border-r border-slate-200 bg-white" :style="{ width: `${nameWidth}px` }">
+                    <p x-show="rows.length === 0" class="px-3 py-10 text-xs text-slate-400">期間のあるタスクはありません。</p>
+                </div>
             </div>
         </template>
     </div>

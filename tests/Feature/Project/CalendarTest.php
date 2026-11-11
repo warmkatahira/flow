@@ -70,6 +70,7 @@ class CalendarTest extends TestCase
             'startedOn' => '2026-11-02',
             'endedOn' => '2026-11-06',
             'periodUrl' => route('tasks.period', $task),
+            'listId' => $this->list->id,
             'list' => 'ToDo',
             'color' => ListColor::Sky->value,
             'assignees' => [],

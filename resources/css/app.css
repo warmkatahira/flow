@@ -359,9 +359,14 @@ html[data-sidebar-moving] .sidebar-wave {
     }
 }
 
-/* カレンダーで帯の端をドラッグしている間は、どこにいても左右の矢印にし、文字を選ばない */
+/* カレンダーで帯をドラッグしている間は、どこにいても同じカーソルにし、文字を選ばない（端は左右の矢印、丸ごとは掴む手） */
 .calendar-resizing,
 .calendar-resizing * {
     cursor: ew-resize !important;
+    user-select: none;
+}
+.calendar-moving,
+.calendar-moving * {
+    cursor: grabbing !important;
     user-select: none;
 }
