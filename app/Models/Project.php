@@ -116,7 +116,7 @@ class Project extends Model
             '優先度：低' => ListColor::Emerald,
             'メモ' => ListColor::Violet,
             '確認中' => ListColor::Orange,
-            '保留中' => ListColor::Lime,
+            '保留中' => ListColor::Slate,
         ];
 
         $position = 0;
