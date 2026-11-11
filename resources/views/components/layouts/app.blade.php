@@ -40,15 +40,18 @@
 
         {{-- min-w-0 がないとボードの幅に引っ張られて、横スクロールがボードの中に収まらない --}}
         <div @class(['flex min-w-0 flex-1 flex-col', 'h-dvh overflow-hidden' => $fill, 'min-h-screen' => ! $fill])>
-            <x-navigation :has-sidebar="$sidebar" />
+            {{-- ページ全体がスクロールする画面でも、ナビゲーションと見出しは上に留めて見えたままにする --}}
+            <div @class(['shrink-0', 'sticky top-0 z-30' => ! $fill])>
+                <x-navigation :has-sidebar="$sidebar" />
 
-            @isset($header)
-                <header class="bg-white border-b border-slate-200">
-                    <div class="px-4 sm:px-6 lg:px-8 py-4">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+                @isset($header)
+                    <header class="bg-white border-b border-slate-200">
+                        <div class="px-4 sm:px-6 lg:px-8 py-4">
+                            {{ $header }}
+                        </div>
+                    </header>
+                @endisset
+            </div>
 
             <main @class(['flex-1', 'flex min-h-0 flex-col' => $fill])>
                 {{ $slot }}
