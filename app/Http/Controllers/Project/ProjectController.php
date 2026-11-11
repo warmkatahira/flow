@@ -156,6 +156,10 @@ class ProjectController extends Controller
                     'status' => $task->status->value,
                     'closed' => in_array($task->status, [TaskStatus::Done, TaskStatus::Canceled], true),
                     'due' => $task->ended_on?->format('Y-m-d'),
+                    // 端のドラッグで期間を変えるときに、動かさなかった側をそのまま送り返す
+                    'startedOn' => $task->started_on?->format('Y-m-d'),
+                    'endedOn' => $task->ended_on?->format('Y-m-d'),
+                    'periodUrl' => $project->isArchived() ? null : route('tasks.period', $task),
                     'list' => $list->name,
                     'color' => $list->color,
                     'assignees' => $task->assignees->modelKeys(),

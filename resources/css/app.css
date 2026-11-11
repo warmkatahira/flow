@@ -358,3 +358,10 @@ html[data-sidebar-moving] .sidebar-wave {
         animation-duration: 0.01s;
     }
 }
+
+/* カレンダーで帯の端をドラッグしている間は、どこにいても左右の矢印にし、文字を選ばない */
+.calendar-resizing,
+.calendar-resizing * {
+    cursor: ew-resize !important;
+    user-select: none;
+}

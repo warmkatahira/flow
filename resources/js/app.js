@@ -859,6 +859,10 @@ Alpine.data('taskCalendar', (projectId) => {
 
     return {
         tasks: [],
+        // 端をドラッグしている間の期間（{ id, edge, start, end, moved }）
+        resizing: null,
+        // ドラッグを終えた直後のクリックで詳細が開かないようにする
+        suppressClick: false,
         shownYear: shown.getFullYear(),
         shownMonth: shown.getMonth(),
 
@@ -897,7 +901,9 @@ Alpine.data('taskCalendar', (projectId) => {
             const filter = Alpine.store('boardFilter');
             const ranges = filter.dueRanges();
 
-            return this.tasks.filter((task) => filter.matches({
+            const resizing = this.resizing;
+
+            return this.tasks.map((task) => (resizing?.id === task.id ? { ...task, start: resizing.start, end: resizing.end } : task)).filter((task) => filter.matches({
                 dataset: {
                     status: task.status,
                     due: task.due ?? '',
@@ -979,7 +985,80 @@ Alpine.data('taskCalendar', (projectId) => {
             return { 0: 'text-rose-500', 6: 'text-sky-600' }[day.weekday] ?? 'text-slate-600';
         },
 
+        /**
+         * 帯の端を掴む。動かした先の日のマスに合わせて開始日／終了日を変え、離したら保存する
+         * 開始日は終了日を越えられない（逆も同じ）
+         */
+        startResize(event, task, edge) {
+            if (! task.periodUrl || event.button !== 0) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            // 週をまたぐと掴んだ端の要素が作り直されるので、動きは画面全体で受け取る
+            this.resizing = { id: task.id, edge, start: task.start, end: task.end, moved: false };
+            document.documentElement.classList.add('calendar-resizing');
+
+            const onMove = (moveEvent) => {
+                const cell = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY)
+                    .find((element) => element.dataset?.calendarDate);
+
+                if (! cell) {
+                    return;
+                }
+
+                const date = cell.dataset.calendarDate;
+                const next = edge === 'start'
+                    ? { start: date < this.resizing.end ? date : this.resizing.end }
+                    : { end: date > this.resizing.start ? date : this.resizing.start };
+
+                Object.assign(this.resizing, next, { moved: true });
+            };
+
+            const onUp = () => {
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+                window.removeEventListener('pointercancel', onUp);
+                document.documentElement.classList.remove('calendar-resizing');
+
+                const { start, end, moved } = this.resizing;
+                this.resizing = null;
+                this.suppressClick = true;
+                setTimeout(() => {
+                    this.suppressClick = false;
+                });
+
+                if (! moved || (start === task.start && end === task.end)) {
+                    return;
+                }
+
+                // 動かさなかった側は、もともと入っていた値（空ならそのまま空）を送る
+                const body = {
+                    _method: 'PUT',
+                    started_on: edge === 'start' ? start : task.startedOn,
+                    ended_on: edge === 'end' ? end : task.endedOn,
+                };
+
+                // 返事を待たずに画面を変え、あとでボードごと取り直す
+                Object.assign(task, { start, end, startedOn: body.started_on, endedOn: body.ended_on, due: body.ended_on });
+
+                post(task.periodUrl, body)
+                    .then(() => window.dispatchEvent(new CustomEvent('board-refresh')))
+                    .catch(() => location.reload());
+            };
+
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp);
+            window.addEventListener('pointercancel', onUp);
+        },
+
         open(task) {
+            if (this.suppressClick) {
+                return;
+            }
+
             if (task.url) {
                 window.dispatchEvent(new CustomEvent('open-task', { detail: { url: task.url } }));
             }

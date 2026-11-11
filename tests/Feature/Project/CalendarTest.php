@@ -67,6 +67,9 @@ class CalendarTest extends TestCase
             'status' => 'done',
             'closed' => true,
             'due' => '2026-11-06',
+            'startedOn' => '2026-11-02',
+            'endedOn' => '2026-11-06',
+            'periodUrl' => route('tasks.period', $task),
             'list' => 'ToDo',
             'color' => ListColor::Sky->value,
             'assignees' => [],
@@ -85,6 +88,43 @@ class CalendarTest extends TestCase
 
         $this->assertSame(['2026-11-03', '2026-11-03', null], [$calendar['開始日だけ']['start'], $calendar['開始日だけ']['end'], $calendar['開始日だけ']['due']]);
         $this->assertSame(['2026-11-20', '2026-11-20'], [$calendar['終了日だけ']['start'], $calendar['終了日だけ']['end']]);
+    }
+
+    public function test_帯の端のドラッグで送る形で期間を変えられる(): void
+    {
+        $task = $this->task('伸ばす', '2026-11-02', '2026-11-04');
+        $onlyEnd = $this->task('終了日だけ', null, '2026-11-20');
+
+        // 画面からは POST に _method を付けた JSON で送る
+        $this->actingAs($this->user)
+            ->postJson(route('tasks.period', $task), ['_method' => 'PUT', 'started_on' => '2026-11-02', 'ended_on' => '2026-11-09'])
+            ->assertOk();
+        $this->actingAs($this->user)
+            ->postJson(route('tasks.period', $onlyEnd), ['_method' => 'PUT', 'started_on' => '2026-11-17', 'ended_on' => '2026-11-20'])
+            ->assertOk();
+
+        $calendar = $this->calendar();
+        $this->assertSame(['2026-11-02', '2026-11-09'], [$calendar['伸ばす']['startedOn'], $calendar['伸ばす']['endedOn']]);
+        $this->assertSame(['2026-11-17', '2026-11-20'], [$calendar['終了日だけ']['start'], $calendar['終了日だけ']['end']]);
+    }
+
+    public function test_開始日だけのタスクは終了日を足して伸ばせる(): void
+    {
+        $task = $this->task('開始日だけ', '2026-11-03', null);
+
+        $this->actingAs($this->user)
+            ->postJson(route('tasks.period', $task), ['_method' => 'PUT', 'started_on' => '2026-11-03', 'ended_on' => '2026-11-05'])
+            ->assertOk();
+
+        $this->assertSame('2026-11-05', $task->fresh()->ended_on->format('Y-m-d'));
+    }
+
+    public function test_アーカイブ中のプロジェクトでは期間を変えられない(): void
+    {
+        $this->task('期間あり', '2026-11-02', '2026-11-04');
+        $this->project->archive();
+
+        $this->assertNull($this->calendar()['期間あり']['periodUrl']);
     }
 
     public function test_アーカイブしたタスクは出さない(): void
