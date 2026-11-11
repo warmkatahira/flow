@@ -66,29 +66,65 @@
         オーナーだけがプロジェクトの編集・アーカイブ・参加者の変更をできます。
     </p>
 
-    {{-- 行のどこを押しても選べる。選んだ行は色を付け、選んでいない人の権限は薄くする --}}
-    <div class="space-y-2">
-        @foreach ($users as $user)
-            @php
-                $currentRole = $project?->roleOf($user);
+    @php
+        // 行ごとの選択の初期値と、絞り込みに使う文字（名前とメールを小文字にしたもの）を先に決めておく
+        $members = $users->map(function ($user) use ($project, $me, $oldMembers) {
+            $currentRole = $project?->roleOf($user);
 
-                // 作成時、自分は必ずオーナーとして参加する
-                $isCreator = $project === null && $me->is($user);
+            // 作成時、自分は必ずオーナーとして参加する
+            $isCreator = $project === null && $me->is($user);
 
-                $checked = $isCreator
+            return [
+                'user' => $user,
+                'isCreator' => $isCreator,
+                'checked' => $isCreator
                     || ($oldMembers !== null
                         ? in_array((string) $user->id, $oldMembers, true)
-                        : $currentRole !== null);
-
-                $selectedRole = $isCreator
+                        : $currentRole !== null),
+                'role' => $isCreator
                     ? ProjectRole::Owner->value
-                    : old("roles.{$user->id}", $currentRole?->value ?? ProjectRole::Member->value);
-            @endphp
+                    : old("roles.{$user->id}", $currentRole?->value ?? ProjectRole::Member->value),
+            ];
+        });
+    @endphp
 
-            <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 transition has-[input:checked]:border-sky-300 has-[input:checked]:bg-sky-50/60 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-sky-500/40 [&:not(:has(input:checked))_select]:opacity-50">
+    {{-- 人数が多くても探せるよう、名前・メールで絞り込み、選んだ人だけにもできる。
+         隠すのは見た目だけなので、隠れた人の選択と権限もそのまま送られる --}}
+    <div x-data="{
+             q: '',
+             onlySelected: false,
+             selected: @js($members->mapWithKeys(fn ($m) => [$m['user']->id => $m['checked']])),
+             texts: @js($members->mapWithKeys(fn ($m) => [$m['user']->id => mb_strtolower($m['user']->name.' '.$m['user']->email)])),
+             get count() { return Object.values(this.selected).filter(Boolean).length },
+             visible(id) { return (! this.onlySelected || this.selected[id]) && this.texts[id].includes(this.q.trim().toLowerCase()) },
+             get noneShown() { return ! Object.keys(this.texts).some((id) => this.visible(id)) },
+         }">
+    <div class="mb-2 flex flex-wrap items-center gap-3">
+        <div class="relative min-w-0 flex-1">
+            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" />
+            </svg>
+            {{-- name を付けないので送られない。Enter で送信されないようにする --}}
+            <input type="search" x-model="q" @keydown.enter.prevent autocomplete="off" placeholder="名前・メールで絞り込み"
+                   aria-label="参加者を名前・メールで絞り込み"
+                   class="block w-full rounded-lg border-slate-300 py-1.5 pl-9 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500">
+        </div>
+        <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" x-model="onlySelected" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+            選択中のみ表示
+        </label>
+        <span class="text-xs text-slate-500"><span x-text="count">{{ $members->where('checked', true)->count() }}</span>人を選択中</span>
+    </div>
+
+    {{-- 一覧は決まった高さの中でスクロールし、絞り込みの欄と送信ボタンが画面から逃げないようにする。
+         行のどこを押しても選べる。選んだ行は色を付け、選んでいない人の権限は薄くする --}}
+    <div class="max-h-[26rem] space-y-2 overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-slate-50/60 p-2">
+        @foreach ($members as ['user' => $user, 'isCreator' => $isCreator, 'checked' => $checked, 'role' => $selectedRole])
+            <div x-show="visible({{ $user->id }})"
+                 class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 transition has-[input:checked]:border-sky-300 has-[input:checked]:bg-sky-50/60 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-sky-500/40 [&:not(:has(input:checked))_select]:opacity-50">
                 <label for="member-{{ $user->id }}" @class(['flex min-w-0 flex-1 items-center gap-3', 'cursor-pointer' => ! $isCreator])>
                     <input autocomplete="off" type="checkbox" id="member-{{ $user->id }}" name="members[]" value="{{ $user->id }}"
-                           @checked($checked) @disabled($isCreator) class="peer sr-only">
+                           @checked($checked) @disabled($isCreator) @change="selected[{{ $user->id }}] = $event.target.checked" class="peer sr-only">
                     <x-check-mark />
 
                     <x-user-avatar :user="$user" size="sm" />
@@ -118,6 +154,8 @@
                 @endif
             </div>
         @endforeach
+        <p x-show="noneShown" x-cloak class="py-6 text-center text-sm text-slate-500">該当するユーザーがいません。</p>
+    </div>
     </div>
 
     <x-input-error :messages="$errors->get('members')" />
