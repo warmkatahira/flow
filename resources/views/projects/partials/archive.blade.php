@@ -17,7 +17,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm text-slate-800">{{ $list->name }}</p>
                             <p class="text-xs text-slate-500">
-                                タスク {{ $list->tasks_count }}件・{{ $list->archived_at->format('Y/m/d') }} にアーカイブ
+                                タスク {{ $list->tasks_count }}件・{{ $list->archived_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }} にアーカイブ
                             </p>
                         </div>
                         @unless ($project->isArchived())
@@ -50,7 +50,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm text-slate-800">{{ $task->title }}</p>
                             <p class="truncate text-xs text-slate-500">
-                                {{ $task->list->name }}・{{ $task->archived_at->format('Y/m/d') }} にアーカイブ
+                                {{ $task->list->name }}・{{ $task->archived_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }} にアーカイブ
                             </p>
                         </div>
                         @unless ($project->isArchived())

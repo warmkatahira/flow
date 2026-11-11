@@ -22,7 +22,7 @@
                                class="block truncate text-sm font-semibold text-slate-800 hover:text-sky-700">
                                 {{ $project->name }}
                             </a>
-                            <p class="text-xs text-slate-500">{{ $project->archived_at->format('Y/m/d') }} にアーカイブ</p>
+                            <p class="text-xs text-slate-500">{{ $project->archived_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }} にアーカイブ</p>
                         </div>
                         @if (ProjectRole::tryFrom($project->pivot->role) === ProjectRole::Owner)
                             <form autocomplete="off" method="POST" action="{{ route('projects.unarchive', $project) }}">

@@ -37,7 +37,7 @@
                 <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $notification->detail }}</span>
             @endif
             <span class="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
-                {{ $createdAt->format('Y/m/d H:i') }}
+                {{ $createdAt->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') }}
                 @if ($readAt)
                     <span class="rounded-full bg-slate-200 px-1.5 text-[10px] leading-4 text-slate-600">既読</span>
                 @endif

@@ -11,6 +11,7 @@ use App\Models\TaskList;
 use App\Models\TaskNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -48,9 +49,9 @@ class TaskFollowTest extends TestCase
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, TaskNotification>
+     * @return Collection<int, TaskNotification>
      */
-    private function notifications(): \Illuminate\Support\Collection
+    private function notifications(): Collection
     {
         return $this->follower->taskNotifications()->get();
     }
@@ -158,7 +159,7 @@ class TaskFollowTest extends TestCase
         $this->assertEqualsCanonicalizing([
             'タイトルを変更しました',
             '説明を変更しました',
-            '期間を 11/10〜11/20 にしました',
+            '期間を 11/10(火)〜11/20(金) にしました',
             '担当者を変更しました',
             'タグを変更しました',
             'チェックリストを変更しました',

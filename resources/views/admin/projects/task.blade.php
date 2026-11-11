@@ -102,9 +102,9 @@
                             <div class="min-w-0 flex-1">
                                 <p class="text-xs text-slate-500">
                                     <span class="font-medium text-slate-700">{{ $comment->user?->name }}</span>
-                                    {{ $comment->created_at->format('Y/m/d H:i') }}
+                                    {{ $comment->created_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') }}
                                     @if ($comment->isEdited())
-                                        （編集済み {{ $comment->updated_at->format('Y/m/d H:i') }}）
+                                        （編集済み {{ $comment->updated_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') }}）
                                     @endif
                                 </p>
                                 @if ($comment->body)
@@ -152,8 +152,8 @@
             </section>
 
             <p class="mt-6 border-t border-slate-100 pt-3 text-xs text-slate-400">
-                作成 {{ $task->created_at->format('Y/m/d H:i') }} {{ $task->creator?->name }}
-                ・ 最終更新 {{ $task->updated_at->format('Y/m/d H:i') }} {{ $task->updater?->name }}
+                作成 {{ $task->created_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') }} {{ $task->creator?->name }}
+                ・ 最終更新 {{ $task->updated_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') }} {{ $task->updater?->name }}
             </p>
         </article>
     </div>

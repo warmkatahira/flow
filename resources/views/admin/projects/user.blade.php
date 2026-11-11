@@ -55,7 +55,7 @@
                                 <td class="px-4 py-3 text-right tabular-nums text-slate-700">{{ $project->users_count }}人</td>
                                 <td class="px-4 py-3 text-right tabular-nums text-slate-700">{{ $project->tasks_count }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-slate-600">
-                                    {{ $project->tasks_max_updated_at ? \Illuminate\Support\Carbon::parse($project->tasks_max_updated_at)->format('Y/m/d H:i') : '—' }}
+                                    {{ $project->tasks_max_updated_at ? \Illuminate\Support\Carbon::parse($project->tasks_max_updated_at)->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') : '—' }}
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     <a href="{{ route('admin.projects.show', [$user, $project]) }}"

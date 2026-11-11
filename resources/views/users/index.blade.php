@@ -58,7 +58,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-slate-600">
-                                {{ $user->last_login_at?->format('Y/m/d H:i') ?? '未ログイン' }}
+                                {{ $user->last_login_at?->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') ?? '未ログイン' }}
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-2 whitespace-nowrap">

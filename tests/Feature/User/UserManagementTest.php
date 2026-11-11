@@ -261,7 +261,7 @@ class UserManagementTest extends TestCase
             ->get(route('users.index'))
             ->assertOk()
             ->assertSee($user->avatarUrl())
-            ->assertSee('2026/11/06 09:30')
+            ->assertSee('2026/11/06(金) 09:30')
             ->assertSee('未ログイン');
     }
 }

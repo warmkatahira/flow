@@ -28,7 +28,7 @@
             <div class="shrink-0 pr-4 sm:pr-6 lg:pr-8">
             @if ($project->isArchived())
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
-                    <p>{{ $project->name }} は {{ $project->archived_at->format('Y/m/d') }} にアーカイブされました。読み取り専用です。</p>
+                    <p>{{ $project->name }} は {{ $project->archived_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }} にアーカイブされました。読み取り専用です。</p>
 
                     @if ($isOwner)
                         <form autocomplete="off" method="POST" action="{{ route('projects.unarchive', $project) }}">

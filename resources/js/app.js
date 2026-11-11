@@ -616,14 +616,15 @@ Alpine.data('dueChip', (due, classes) => ({
     },
 
     get text() {
-        const [, m, d] = due.split('-').map(Number);
-        const date = `${m}/${d}`;
+        const [y, m, d] = due.split('-').map(Number);
+        const weekday = '日月火水木金土'[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+        const date = `${m}/${d}(${weekday})`;
 
         return {
             overdue: `期限切れ ${date}`,
             today: '今日まで',
             // 「あと○日」は一般的な数え方（終了日 - 今日）。明日なら「あと1日」
-            soon: `あと${this.diff}日（${date}）`,
+            soon: `あと${this.diff}日 ${date}`,
         }[this.tone] ?? '';
     },
 }));

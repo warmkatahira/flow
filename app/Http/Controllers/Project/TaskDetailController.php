@@ -79,7 +79,7 @@ class TaskDetailController extends Controller
         ]));
 
         if ($task->wasChanged(['started_on', 'ended_on'])) {
-            $period = collect([$task->started_on, $task->ended_on])->filter()->map->format('n/j')->unique()->join('〜');
+            $period = collect([$task->started_on, $task->ended_on])->filter()->map(fn ($date) => $date->locale('ja')->isoFormat('M/D(ddd)'))->unique()->join('〜');
 
             $task->recordActivity($request->user(), TaskActivity::Period, $period ?: null);
         }

@@ -19,7 +19,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm text-slate-800">{{ $user->name }}</p>
                             <p class="truncate text-xs text-slate-500">
-                                {{ $user->email }}・{{ $user->deleted_at->format('Y/m/d') }} に削除
+                                {{ $user->email }}・{{ $user->deleted_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd)') }} に削除
                             </p>
                         </div>
                         <form autocomplete="off" method="POST" action="{{ route('users.restore', $user) }}">

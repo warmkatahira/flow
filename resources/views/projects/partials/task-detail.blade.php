@@ -438,9 +438,9 @@
             <div class="min-w-0 flex-1" x-data="{ editingComment: false }">
                 <div class="flex items-center gap-3 text-xs text-slate-500">
                     <span class="text-slate-700">{{ $comment->user->name }}</span>
-                    <span>{{ $comment->created_at->format('Y年m月d日 H:i') }}</span>
+                    <span>{{ $comment->created_at->locale('ja')->isoFormat('YYYY年MM月DD日(ddd) HH:mm') }}</span>
                     @if ($comment->isEdited())
-                        <span>（編集済み {{ $comment->updated_at->format('Y年m月d日 H:i') }}）</span>
+                        <span>（編集済み {{ $comment->updated_at->locale('ja')->isoFormat('YYYY年MM月DD日(ddd) HH:mm') }}）</span>
                     @endif
 
                     @if ($mine)
@@ -582,10 +582,10 @@
 {{-- タグの文字数が違っても日時と名前の位置が揃うよう、表の形に並べる。最終更新は並べ替えとコメントでは変わらない --}}
 <dl class="grid grid-cols-[max-content_max-content_1fr] gap-x-3 gap-y-0.5 border-t border-slate-200 px-6 py-3 text-xs text-slate-400">
     <dt>作成</dt>
-    <dd>{{ $task->created_at->format('Y年m月d日 H:i') }}</dd>
+    <dd>{{ $task->created_at->locale('ja')->isoFormat('YYYY年MM月DD日(ddd) HH:mm') }}</dd>
     <dd>{{ $task->creator?->name }}</dd>
 
     <dt>最終更新</dt>
-    <dd>{{ $task->updated_at->format('Y年m月d日 H:i') }}</dd>
+    <dd>{{ $task->updated_at->locale('ja')->isoFormat('YYYY年MM月DD日(ddd) HH:mm') }}</dd>
     <dd>{{ $task->updater?->name }}</dd>
 </dl>

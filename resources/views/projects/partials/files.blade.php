@@ -84,7 +84,7 @@
                                 <span class="truncate text-slate-600">{{ $file->comment->user->name }}</span>
                             </div>
                         </td>
-                        <td class="hidden whitespace-nowrap px-4 py-2.5 text-slate-500 sm:table-cell">{{ $file->created_at->format('Y/m/d H:i') }}</td>
+                        <td class="hidden whitespace-nowrap px-4 py-2.5 text-slate-500 sm:table-cell">{{ $file->created_at->locale('ja')->isoFormat('YYYY/MM/DD(ddd) HH:mm') }}</td>
                         <td class="hidden whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-slate-500 sm:table-cell">{{ $file->humanSize() }}</td>
                         <td class="px-4 py-2.5">
                             <div class="flex items-center justify-end gap-1.5">
