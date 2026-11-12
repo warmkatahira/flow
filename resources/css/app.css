@@ -370,3 +370,23 @@ html[data-sidebar-moving] .sidebar-wave {
     cursor: grabbing !important;
     user-select: none;
 }
+
+/* ナビの「すべてのメニュー」の点々。乗せている間、左上から右下へ水色の光が流れ続ける */
+@keyframes launcher-sweep {
+    0%, 100% { fill: currentColor; }
+    30% { fill: var(--color-sky-400); }
+}
+
+.launcher-dots:hover circle,
+.launcher-dots:focus-visible circle {
+    animation: launcher-sweep 1.1s ease-in-out infinite;
+    animation-delay: calc(var(--step) * 90ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .launcher-dots:hover circle,
+    .launcher-dots:focus-visible circle {
+        animation: none;
+        fill: var(--color-sky-400);
+    }
+}

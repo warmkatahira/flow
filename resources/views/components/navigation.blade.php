@@ -75,11 +75,12 @@
                 <div x-data="{ menuOpen: false }" class="relative shrink-0" @click.outside="menuOpen = false" @keydown.escape.window="menuOpen = false">
                     <button type="button" @click="menuOpen = ! menuOpen" :aria-expanded="menuOpen ? 'true' : 'false'"
                             aria-label="すべてのメニュー" title="すべてのメニュー"
-                            class="grid h-9 w-9 place-items-center rounded-lg transition {{ $menuActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                            class="launcher-dots grid h-9 w-9 place-items-center rounded-lg transition {{ $menuActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            @foreach ([4, 10, 16] as $y)
-                                @foreach ([4, 10, 16] as $x)
-                                    <circle cx="{{ $x }}" cy="{{ $y }}" r="1.6" />
+                            {{-- 乗せると左上から右下へ水色の光が流れる（resources/css/app.css の .launcher-dots） --}}
+                            @foreach ([0, 1, 2] as $row)
+                                @foreach ([0, 1, 2] as $col)
+                                    <circle cx="{{ 4 + $col * 6 }}" cy="{{ 4 + $row * 6 }}" r="1.6" style="--step: {{ $row + $col }}" />
                                 @endforeach
                             @endforeach
                         </svg>
