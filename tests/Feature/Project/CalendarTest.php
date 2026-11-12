@@ -136,14 +136,14 @@ class CalendarTest extends TestCase
         $this->assertSame(['残す'], array_keys($this->calendar()));
     }
 
-    public function test_プロジェクトの画面にカレンダーのタブがある(): void
+    public function test_プロジェクトの画面にスケジュールのタブがある(): void
     {
         $this->task('期間あり', '2026-11-02', '2026-11-06');
 
         $this->actingAs($this->user)
             ->get(route('projects.show', $this->project))
             ->assertOk()
-            ->assertSee('カレンダー')
+            ->assertSee('スケジュール')
             ->assertSee('data-live-calendar', false)
             ->assertSee('期間あり');
     }

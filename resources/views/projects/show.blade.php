@@ -57,7 +57,7 @@
                 @include($project->isArchived() ? 'projects.partials.board-readonly' : 'projects.partials.board')
             </div>
 
-            {{-- カレンダー --}}
+            {{-- スケジュール（カレンダー・タイムライン） --}}
             <div x-show="tab === 'calendar'" x-cloak class="flex min-h-0 flex-1 flex-col">
                 @include('projects.partials.calendar')
             </div>
