@@ -7,7 +7,8 @@
 ])
 
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+{{-- data-cards はカードの拡張・折り畳み（resources/js/app.js の cardView）。最初は畳んだ状態 --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-cards="collapsed">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

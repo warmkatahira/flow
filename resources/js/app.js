@@ -533,13 +533,16 @@ Alpine.store('cardView', {
     expanded: document.documentElement.dataset.cards === 'expanded',
 
     toggle() {
-        this.expanded = ! this.expanded;
+        const html = document.documentElement;
 
-        if (this.expanded) {
-            document.documentElement.dataset.cards = 'expanded';
-        } else {
-            delete document.documentElement.dataset.cards;
-        }
+        // Chrome では、ページを開いてから最初の data-cards の書き換えでは拡張・折り畳みの動きが始まらない。
+        // 見た目の変わらない値（今の状態のまま末尾に - を付けたもの）を一度挟んでから切り替える。
+        // CSS は [data-cards^='expanded'] で見ているので、'expanded-' は拡張したまま、'collapsed-' は畳んだまま
+        html.dataset.cards = this.expanded ? 'expanded-' : 'collapsed-';
+        void html.offsetHeight;
+
+        this.expanded = ! this.expanded;
+        html.dataset.cards = this.expanded ? 'expanded' : 'collapsed';
 
         remember(localStorage, 'flow.cards.expanded', this.expanded ? '1' : '0');
     },

@@ -100,26 +100,32 @@
 
                                 <x-due-chip :task="$task" />
 
-                                {{-- 詳細は「拡張する」で出す --}}
-                                @if ($task->description)
-                                    <p class="mt-1 line-clamp-2 hidden break-words text-xs text-slate-500 cards-expanded:[display:-webkit-box]">{{ $task->descriptionText() }}</p>
-                                @endif
+                                {{-- 詳細は「拡張する」で出す。タグが札になってから、高さ 0 から開く（resources/css/app.css の .card-more） --}}
+                                @if ($task->description || $task->started_on || $task->ended_on || $task->checklist_items_count || $task->assignees->isNotEmpty())
+                                    <div class="card-more">
+                                        <div>
+                                            @if ($task->description)
+                                                <p class="mt-1 line-clamp-2 break-words text-xs text-slate-500">{{ $task->descriptionText() }}</p>
+                                            @endif
 
-                                @if ($task->started_on || $task->ended_on || $task->checklist_items_count || $task->assignees->isNotEmpty())
-                                    <div class="mt-1.5 hidden flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 cards-expanded:flex">
-                                        @if ($task->started_on || $task->ended_on)
-                                            <span>{{ $task->periodLabel() }}</span>
-                                        @endif
-                                        @if ($task->checklist_items_count)
-                                            <span title="チェックリスト">☑ {{ $task->done_checklist_items_count }}/{{ $task->checklist_items_count }}</span>
-                                        @endif
-                                        @if ($task->assignees->isNotEmpty())
-                                            <span class="ml-auto flex -space-x-1.5">
-                                                @foreach ($task->assignees as $assignee)
-                                                    <x-user-avatar :user="$assignee" size="xxs" class="ring-2 ring-white" title="{{ $assignee->name }}" />
-                                                @endforeach
-                                            </span>
-                                        @endif
+                                            @if ($task->started_on || $task->ended_on || $task->checklist_items_count || $task->assignees->isNotEmpty())
+                                                <div class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
+                                                    @if ($task->started_on || $task->ended_on)
+                                                        <span>{{ $task->periodLabel() }}</span>
+                                                    @endif
+                                                    @if ($task->checklist_items_count)
+                                                        <span title="チェックリスト">☑ {{ $task->done_checklist_items_count }}/{{ $task->checklist_items_count }}</span>
+                                                    @endif
+                                                    @if ($task->assignees->isNotEmpty())
+                                                        <span class="ml-auto flex -space-x-1.5">
+                                                            @foreach ($task->assignees as $assignee)
+                                                                <x-user-avatar :user="$assignee" size="xxs" class="ring-2 ring-white" title="{{ $assignee->name }}" />
+                                                            @endforeach
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
                                 @endif
                             </div>
