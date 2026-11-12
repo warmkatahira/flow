@@ -122,7 +122,8 @@
                     @foreach ($pinned as $item)
                         <a href="{{ route($item['route']) }}"
                            @if (request()->routeIs($item['active'])) aria-current="page" @endif
-                           class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition {{ request()->routeIs($item['active']) ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                           class="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition {{ request()->routeIs($item['active']) ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">{!! $icons[$item['icon']] !!}</svg>
                             {{ $item['label'] }}
                         </a>
                     @endforeach
