@@ -646,6 +646,11 @@ Alpine.store('boardFilter', {
         return this.statuses.length + this.assignees.length + this.dues.length + this.labels.length;
     },
 
+    /** マイタスク・フォロー中・未読ありも含めた、使っている条件の数（「絞り込み中」のボタンに出す） */
+    get activeCount() {
+        return this.count + [this.mine, this.followed, this.unread].filter(Boolean).length;
+    },
+
     load(projectId, me) {
         this.key = `flow.filter.${projectId}`;
         this.me = me;
@@ -692,6 +697,7 @@ Alpine.store('boardFilter', {
         Object.assign(this, { statuses: [], dues: [], from: '', to: '', assignees: [], labels: [], mine: false, followed: false, unread: false });
         this.changed();
     },
+
 
     /** 選んだ締切日の範囲の一覧。[から, まで] で、空なら上限・下限なし。日付が未入力のカスタムは含めない */
     dueRanges() {
@@ -1576,6 +1582,115 @@ Alpine.data('notifications', (initialCount, initialUnread, userId, url, readAllU
     async readAll() {
         await post(readAllUrl, {});
         await this.refresh();
+    },
+}));
+
+/**
+ * タスクの検索（ナビの検索欄）
+ *
+ * 打つたびに少し待ってから結果の HTML を取り直す（古い問い合わせは取り消す）。上下キーで選び、Enter で開く。
+ * 入力欄や文章の編集中でなければ、「/」でどこからでも検索欄に入れる。
+ */
+Alpine.data('taskSearch', (url) => ({
+    q: '',
+    html: '',
+    open: false,
+    active: -1,
+    timer: null,
+    controller: null,
+
+    init() {
+        window.addEventListener('keydown', (event) => {
+            if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) {
+                return;
+            }
+
+            if (event.target.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) {
+                return;
+            }
+
+            event.preventDefault();
+            this.$refs.input.focus();
+            this.$refs.input.select();
+        });
+    },
+
+    search() {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => this.fetch(), 200);
+    },
+
+    async fetch() {
+        const q = this.q.trim();
+
+        this.controller?.abort();
+
+        if (q === '') {
+            this.html = '';
+            this.active = -1;
+
+            return;
+        }
+
+        this.controller = new AbortController();
+
+        try {
+            const response = await fetch(`${url}?q=${encodeURIComponent(q)}`, { signal: this.controller.signal });
+
+            if (! response.ok) {
+                return;
+            }
+
+            this.html = await response.text();
+            this.open = true;
+            this.active = 0;
+            this.$nextTick(() => this.mark());
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                throw error;
+            }
+        }
+    },
+
+    items() {
+        return [...this.$refs.results.querySelectorAll('[data-search-item]')];
+    },
+
+    mark() {
+        this.items().forEach((item, index) => {
+            item.dataset.active = String(index === this.active);
+
+            if (index === this.active) {
+                item.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    },
+
+    move(step) {
+        const count = this.items().length;
+
+        if (count === 0) {
+            return;
+        }
+
+        this.open = true;
+        this.active = (this.active + step + count) % count;
+        this.mark();
+    },
+
+    go() {
+        const item = this.items()[this.active];
+
+        if (item) {
+            window.location.href = item.href;
+        }
+    },
+
+    close() {
+        if (this.open) {
+            this.open = false;
+            this.$refs.input.blur();
+        }
     },
 }));
 

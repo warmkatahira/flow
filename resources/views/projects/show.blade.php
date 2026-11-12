@@ -9,19 +9,12 @@
     {{-- プロジェクト内のタブ。ガントチャートはこれから --}}
     <div x-data="{ tab: @js(in_array(request()->query('tab'), ['board', 'calendar', 'files', 'members', 'archive'], true) ? request()->query('tab') : 'board') }" class="flex min-h-0 flex-1 flex-col"
          x-project-live="{ projectId: {{ $project->id }}, boardUrl: @js(route('projects.board', $project)) }">
-        <div class="border-b border-slate-200 bg-white">
-            {{-- プロジェクト名は左のリストにあるので、見出しは置かない --}}
-            <div class="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-                @include('projects.partials.tabs', ['archiveCount' => $archivedLists->count() + $archivedTasks->count()])
-
-                <div class="flex shrink-0 items-center gap-2">
-                    @include('projects.partials.board-filter')
-                    @unless ($project->isPersonal())
-                        <x-favorite-button :project="$project" />
-                    @endunless
-                </div>
-            </div>
-        </div>
+        <x-project-header :project="$project" :archive-count="$archivedLists->count() + $archivedTasks->count()">
+            @include('projects.partials.board-filter')
+            @unless ($project->isPersonal())
+                <x-favorite-button :project="$project" />
+            @endunless
+        </x-project-header>
 
         {{-- ボードは画面の右端まで見せるので、右の余白は中身ごとに持たせる --}}
         <div class="flex min-h-0 flex-1 flex-col pl-4 pt-4 sm:pl-6 lg:pl-8">

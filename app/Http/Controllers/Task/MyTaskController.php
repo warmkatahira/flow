@@ -22,11 +22,8 @@ class MyTaskController extends Controller
         $showAll = $request->query('show') === 'all';
 
         $query = Task::query()
-            ->whereHas('assignees', fn (Builder $query) => $query->whereKey($user->getKey()))
-            ->whereNull('tasks.archived_at')
-            ->whereHas('list', fn (Builder $query) => $query->active())
-            ->whereHas('project', fn (Builder $query) => $query->active()
-                ->whereHas('users', fn (Builder $query) => $query->whereKey($user->getKey())));
+            ->onBoardFor($user)
+            ->whereHas('assignees', fn (Builder $query) => $query->whereKey($user->getKey()));
 
         // 完了と中止は既定では出さない。件数は切り替えのボタンに両方出す
         $openCount = (clone $query)->whereNotIn('status', self::closedStatuses())->count();

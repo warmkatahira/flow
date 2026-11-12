@@ -18,6 +18,7 @@ use App\Http\Controllers\Project\TaskDetailController;
 use App\Http\Controllers\Project\TaskLabelController;
 use App\Http\Controllers\Project\TaskListController;
 use App\Http\Controllers\Task\MyTaskController;
+use App\Http\Controllers\Task\TaskSearchController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\User\UserImportController;
 use App\Http\Middleware\EnsurePasswordIsChanged;
@@ -39,6 +40,9 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
 
     // タスク一覧（参加しているプロジェクト全体で、自分が担当者になっているタスク）
     Route::get('tasks', [MyTaskController::class, 'index'])->name('my-tasks.index');
+
+    // タスクの検索（ナビの検索欄。結果の一覧を HTML で返す）
+    Route::get('tasks/search', TaskSearchController::class)->name('tasks.search');
 
     // 通知（自分へのメンションと、フォローしたタスクの動き）
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

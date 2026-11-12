@@ -1,11 +1,7 @@
 {{-- ナビゲーションとタブは常に見えるよう、画面の高さに収めてタブの下だけをスクロールさせる --}}
 <x-layouts.app :title="$project->name.' の設定'" fill sidebar>
     {{-- プロジェクトの画面と同じタブ。他のタブはプロジェクトの画面へ戻る --}}
-    <div class="shrink-0 border-b border-slate-200 bg-white">
-        <div class="flex items-center gap-4 px-4 sm:px-6 lg:px-8">
-            @include('projects.partials.tabs', ['active' => 'settings', 'archiveCount' => $archiveCount])
-        </div>
-    </div>
+    <x-project-header :project="$project" active="settings" :archive-count="$archiveCount" />
 
     <div class="min-h-0 flex-1 overflow-y-auto">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

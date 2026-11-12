@@ -8,9 +8,10 @@
     use App\Enums\ProjectRole;
 
     $active ??= null;
-    $tabClass = 'inline-flex shrink-0 cursor-pointer items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-semibold transition';
-    $idleClass = 'border-transparent text-slate-500 hover:text-slate-800';
-    $activeClass = 'border-sky-600 text-sky-700';
+    // カプセル（x-project-header）の中に並べる。選んでいるタブは水色で塗る
+    $tabClass = 'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-semibold transition';
+    $idleClass = 'text-slate-500 hover:bg-slate-100 hover:text-slate-800';
+    $activeClass = 'bg-sky-600 text-white shadow-[0_4px_12px_-4px_rgb(2_132_199/0.6)]';
     $tabs = [
         'board' => ['ボード', '<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M14 17h2.75A2.25 2.25 0 0019 14.75V5.25A2.25 2.25 0 0016.75 3H14v14zM12.5 3h-5v14h5V3zM3.25 3H6v14H3.25A2.25 2.25 0 011 14.75v-9.5A2.25 2.25 0 013.25 3z" /></svg>'],
         // キーは URL（?tab=calendar）とブラウザに覚えた表示で使っているので calendar のまま。中でカレンダーとタイムラインを切り替える
@@ -21,14 +22,14 @@
     ];
 @endphp
 
-<nav class="flex min-w-0 gap-1 overflow-x-auto [scrollbar-width:none]" aria-label="プロジェクトのタブ">
+<nav class="flex min-w-0 gap-0.5 overflow-x-auto [scrollbar-width:none]" aria-label="プロジェクトのタブ">
     @foreach ($tabs as $key => [$label, $icon])
         @if ($active)
             <a href="{{ route('projects.show', [$project, 'tab' => $key]) }}" class="{{ $tabClass }} {{ $idleClass }}">
                 {!! $icon !!}
                 {{ $label }}
                 @if ($key === 'archive' && isset($archiveCount))
-                    <span class="ml-0.5 font-normal text-slate-400">{{ $archiveCount }}</span>
+                    <span class="ml-0.5 font-normal opacity-60">{{ $archiveCount }}</span>
                 @endif
             </a>
         @else
@@ -38,7 +39,7 @@
                 {!! $icon !!}
                 {{ $label }}
                 @if ($key === 'archive' && isset($archiveCount))
-                    <span data-live-archive-count class="ml-0.5 font-normal text-slate-400">{{ $archiveCount }}</span>
+                    <span data-live-archive-count class="ml-0.5 font-normal opacity-60">{{ $archiveCount }}</span>
                 @endif
             </button>
         @endif

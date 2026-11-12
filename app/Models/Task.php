@@ -8,6 +8,7 @@ use App\Events\NotificationReceived;
 use App\Models\Concerns\Archivable;
 use App\Support\RichText;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -271,6 +272,22 @@ class Task extends Model
         $format = fn (?Carbon $date) => $date?->locale('ja')->isoFormat($date->isCurrentYear() ? 'M/D(ddd)' : 'YYYY/M/D(ddd)');
 
         return trim($format($this->started_on).' 〜 '.$format($this->ended_on));
+    }
+
+    /**
+     * 参加しているプロジェクトのボードに出ているタスクだけに絞る
+     *
+     * アーカイブしたタスク・リストと、アーカイブ中のプロジェクトのものは除く（タスク一覧と検索で使う）。
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeOnBoardFor(Builder $query, User $user): Builder
+    {
+        return $query
+            ->whereNull('tasks.archived_at')
+            ->whereHas('list', fn (Builder $query) => $query->active())
+            ->whereHas('project', fn (Builder $query) => $query->active()->visibleTo($user));
     }
 
     /**
