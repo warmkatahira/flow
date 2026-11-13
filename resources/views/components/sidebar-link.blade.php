@@ -7,7 +7,7 @@
 <a href="{{ route('projects.show', $project) }}" title="{{ $project->name }}"
    @if ($current) aria-current="page" @endif
    data-unread="{{ $unread ? 'true' : 'false' }}" :data-unread="$store.unread.hasProject({{ $project->id }}) ? 'true' : 'false'"
-   {{ $attributes->merge(['class' => 'flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition '.($current ? 'bg-sky-500 text-white' : 'text-slate-200 hover:bg-slate-700 data-[unread=true]:font-bold data-[unread=true]:text-white')]) }}>
+   {{ $attributes->merge(['class' => 'flex items-center gap-2 rounded-lg px-2 py-1 text-[13px] transition '.($current ? 'bg-sky-500 text-white' : 'text-slate-200 hover:bg-slate-700 data-[unread=true]:font-bold data-[unread=true]:text-white')]) }}>
     <x-project-icon :project="$project" size="xs" />
     <span class="min-w-0 flex-1 truncate">{{ $project->name }}</span>
     <span @unless ($unread) style="display: none" @endunless x-show="$store.unread.hasProject({{ $project->id }})" data-unread-dot
