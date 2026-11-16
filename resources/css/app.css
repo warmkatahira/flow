@@ -172,36 +172,6 @@ html[data-sidebar-moving] .sidebar-wave {
     }
 }
 
-/*
- * ボードのリスト（ティント）。面をリストの色でごく薄く塗り、見出しは色のラベルにする
- * 色は好きなカラーコードを選べるので、文字は濃い色に混ぜて、黄色のような淡い色でも読めるようにする
- * リストの要素に style="--lc: #色" を置いて使う
- */
-.board-list {
-    background-color: color-mix(in oklab, var(--lc) 11%, white);
-}
-.board-list-label {
-    background-color: color-mix(in oklab, var(--lc) 22%, white);
-    color: color-mix(in oklab, var(--lc) 55%, var(--color-slate-900));
-}
-.board-list-ink {
-    color: color-mix(in oklab, var(--lc) 55%, var(--color-slate-900));
-}
-.board-list-add:hover {
-    background-color: color-mix(in oklab, var(--lc) 16%, transparent);
-}
-.board-list .board-card:not(.task-selected) {
-    --tw-ring-color: color-mix(in oklab, var(--lc) 25%, var(--color-slate-200));
-}
-
-@media (hover: hover) {
-    /* 浮き上がりは他のカードと同じにして、枠と背景だけリストの色にする */
-    .board-list .task-card:hover:not(.sortable-chosen, .sortable-ghost, .task-selected) {
-        --tw-ring-color: var(--lc);
-        background-color: color-mix(in oklab, var(--lc) 5%, white);
-    }
-}
-
 /* カンバンで複数選択したタスク。Sortable に渡せるクラスは1つだけなのでまとめておく */
 .task-selected {
     @apply bg-sky-50 ring-2 ring-sky-500;

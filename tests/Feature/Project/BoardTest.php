@@ -181,7 +181,7 @@ class BoardTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame('#7d5cc1', $list->refresh()->color);
-        $this->actingAs($user)->get(route('projects.show', $project))->assertSee('--lc: #7d5cc1', false);
+        $this->actingAs($user)->get(route('projects.show', $project))->assertSee('background-color: #7d5cc1', false);
     }
 
     public function test_カラーコード以外は色にできない(): void
