@@ -1,5 +1,5 @@
 {{--
-    チェックボックスの見た目。直前に class="peer sr-only" の input[type=checkbox] を置き、両方を label で包む
+    チェックボックスの見た目。直前に class="peer sr-only" の input[type=checkbox] を置き、両方を label で包む。label には relative を付ける（見えない input がラベルから離れた場所に置かれ、押したときにフォーカスでスクロールが飛ぶのを防ぐ）
 --}}
 <span {{ $attributes->merge(['class' => 'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 border-slate-300 bg-white text-transparent transition peer-checked:border-sky-500 peer-checked:bg-sky-500 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500/40 peer-disabled:opacity-60']) }} aria-hidden="true">
     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">

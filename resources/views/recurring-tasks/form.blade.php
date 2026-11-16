@@ -22,7 +22,9 @@
     $labelClass = 'block text-sm text-slate-600';
     $inputClass = 'mt-1.5 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none';
     $smallInputClass = 'rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none';
-    $chipClass = 'inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 transition hover:border-sky-300 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50 has-[:checked]:text-sky-800';
+    // relative は、中の見えないチェックボックス（sr-only）をラベルの位置に置くため。ないと離れた場所に置かれ、
+    // 押したときにフォーカスがそこへ移って、画面がスクロールしてしまう
+    $chipClass = 'relative inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 transition hover:border-sky-300 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50 has-[:checked]:text-sky-800';
     $sectionClass = 'rounded-xl bg-white px-6 py-6 shadow-sm ring-1 ring-slate-200';
 @endphp
 

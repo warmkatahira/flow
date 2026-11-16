@@ -45,7 +45,7 @@
     <x-input-error :messages="$errors->get('icon')" />
 
     @if ($project?->icon_path)
-        <label class="mt-2 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+        <label class="relative mt-2 inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600">
             <input autocomplete="off" type="checkbox" name="remove_icon" value="1" class="peer sr-only">
             <x-check-mark />
             アイコン画像を削除する
@@ -122,7 +122,7 @@
         @foreach ($members as ['user' => $user, 'isCreator' => $isCreator, 'checked' => $checked, 'role' => $selectedRole])
             <div x-show="visible({{ $user->id }})"
                  class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 transition has-[input:checked]:border-sky-300 has-[input:checked]:bg-sky-50/60 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-sky-500/40 [&:not(:has(input:checked))_select]:opacity-50">
-                <label for="member-{{ $user->id }}" @class(['flex min-w-0 flex-1 items-center gap-3', 'cursor-pointer' => ! $isCreator])>
+                <label for="member-{{ $user->id }}" @class(['relative flex min-w-0 flex-1 items-center gap-3', 'cursor-pointer' => ! $isCreator])>
                     <input autocomplete="off" type="checkbox" id="member-{{ $user->id }}" name="members[]" value="{{ $user->id }}"
                            @checked($checked) @disabled($isCreator) @change="selected[{{ $user->id }}] = $event.target.checked" class="peer sr-only">
                     <x-check-mark />
