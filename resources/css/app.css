@@ -323,9 +323,68 @@ html[data-sidebar-moving] .sidebar-wave {
         background-color 0.15s;
 }
 
+/*
+ * ドラッグ。付箋をつまんで持ち上げたように、少し傾いて大きくなり、影が深くなる（resources/js/app.js の x-board で forceFallback にしている）
+ * 掴んだカードの複製（.sortable-fallback）は Sortable が位置を transform で動かすので、傾きと大きさは rotate / scale で付ける。
+ * Sortable が付ける半透明（opacity: 0.8）は消す。元の場所（.sortable-ghost）はリストの色の点線の枠だけにする
+ */
+.note-card.sortable-fallback {
+    opacity: 1 !important;
+    cursor: grabbing;
+    animation: note-lift 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.note-card.sortable-fallback::after {
+    width: 0 !important;
+    height: 0 !important;
+}
+@keyframes note-lift {
+    to {
+        rotate: 3deg;
+        scale: 1.04;
+        box-shadow:
+            0 2px 4px rgb(15 23 42 / 0.1),
+            0 22px 28px -12px rgb(15 23 42 / 0.45);
+    }
+}
+.note-card.sortable-ghost {
+    background: transparent;
+    box-shadow: none;
+    outline: 2px dashed var(--lc-line);
+    outline-offset: -2px;
+}
+.note-card.sortable-ghost > *,
+.note-card.sortable-ghost::before,
+.note-card.sortable-ghost::after {
+    visibility: hidden;
+}
+
+/* 運んでいる間は、通りがかった付箋の角をめくらない（マウスは複製を素通りして下の付箋に乗っている） */
+.note-board:has(.sortable-fallback) .note-card.task-card:hover {
+    border-bottom-right-radius: 14px;
+}
+.note-board:has(.sortable-fallback) .note-card.task-card:hover::after {
+    width: 0;
+    height: 0;
+}
+
+/* 置いたとき。傾きが戻って小さく弾む */
+.note-card.note-land {
+    animation: note-land 0.32s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+@keyframes note-land {
+    from {
+        rotate: 2deg;
+        scale: 1.03;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .note-card::after {
         transition: none;
+    }
+    .note-card.sortable-fallback,
+    .note-card.note-land {
+        animation: none;
     }
 }
 

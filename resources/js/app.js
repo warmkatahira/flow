@@ -175,6 +175,14 @@ Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
         setTimeout(() => card.classList.remove('note-peel'), peelSettlesAt);
     });
 
+    // 置いた付箋は、傾きが戻って小さく弾む（.note-land）
+    const land = (items) => items.forEach((item) => {
+        item.classList.remove('note-land');
+        void item.offsetWidth;
+        item.classList.add('note-land');
+        setTimeout(() => item.classList.remove('note-land'), 400);
+    });
+
     // リストの並べ替え
     sortables.push(Sortable.create(element, {
         ...autoScroll,
@@ -203,6 +211,9 @@ Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
             multiDrag: true,
             multiDragKey: isMac ? 'Meta' : 'ctrl',
             selectedClass: 'task-selected',
+            // ブラウザが撮る写真ではなく、Sortable が作る複製を動かす。付箋をつまんで持ち上げた動きを CSS で付けるため（resources/css/app.css の .sortable-fallback）
+            forceFallback: true,
+            fallbackTolerance: 3,
             // キーなしのクリックでも1件選択されてしまうので、その場で取り消す
             onSelect: (event) => {
                 if (! event.originalEvent?.[isMac ? 'metaKey' : 'ctrlKey']) {
@@ -226,6 +237,7 @@ Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
 
                 items.forEach((item) => Sortable.utils.deselect(item));
                 refreshCounts();
+                land(items);
 
                 post(tasksUrl, {
                     list_id: Number(target.getAttribute('data-tasks')),
