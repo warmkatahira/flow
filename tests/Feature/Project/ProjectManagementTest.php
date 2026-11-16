@@ -46,7 +46,7 @@ class ProjectManagementTest extends TestCase
 
         $this->assertSame(['開始前', '進行中', '完了'], $lists->pluck('name')->all());
         $this->assertSame(
-            [ListColor::Sky->value, ListColor::Emerald->value, ListColor::Rose->value],
+            [ListColor::Sky->pale(), ListColor::Emerald->pale(), ListColor::Rose->pale()],
             $lists->pluck('color')->all(),
         );
         $this->assertSame([0, 1, 2], $lists->pluck('position')->all());

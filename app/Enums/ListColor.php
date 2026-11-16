@@ -7,6 +7,9 @@ namespace App\Enums;
  *
  * リストには好きな色も付けられるので、task_lists.color はカラーコードで持つ。
  * ここにあるのは選択肢だけで、この中の値とは限らない。
+ *
+ * タグには値（はっきりした色）をそのまま、リストには pale()（淡い色）を使う。
+ * ボードのカードはリストの色の付箋になるので、リストは淡い色を並べ、タグのバーが付箋の上で埋もれないようにする。
  */
 enum ListColor: string
 {
@@ -26,6 +29,27 @@ enum ListColor: string
     case Teal = '#00bba7';
     case Brown = '#973c00';
     case Slate = '#90a1b9';
+
+    /**
+     * リストに使う淡い色。並びと名前は値と同じ
+     */
+    public function pale(): string
+    {
+        return match ($this) {
+            self::Sky => '#bae6fd',
+            self::Indigo => '#c7d2fe',
+            self::Violet => '#ddd6fe',
+            self::Pink => '#fbcfe8',
+            self::Rose => '#fecdd3',
+            self::Orange => '#fed7aa',
+            self::Amber => '#fde68a',
+            self::Lime => '#d9f99d',
+            self::Emerald => '#a7f3d0',
+            self::Teal => '#99f6e4',
+            self::Brown => '#e7d3bf',
+            self::Slate => '#e2e8f0',
+        };
+    }
 
     public function label(): string
     {

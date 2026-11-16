@@ -1,18 +1,24 @@
-@props(['value' => App\Enums\ListColor::Sky->value])
+@props(['value' => null, 'pale' => false])
+
+@php
+    // リストには淡い色（pale）、タグにははっきりした色を並べる（App\Enums\ListColor）
+    $presets = collect(App\Enums\ListColor::cases())->map(fn ($preset) => ['value' => $pale ? $preset->pale() : $preset->value, 'label' => $preset->label()]);
+    $value ??= $presets->first()['value'];
+@endphp
 
 {{--
-    リストの色。プリセットから選ぶか、カラーコードかピッカーで好きな色にする。
+    リスト・タグの色。プリセットから選ぶか、カラーコードかピッカーで好きな色にする。
     x-model を付ければ外から色を渡せる（リストの編集ダイアログ）。
     同じ要素の x-model は内側のスコープで評価されるので、中の変数名は外と変えておく。
 --}}
 <div x-data="{ picked: @js($value) }" x-modelable="picked" {{ $attributes->merge(['class' => 'flex flex-wrap items-center justify-between gap-x-4 gap-y-2']) }}>
     <div class="flex flex-wrap gap-1.5">
-        @foreach (App\Enums\ListColor::cases() as $preset)
-            <button type="button" @click="picked = @js($preset->value)"
-                    :class="picked.toLowerCase() === @js($preset->value) && 'ring-2 ring-slate-700'"
-                    style="background-color: {{ $preset->value }}"
-                    title="{{ $preset->label() }}" aria-label="{{ $preset->label() }}"
-                    class="h-6 w-6 rounded-md ring-offset-1"></button>
+        @foreach ($presets as $preset)
+            <button type="button" @click="picked = @js($preset['value'])"
+                    :class="picked.toLowerCase() === @js($preset['value']) && 'ring-2 ring-slate-700'"
+                    style="background-color: {{ $preset['value'] }}"
+                    title="{{ $preset['label'] }}" aria-label="{{ $preset['label'] }}"
+                    class="h-6 w-6 rounded-md ring-1 ring-black/5 ring-offset-1"></button>
         @endforeach
     </div>
 

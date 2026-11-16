@@ -138,15 +138,15 @@ class Project extends Model
         }
 
         $defaults = [
-            '開始前' => ListColor::Sky,
-            '進行中' => ListColor::Emerald,
-            '完了' => ListColor::Rose,
+            '開始前' => ListColor::Sky->pale(),
+            '進行中' => ListColor::Emerald->pale(),
+            '完了' => ListColor::Rose->pale(),
         ];
 
         $position = 0;
 
         foreach ($defaults as $name => $color) {
-            $this->taskLists()->create(['name' => $name, 'color' => $color->value, 'position' => $position++]);
+            $this->taskLists()->create(['name' => $name, 'color' => $color, 'position' => $position++]);
         }
     }
 

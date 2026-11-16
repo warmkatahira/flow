@@ -110,7 +110,7 @@ class ProjectSeeder extends Seeder
         foreach ($lists as $position => [$name, $color, $titles]) {
             $list = $project->taskLists()->create([
                 'name' => $name,
-                'color' => $color->value,
+                'color' => $color->pale(),
                 'position' => $position,
             ]);
 

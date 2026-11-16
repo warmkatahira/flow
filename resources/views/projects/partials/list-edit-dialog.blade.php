@@ -33,7 +33,7 @@
 
             <div>
                 <p class="mb-2 text-sm text-slate-600">リスト色</p>
-                <x-list-color-picker x-model="color" />
+                <x-list-color-picker pale x-model="color" />
             </div>
 
             <div class="flex justify-center gap-6 pt-3">

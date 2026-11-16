@@ -8,8 +8,11 @@
     </p>
 @endif
 
-{{-- リストは画面の下まで伸ばし、タスクが多いときはリストの中でスクロールする --}}
-<div class="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-3 pr-4 sm:pr-6 lg:pr-8 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]"
+{{--
+    リストは画面の下まで伸ばし、タスクが多いときはリストの中でスクロールする
+    見た目は付箋（resources/css/app.css の .note-board）。ボードは点の打たれたホワイトボードにする
+--}}
+<div class="note-board flex min-h-0 flex-1 gap-6 overflow-x-auto pb-3 pr-4 sm:pr-6 lg:pr-8 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]"
      x-drag-scroll
      x-board="{
         tasksUrl: @js(route('tasks.reorder', $project)),
@@ -17,16 +20,14 @@
         archiveUrl: @js(route('tasks.archive-many', $project)),
      }">
     @foreach ($project->taskLists as $list)
-        <section data-list-id="{{ $list->id }}" x-data="{ adding: false }"
-                 class="flex min-h-0 w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
-            {{-- 上端の帯。見出しと同じくリストを掴める --}}
-            <div data-list-handle class="h-2 shrink-0 cursor-grab rounded-t-xl" style="background-color: {{ $list->color }}"></div>
-
-            {{-- 見出し --}}
-            <div class="shrink-0">
-                <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2">
-                    <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
-                    <span data-list-count class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
+        {{-- リストは面を持たず、見出しの下線をリストの色にする --}}
+        <section data-list-id="{{ $list->id }}" x-data="{ adding: false }" style="--lc: {{ $list->color }}"
+                 class="flex min-h-0 w-72 shrink-0 flex-col">
+            {{-- 見出し。ここを掴んでリストを動かす --}}
+            <div class="shrink-0 px-2">
+                <div data-list-handle class="note-list-head flex cursor-grab items-center gap-1.5 px-0.5 pb-1.5 pt-0.5">
+                    <span class="min-w-0 truncate text-[15px] text-slate-900">{{ $list->name }}</span>
+                    <span data-list-count class="shrink-0 text-xs text-slate-500">{{ $list->tasks->count() }}</span>
 
                     <x-board-menu title="リストメニュー" class="ml-auto" button-class="p-1 text-slate-700 hover:bg-black/10">
                         <x-board-menu-item @click="menuOpen = false; adding = true; $nextTick(() => $refs.title.focus())">新規タスクを追加</x-board-menu-item>
@@ -55,9 +56,9 @@
             </div>
 
             {{-- タスクを追加 --}}
-            <div class="shrink-0 px-2 pt-2">
+            <div class="shrink-0 px-2 pt-3">
                 <button type="button" @click="adding = true; $nextTick(() => $refs.title.focus())" x-show="! adding"
-                        class="flex w-full items-center justify-center gap-1 rounded-lg bg-white px-3 py-1.5 text-sm text-sky-600 transition hover:bg-sky-50">
+                        class="note-list-add flex w-full items-center justify-center gap-1 rounded px-3 py-1.5 text-sm transition">
                     ＋ タスクを追加
                 </button>
 
@@ -73,20 +74,21 @@
             </div>
 
             {{-- タスク --}}
-            <div data-tasks="{{ $list->id }}" class="min-h-8 flex-1 space-y-2 overflow-y-auto p-2 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
+            <div data-tasks="{{ $list->id }}" class="min-h-8 flex-1 space-y-3.5 overflow-y-auto px-2 pb-2 pt-4 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
                 @foreach ($list->tasks as $task)
                     <article data-task-id="{{ $task->id }}" data-task-url="{{ route('tasks.show', $task) }}"
                              data-status="{{ $task->status->value }}" data-due="{{ $task->ended_on?->format('Y-m-d') }}"
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
                              data-followed="{{ $followedTaskIds->contains($task->id) ? '1' : '' }}"
-                             class="task-card relative cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
+                             style="--tilt: {{ [-1.2, 0.8, -0.4, 1.1, -0.9, 0.5, -1.4, 0.9][$task->number % 8] }}deg"
+                             class="note-card task-card relative cursor-pointer p-2.5">
                         {{-- 未読の通知があるタスク。開くと既読になって消える --}}
                         <span x-show="$store.unread.hasTask({{ $task->id }})" x-cloak data-unread-dot title="未読の通知あり"
                               class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-sky-500 ring-2 ring-white"></span>
                         <div class="flex items-start gap-2">
                             <div class="flex shrink-0 flex-col items-center gap-1">
-                                <span class="text-[10px] font-medium leading-4 text-slate-400">#{{ $task->number }}</span>
+                                <span class="note-num text-[10px] font-medium leading-4">#{{ $task->number }}</span>
                                 <x-task-status-icon :status="$task->status" class="h-4 w-4" />
                                 @if ($followedTaskIds->contains($task->id))
                                     <x-follow-icon class="h-3.5 w-3.5 text-sky-500" title="フォロー中" />
@@ -178,7 +180,7 @@
             <input autocomplete="off" type="text" name="name" x-ref="name" required maxlength="255" placeholder="リスト名"
                    class="block w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none">
 
-            <x-list-color-picker />
+            <x-list-color-picker pale />
 
             <div class="flex items-center gap-2">
                 <button type="submit" class="rounded-lg bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700">追加</button>

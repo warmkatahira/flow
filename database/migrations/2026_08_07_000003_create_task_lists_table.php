@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             // #rrggbb（プリセットは App\Enums\ListColor）
-            $table->string('color', 7)->default('#00a6f4');
+            $table->string('color', 7)->default('#bae6fd');
             $table->unsignedInteger('position');
             $table->timestamps();
             $table->timestamp('archived_at')->nullable()->index();
