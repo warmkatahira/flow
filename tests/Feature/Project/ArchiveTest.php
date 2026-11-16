@@ -3,6 +3,7 @@
 namespace Tests\Feature\Project;
 
 use App\Enums\ListColor;
+use App\Enums\TaskStatus;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskList;
@@ -371,6 +372,79 @@ class ArchiveTest extends TestCase
             ->assertForbidden();
 
         $this->assertFalse($task->fresh()->isArchived());
+    }
+
+    public function test_完了のタスクだけをまとめてアーカイブし取り消しも出す(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $list = $this->listFor($project);
+        $done = $this->taskIn($list, $user, '完了1');
+        $alsoDone = $this->taskIn($list, $user, '完了2');
+        $reopened = $this->taskIn($list, $user, '確認中に完了を外された');
+        $todo = $this->taskIn($list, $user, '未着手');
+        Task::whereKey([$done->id, $alsoDone->id])->update(['status' => TaskStatus::Done]);
+
+        $this->actingAs($user)
+            ->from(route('projects.show', $project))
+            ->post(route('tasks.archive-done', $project), ['ids' => [$done->id, $alsoDone->id, $reopened->id]])
+            ->assertRedirect(route('projects.show', $project))
+            ->assertSessionHas('toast.message', '2件のタスクをアーカイブしました')
+            ->assertSessionHas('toast.ids', [$done->id, $alsoDone->id]);
+
+        $this->assertTrue($done->fresh()->isArchived());
+        $this->assertTrue($alsoDone->fresh()->isArchived());
+        // 送られてきても完了でなければ残す。送られていない（絞り込みで隠れていた）ものも残す
+        $this->assertFalse($reopened->fresh()->isArchived());
+        $this->assertFalse($todo->fresh()->isArchived());
+    }
+
+    public function test_完了のタスクがなければまとめてアーカイブしても何も変わらない(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $task = $this->taskIn($this->listFor($project), $user);
+
+        $this->actingAs($user)
+            ->from(route('projects.show', $project))
+            ->post(route('tasks.archive-done', $project), ['ids' => [$task->id]])
+            ->assertRedirect(route('projects.show', $project))
+            ->assertSessionHas('status', 'アーカイブできる完了のタスクはありませんでした')
+            ->assertSessionMissing('toast');
+
+        $this->assertFalse($task->fresh()->isArchived());
+    }
+
+    public function test_完了のまとめてアーカイブは参加者でなければ404でアーカイブ中は403になる(): void
+    {
+        $owner = User::factory()->create();
+        $project = Project::factory()->ownedBy($owner)->create();
+        $task = $this->taskIn($this->listFor($project), $owner);
+        $task->forceFill(['status' => TaskStatus::Done])->save();
+
+        $this->actingAs(User::factory()->systemAdmin()->create())
+            ->post(route('tasks.archive-done', $project), ['ids' => [$task->id]])
+            ->assertNotFound();
+
+        $project->archive();
+
+        $this->actingAs($owner)
+            ->post(route('tasks.archive-done', $project), ['ids' => [$task->id]])
+            ->assertForbidden();
+
+        $this->assertFalse($task->fresh()->isArchived());
+    }
+
+    public function test_完了のまとめてアーカイブのボタンは操作できる人のボードにだけ出る(): void
+    {
+        $owner = User::factory()->create();
+        $project = Project::factory()->ownedBy($owner)->create();
+
+        $this->actingAs($owner)->get(route('projects.show', $project))->assertSee('完了をアーカイブ');
+
+        $project->archive();
+
+        $this->actingAs($owner)->get(route('projects.show', $project))->assertDontSee('完了をアーカイブ');
     }
 
     public function test_アーカイブの取り消しはタスクを元の位置に戻す(): void

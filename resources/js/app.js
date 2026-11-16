@@ -560,6 +560,41 @@ Alpine.data('archiveConfirm', () => ({
 }));
 
 /**
+ * 完了のタスクをまとめてアーカイブするボタン（resources/views/projects/partials/board-filter.blade.php）
+ *
+ * ボードに出ている完了のタスクを数える。絞り込みで隠れているもの（.hidden）と、ドラッグ中の複製は数えない。
+ * ステータスの変更・絞り込み・他の人の変更でのボードの差し替えに付いていけるよう、ボードの変化を見張って数え直す。
+ */
+Alpine.data('archiveDone', () => ({
+    ids: [],
+
+    init() {
+        const board = document.querySelector('[data-live-board]');
+
+        if (! board) {
+            return;
+        }
+
+        let queued = false;
+        const recount = () => {
+            queued = false;
+            this.ids = [...board.querySelectorAll('article[data-task-id][data-status="done"]:not(.hidden, .sortable-fallback)')]
+                .map((card) => Number(card.dataset.taskId));
+        };
+
+        const observer = new MutationObserver(() => {
+            if (! queued) {
+                queued = true;
+                requestAnimationFrame(recount);
+            }
+        });
+
+        observer.observe(board, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-status'] });
+        recount();
+    },
+}));
+
+/**
  * カードの詳細の開閉（拡張する / 折り畳む）。全プロジェクト共通で覚えておく
  */
 Alpine.store('cardView', {

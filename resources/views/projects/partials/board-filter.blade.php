@@ -88,6 +88,31 @@
         <span x-text="$store.cardView.expanded ? '折り畳む' : '拡張する'">拡張する</span>
     </button>
 
+    {{--
+        完了のタスクをまとめてアーカイブ（resources/js/app.js の archiveDone）。
+        絞り込みで隠れているものは対象にしない（見えていないタスクまで消えないように）。0件のときは押せない。
+        確認はアーカイブの確認ダイアログ（x-archive-confirm）、取り消しはトーストから
+    --}}
+    @can('work', $project)
+        <form x-data="archiveDone" x-show="tab === 'board'" method="POST" action="{{ route('tasks.archive-done', $project) }}"
+              data-archive-confirm="完了のタスク" :data-name="`${ids.length}件`" data-note="アーカイブタブから元に戻せます。">
+            @csrf
+            <template x-for="id in ids" :key="id">
+                <input type="hidden" name="ids[]" :value="id">
+            </template>
+            <button type="submit" :disabled="ids.length === 0"
+                    :title="ids.length === 0 ? '画面に出ている完了のタスクはありません' : `画面に出ている完了のタスク ${ids.length}件をアーカイブ`"
+                    class="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm text-slate-500 transition enabled:hover:bg-slate-100 enabled:hover:text-slate-800 disabled:cursor-default disabled:opacity-40">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M2 3a1 1 0 00-1 1v1a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1H2z" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M2 7.5h16l-.811 7.71a2 2 0 01-1.99 1.79H4.802a2 2 0 01-1.99-1.79L2 7.5zM7 11a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
+                </svg>
+                完了をアーカイブ
+                <span x-show="ids.length > 0" x-cloak x-text="ids.length" class="rounded-full bg-emerald-100 px-1.5 text-[11px] leading-4 text-emerald-700"></span>
+            </button>
+        </form>
+    @endcan
+
     <div x-show="filterOpen" x-cloak
          class="absolute right-0 top-full z-30 mt-2 grid w-[46rem] max-w-[calc(100vw-2rem)] grid-cols-4 divide-x divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-slate-200">
         <div class="p-3">

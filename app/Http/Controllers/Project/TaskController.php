@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Project;
 
 use App\Enums\TaskActivity;
+use App\Enums\TaskStatus;
 use App\Events\BoardChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskCommentAttachment;
 use App\Models\TaskList;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -174,12 +176,52 @@ class TaskController extends Controller
             'ids.*' => ['integer'],
         ]);
 
+        $count = $this->archiveOnBoard($request, $project, $project->tasks()->whereKey($attributes['ids']));
+
+        return response()->json(['archived' => $count]);
+    }
+
+    /**
+     * 完了のタスクをまとめてアーカイブする（ボードの上のバーの「完了をアーカイブ」）
+     *
+     * ids は押した人の画面に出ていた完了のタスク（絞り込みで隠れているものは送られない）。
+     * 確認している間に他の人が完了を外したタスクは、ここで除く。
+     */
+    public function archiveDone(Request $request, Project $project): RedirectResponse
+    {
+        Gate::authorize('work', $project);
+
+        $attributes = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $count = $this->archiveOnBoard($request, $project, $project->tasks()->whereKey($attributes['ids'])->where('status', TaskStatus::Done));
+
+        if ($count === 0) {
+            return back()->with('status', 'アーカイブできる完了のタスクはありませんでした');
+        }
+
+        return back();
+    }
+
+    /**
+     * ボードに出ているタスクをまとめてアーカイブし、取り消し用のトーストを用意する
+     *
+     * @param  HasMany<Task, Project>  $tasks
+     * @return int アーカイブした件数
+     */
+    private function archiveOnBoard(Request $request, Project $project, HasMany $tasks): int
+    {
         // 他プロジェクトや、ボードに出ていないものを混ぜられても動かないようにする
-        $ids = $project->tasks()
+        $ids = $tasks
             ->active()
-            ->whereKey($attributes['ids'])
             ->whereHas('list', fn ($query) => $query->active())
             ->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
 
         $count = $project->tasks()->whereKey($ids)->update(['archived_at' => now()]);
 
@@ -195,7 +237,7 @@ class TaskController extends Controller
             'ids' => $ids->all(),
         ]);
 
-        return response()->json(['archived' => $count]);
+        return $count;
     }
 
     /**
