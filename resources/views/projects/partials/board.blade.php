@@ -81,7 +81,6 @@
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
                              data-followed="{{ $followedTaskIds->contains($task->id) ? '1' : '' }}"
-                             style="--tilt: {{ [-1.2, 0.8, -0.4, 1.1, -0.9, 0.5, -1.4, 0.9][$task->number % 8] }}deg"
                              class="note-card task-card relative cursor-pointer p-2.5">
                         {{-- 未読の通知があるタスク。開くと既読になって消える --}}
                         <span x-show="$store.unread.hasTask({{ $task->id }})" x-cloak data-unread-dot title="未読の通知あり"

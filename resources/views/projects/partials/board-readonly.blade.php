@@ -23,7 +23,6 @@
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
                              data-followed="{{ $followedTaskIds->contains($task->id) ? '1' : '' }}"
-                             style="--tilt: {{ [-1.2, 0.8, -0.4, 1.1, -0.9, 0.5, -1.4, 0.9][$task->number % 8] }}deg"
                              class="note-card relative flex items-start gap-2 p-2.5">
                         <div class="flex shrink-0 flex-col items-center gap-1">
                             <span class="note-num text-[10px] font-medium leading-4">#{{ $task->number }}</span>

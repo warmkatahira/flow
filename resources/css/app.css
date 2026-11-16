@@ -174,8 +174,8 @@ html[data-sidebar-moving] .sidebar-wave {
 
 /*
  * ボードの見た目（付箋）。ボードは点の打たれたホワイトボード、リストは面を持たず見出しの下線だけ、
- * カードはリストの色の付箋にして、上にテープを貼り、少しだけ傾ける
- * リストに style="--lc: 色"、カードに style="--tilt: 角度" を置いて使う（傾きはタスクの番号から決め、並べ替えても変わらない）
+ * カードはリストの色の付箋にして、上にテープを貼る（傾けるのは試してやめた）
+ * リストに style="--lc: 色" を置いて使う
  *
  * リストの色は淡い色を並べている（App\Enums\ListColor::pale）。付箋はその色をそのまま使い、
  * 濃い色を自分で選んだときや以前の濃い色のリストでも、明るさと鮮やかさを抑えて付箋らしい淡さにする。
@@ -203,12 +203,10 @@ html[data-sidebar-moving] .sidebar-wave {
 .note-card {
     background-color: var(--lc-paper);
     border-radius: 2px 2px 14px 2px;
-    rotate: var(--tilt, 0deg);
     box-shadow:
         0 1px 1px rgb(15 23 42 / 0.08),
         0 6px 10px -6px rgb(15 23 42 / 0.25);
     transition:
-        rotate 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
         translate 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
         box-shadow 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
         background-color 0.15s;
@@ -243,26 +241,17 @@ html[data-sidebar-moving] .sidebar-wave {
 }
 
 /*
- * ⋯ メニューを開いている間は、傾きも浮き上がりも外す。
- * メニューは画面に対して固定（position: fixed）で出すが、rotate や translate の付いた要素の中では
+ * ⋯ メニューを開いている間は、乗せたときの浮き上がりを外す。
+ * メニューは画面に対して固定（position: fixed）で出すが、translate や rotate の付いた要素の中では
  * カードを基準にした位置になってしまい、リストの外へ押し出されて見えなくなるため
  */
 .note-card:has([data-menu-open]) {
-    rotate: none !important;
     translate: none !important;
 }
 
-/* つかんでいるとき・選んだときはまっすぐにする */
-.note-card.sortable-chosen,
-.note-card.sortable-ghost,
-.note-card.task-selected {
-    rotate: 0deg;
-}
-
 @media (hover: hover) {
-    /* 乗せるとまっすぐになって少し浮く。色は付箋のまま（青い枠と水色の背景は付けない） */
+    /* 乗せると少し浮く。色は付箋のまま（青い枠と水色の背景は付けない） */
     .note-card.task-card:hover:not(.sortable-chosen, .sortable-ghost, .task-selected) {
-        rotate: 0deg;
         background-color: var(--lc-paper);
         --tw-ring-color: transparent;
         box-shadow:
