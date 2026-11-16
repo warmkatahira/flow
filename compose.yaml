@@ -30,6 +30,8 @@ services:
     reverb:
         image: 'sail-8.5/app'
         command: 'php artisan reverb:start --host=0.0.0.0 --port=8080'
+        # 止まると保存のたびに通知の送信で 10 秒待たされるので、止まったら起動し直す（reverb:restart の合図でも自分から終了する）
+        restart: unless-stopped
         ports:
             - '${FORWARD_REVERB_PORT:-8081}:8080'
         environment:
