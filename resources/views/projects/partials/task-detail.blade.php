@@ -76,7 +76,7 @@
     {{-- タイトル。フォーカスを外すと保存する（resources/js/app.js の blurEdit） --}}
     <div x-data="blurEdit(@js($task->title))" class="mt-1">
         <h2 x-show="! editing" @click="editing = true; $nextTick(() => $refs.title.select())"
-            class="cursor-text break-words text-xl font-bold text-slate-800">{{ $task->title }}</h2>
+            class="cursor-text break-words text-xl text-slate-800">{{ $task->title }}</h2>
 
         <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak>
             @csrf
