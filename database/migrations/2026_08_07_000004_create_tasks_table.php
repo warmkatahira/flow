@@ -26,6 +26,9 @@ return new class extends Migration
             // 最後に中身を変えた人。並べ替えとコメントでは変えない（updated_at も同じ）
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedInteger('position');
+            // 定期タスクから自動で作ったもの。recurring_tasks はこの表より後に作るので外部キーは張らず、
+            // 定期タスクを消すときに null へ戻す（App\Models\RecurringTask の deleting）
+            $table->unsignedBigInteger('recurring_task_id')->nullable()->index();
             $table->timestamps();
             $table->timestamp('archived_at')->nullable()->index();
 

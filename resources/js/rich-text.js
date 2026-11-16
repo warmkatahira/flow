@@ -171,6 +171,36 @@ Alpine.data('richDescription', (saved) => {
 });
 
 /**
+ * ふつうのフォームの中の書式付き入力欄（定期タスクのひな形の説明）
+ *
+ * 常に編集できる状態で出し、書くたびに隠し入力（x-ref="input"）へ HTML を入れる。送信はフォームに任せる。
+ */
+Alpine.data('richField', (content) => {
+    let editor = null;
+
+    return {
+        ...formatting(),
+
+        editor: () => editor,
+
+        init() {
+            editor = createEditor(this.$refs.editor, {
+                content,
+                placeholder: '説明を書く',
+                onTransaction: () => this.refreshMarks(),
+                onUpdate: () => {
+                    this.$refs.input.value = editor.isEmpty ? '' : editor.getHTML();
+                },
+            });
+        },
+
+        destroy() {
+            editor?.destroy();
+        },
+    };
+});
+
+/**
  * コメントの入力欄。@ を打つとプロジェクトの参加者から選べる
  *
  * メンションは「@名前」という文字のまま入れる。誰へのメンションかはサーバーが本文の文字から決める。

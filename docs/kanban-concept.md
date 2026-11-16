@@ -369,7 +369,7 @@
 | `projects` | プロジェクト（`name`, `icon_path`, `personal_user_id`（My Project の持ち主）, `archived_at`） | 実装済み |
 | `project_user` | プロジェクトと参加者の中間テーブル（`role`, `is_favorite`, `group_id`） | 実装済み |
 | `task_lists` | リスト（列）。`name`, `color`（`#rrggbb`。プリセットは `ListColor`）, `position`, `archived_at` | 実装済み |
-| `tasks` | タスク。`number`(プロジェクトごとの連番), `title`, `description`, `status`, `started_on`, `ended_on`, `created_by`, `updated_by`, `position`, `archived_at` | 実装済み |
+| `tasks` | タスク。`number`(プロジェクトごとの連番), `title`, `description`, `status`, `started_on`, `ended_on`, `created_by`, `updated_by`, `position`, `recurring_task_id`(定期タスクから作ったもの。外部キーなし), `archived_at` | 実装済み |
 | `task_user` | タスクの担当者 | 実装済み |
 | `labels` | プロジェクトごとのタグの種類。`name`, `color`, `position` | 実装済み |
 | `label_task` | タスクに付けたタグ | 実装済み |
@@ -379,6 +379,7 @@
 | `task_comment_reactions` | コメントへのリアクション（1コメントに1人1つ）。`emoji` | 実装済み |
 | `task_checklists` | タスクの中のチェックリスト（枠）。`title`, `position` | 実装済み |
 | `task_checklist_items` | チェックリストの項目。並び順、完了フラグ、期間（`started_on`, `ended_on`）、担当者（`assignee_id`） | 実装済み |
+| `recurring_tasks` | 定期タスク。ひな形（タイトル・説明、タグ・担当者・フォロー・チェックリストは JSON）、繰り返し（`frequency` ほか）、`holiday_rule`、`due_days`、`starts_on` / `ends_on`、`last_base_on`、`next_run_on`、`paused_at` | 実装済み |
 | `task_follows` | タスクをフォローしている人 | 実装済み |
 | `task_notifications` | フォローしたタスクの動きの通知（受け取る人ごと）。`actor_id`, `type`, `detail`, `read_at` | 実装済み |
 
@@ -387,6 +388,29 @@
 
 ※ シーダーはテーブルごとにファイルを分ける（`database/seeders/`）。
 ※ マイグレーションは1ファイル＝1テーブル。カラムを増減するときも追加のマイグレーションは作らず、そのテーブルの create を直して `migrate:fresh --seed` で作り直す。
+
+## 定期タスク（実装済み）
+
+決まった日にタスクを自動で作る。プロジェクトのタブの「定期タスク」で一覧・作成・編集・一時停止・削除をする（`RecurringTaskController`）。2026-11-16 にユーザーと決めた仕様。
+
+- 作る時機: 決まった日の朝 6:00 に、その日の分をまとめて作る（`php artisan flow:recurring-tasks`。`routes/console.php` で毎日 6:00）。前の回が完了していなくても作る（残った回は期限の印で分かる）
+  - **本番では cron で `php artisan schedule:run` を毎分動かす設定が要る**
+  - 6:00 を過ぎてから今日の分を設定・再開したときは、翌朝を待たずに保存したときに作る
+  - 何回分も作り損ねていても（サーバー停止など）、作るのは最新の1回だけ
+- 繰り返し（`App\Enums\RecurrenceFrequency`）: 毎日 / 平日（月〜金）/ 毎週（曜日を複数選べる）/ 毎月（日付。31 は末日、その月にない日は月末）/ 毎月（第1〜4・最終◯曜日）/ 毎年（月日）
+- 土日・祝日に当たったとき（`App\Enums\HolidayRule`）: そのまま作る / 前の平日 / 後の平日 / 作らない。祝日は Yasumi で判定（振替休日・国民の休日も含む。`App\Support\JapaneseCalendar`）
+  - 毎日・平日は、前後へずらすと隣の回とぶつかるので「そのまま」か「作らない」だけ
+  - 次の回は「本来の日」（ずらす前）で数える（`last_base_on`）。ずらしたあとの日で数えると、前の平日へずらした回のあとに本来の日が来て二重に作るため
+- ひな形: タイトル（差し込み `{年}` `{月}` `{日}` `{年月}` `{日付}`）・説明・タグ・担当者・フォローする人・チェックリスト（チェックは外して作る。項目の担当者も写す）
+  - タスクの詳細の「定期タスクにする」（くるっと回る矢印のボタン）で、その時点のタスクの中身を写して作成画面を開く。元のタスクはふつうのタスクのままで、完了やアーカイブをしても影響しない
+  - タグ・担当者は作るときに、プロジェクトに残っているタグ・参加者だけに絞る（抜けた人は外す）
+- 入れる先: 設定で選んだリスト。なくなったりアーカイブされたりしていたら先頭のリスト
+- 期間: 開始日は作った日、終了日は「作った日から◯日後」（空なら終了日なし）
+- 終わり方: 止めるまで続く。終わる日も指定できる。一時停止を再開したときは、止めていた間の回を作らずに飛ばす
+- 作ったタスクの作成者は定期タスクを作った人。詳細の下に「自動作成: 定期タスク『…』から」と出す。定期タスクを消しても、作ったタスクは残る
+- 権限: プロジェクトの参加者なら誰でも（タスクと同じ）。アーカイブ中のプロジェクトでは作らず、タブも出さない。戻すと再開する
+- 通知: 自動で作ったときは通知しない
+- 未実装: システム管理者のプロジェクト管理（閲覧）からの表示
 
 ## 未決事項
 

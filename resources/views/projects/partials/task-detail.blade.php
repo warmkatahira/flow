@@ -52,6 +52,15 @@
                 </button>
             </form>
 
+            {{-- このタスクの今の中身をひな形にして、定期タスクを作る --}}
+            <a href="{{ route('recurring-tasks.create', [$task->project_id, 'task' => $task->id]) }}"
+               title="定期タスクにする（この中身で、決まった日にタスクを自動で作る）" aria-label="定期タスクにする"
+               class="rounded-lg p-1.5 text-slate-600 transition hover:bg-white/60">
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z" />
+                </svg>
+            </a>
+
             {{-- このタスクを直接開くリンク --}}
             <button type="button" x-data="{ copied: false }" aria-label="リンクをコピー"
                     :title="copied ? 'コピーしました' : 'リンクをコピー'"
@@ -588,4 +597,12 @@
     <dt>最終更新</dt>
     <dd>{{ $task->updated_at->locale('ja')->isoFormat('YYYY年MM月DD日(ddd) HH:mm') }}</dd>
     <dd>{{ $task->updater?->name }}</dd>
+
+    {{-- 定期タスクから自動で作ったもの。定期タスクを消したあとは出さない --}}
+    @if ($task->recurringTask)
+        <dt>自動作成</dt>
+        <dd class="col-span-2">
+            定期タスク「<a href="{{ route('recurring-tasks.edit', $task->recurringTask) }}" class="text-sky-600 hover:underline">{{ $task->recurringTask->title }}</a>」から
+        </dd>
+    @endif
 </dl>

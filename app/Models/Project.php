@@ -151,6 +151,16 @@ class Project extends Model
     }
 
     /**
+     * 定期タスク
+     *
+     * @return HasMany<RecurringTask, $this>
+     */
+    public function recurringTasks(): HasMany
+    {
+        return $this->hasMany(RecurringTask::class);
+    }
+
+    /**
      * アーカイブ済みも含む（番号はアーカイブ済みのタスクとも重複させない）
      *
      * @return HasMany<Task, $this>

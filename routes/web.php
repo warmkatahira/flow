@@ -13,6 +13,7 @@ use App\Http\Controllers\Project\ProjectGroupController;
 use App\Http\Controllers\Project\TaskChecklistController;
 use App\Http\Controllers\Project\TaskCommentAttachmentController;
 use App\Http\Controllers\Project\TaskCommentController;
+use App\Http\Controllers\Project\RecurringTaskController;
 use App\Http\Controllers\Project\TaskController;
 use App\Http\Controllers\Project\TaskDetailController;
 use App\Http\Controllers\Project\TaskLabelController;
@@ -116,6 +117,15 @@ Route::middleware(['auth', EnsureUserIsActive::class, EnsurePasswordIsChanged::c
     Route::delete('comments/{comment}', [TaskCommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('comments/{comment}/reactions', [TaskCommentController::class, 'react'])->name('comments.react');
     Route::get('attachments/{attachment}', [TaskCommentAttachmentController::class, 'show'])->name('attachments.show');
+
+    // 定期タスク
+    Route::get('projects/{project}/recurring-tasks', [RecurringTaskController::class, 'index'])->name('recurring-tasks.index');
+    Route::get('projects/{project}/recurring-tasks/create', [RecurringTaskController::class, 'create'])->name('recurring-tasks.create');
+    Route::post('projects/{project}/recurring-tasks', [RecurringTaskController::class, 'store'])->name('recurring-tasks.store');
+    Route::get('recurring-tasks/{recurringTask}/edit', [RecurringTaskController::class, 'edit'])->name('recurring-tasks.edit');
+    Route::put('recurring-tasks/{recurringTask}', [RecurringTaskController::class, 'update'])->name('recurring-tasks.update');
+    Route::post('recurring-tasks/{recurringTask}/pause', [RecurringTaskController::class, 'pause'])->name('recurring-tasks.pause');
+    Route::delete('recurring-tasks/{recurringTask}', [RecurringTaskController::class, 'destroy'])->name('recurring-tasks.destroy');
 
     Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
     Route::post('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');

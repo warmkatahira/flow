@@ -81,6 +81,16 @@ class Task extends Model
     }
 
     /**
+     * 自動で作ったときの定期タスク（消されていれば null）
+     *
+     * @return BelongsTo<RecurringTask, $this>
+     */
+    public function recurringTask(): BelongsTo
+    {
+        return $this->belongsTo(RecurringTask::class);
+    }
+
+    /**
      * 担当者
      *
      * @return BelongsToMany<User, $this>
