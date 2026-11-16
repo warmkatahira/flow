@@ -17,18 +17,16 @@
         archiveUrl: @js(route('tasks.archive-many', $project)),
      }">
     @foreach ($project->taskLists as $list)
-        <section data-list-id="{{ $list->id }}" x-data="{ adding: false }"
-                 class="flex min-h-0 w-72 shrink-0 flex-col rounded-xl bg-slate-200/70 shadow-sm">
-            {{-- 上端の帯。見出しと同じくリストを掴める --}}
-            <div data-list-handle class="h-2 shrink-0 cursor-grab rounded-t-xl" style="background-color: {{ $list->color }}"></div>
-
-            {{-- 見出し --}}
+        {{-- 面はリストの色でごく薄く塗る（resources/css/app.css の .board-list） --}}
+        <section data-list-id="{{ $list->id }}" x-data="{ adding: false }" style="--lc: {{ $list->color }}"
+                 class="board-list flex min-h-0 w-72 shrink-0 flex-col rounded-2xl">
+            {{-- 見出し。ここを掴んでリストを動かす --}}
             <div class="shrink-0">
-                <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-3 pb-1 pt-2">
-                    <span class="min-w-0 truncate text-sm text-slate-900">{{ $list->name }}</span>
-                    <span data-list-count class="shrink-0 text-sm text-sky-600">{{ $list->tasks->count() }}</span>
+                <div data-list-handle class="flex cursor-grab items-center gap-1.5 px-2.5 pb-0.5 pt-2.5">
+                    <span class="board-list-label min-w-0 truncate rounded-full px-2.5 py-0.5 text-sm">{{ $list->name }}</span>
+                    <span data-list-count class="board-list-ink shrink-0 text-sm">{{ $list->tasks->count() }}</span>
 
-                    <x-board-menu title="リストメニュー" class="ml-auto" button-class="p-1 text-slate-700 hover:bg-black/10">
+                    <x-board-menu title="リストメニュー" class="ml-auto" button-class="p-1 text-slate-600 hover:bg-black/10">
                         <x-board-menu-item @click="menuOpen = false; adding = true; $nextTick(() => $refs.title.focus())">新規タスクを追加</x-board-menu-item>
 
                         <div class="my-1.5 border-t border-slate-100"></div>
@@ -57,7 +55,7 @@
             {{-- タスクを追加 --}}
             <div class="shrink-0 px-2 pt-2">
                 <button type="button" @click="adding = true; $nextTick(() => $refs.title.focus())" x-show="! adding"
-                        class="flex w-full items-center justify-center gap-1 rounded-lg bg-white px-3 py-1.5 text-sm text-sky-600 transition hover:bg-sky-50">
+                        class="board-list-add board-list-ink flex w-full items-center gap-1 rounded-lg px-2 py-1.5 text-left text-sm transition">
                     ＋ タスクを追加
                 </button>
 
@@ -80,7 +78,7 @@
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
                              data-followed="{{ $followedTaskIds->contains($task->id) ? '1' : '' }}"
-                             class="task-card relative cursor-pointer rounded-lg bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
+                             class="task-card board-card relative cursor-pointer rounded-xl bg-white p-2.5 shadow-xs ring-1 ring-slate-200">
                         {{-- 未読の通知があるタスク。開くと既読になって消える --}}
                         <span x-show="$store.unread.hasTask({{ $task->id }})" x-cloak data-unread-dot title="未読の通知あり"
                               class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-sky-500 ring-2 ring-white"></span>
@@ -168,7 +166,7 @@
     {{-- リストを追加 --}}
     <div class="w-72 shrink-0 self-start" x-data="{ adding: false }">
         <button type="button" @click="adding = true; $nextTick(() => $refs.name.focus())" x-show="! adding"
-                class="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-300 bg-white/60 px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-white">
+                class="flex w-full items-center justify-center gap-1 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-white">
             ＋ リストを追加
         </button>
 
