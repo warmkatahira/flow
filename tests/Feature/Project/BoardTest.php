@@ -3,6 +3,7 @@
 namespace Tests\Feature\Project;
 
 use App\Enums\ListColor;
+use App\Enums\TaskStatus;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskList;
@@ -80,6 +81,28 @@ class BoardTest extends TestCase
         $this->assertSame(2, Task::firstWhere('title', '2件目')->number);
         // 別プロジェクトは番号が飛ばず 1 から始まる
         $this->assertSame(1, Task::firstWhere('title', '別プロジェクトの1件目')->number);
+    }
+
+    public function test_付箋のテープの貼り方は番号ごとに決まり完了のタスクにはハンコが付く(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->ownedBy($user)->create();
+        $list = $this->listFor($project);
+
+        $this->actingAs($user)->post(route('tasks.store', $list), ['title' => '未完了']);
+        $this->actingAs($user)->post(route('tasks.store', $list), ['title' => '完了済み']);
+        Task::firstWhere('title', '完了済み')->forceFill(['status' => TaskStatus::Done])->save();
+
+        $first = Task::firstWhere('title', '未完了');
+        $second = Task::firstWhere('title', '完了済み');
+
+        // 番号から決めるので毎回同じで、番号が違えば貼り方も違う
+        $this->assertSame($first->tapeStyle(), $first->fresh()->tapeStyle());
+        $this->assertNotSame($first->tapeStyle(), $second->tapeStyle());
+
+        $page = $this->actingAs($user)->get(route('projects.show', $project));
+        $page->assertSee($first->tapeStyle(), false)->assertSee($second->tapeStyle(), false);
+        $this->assertSame(1, substr_count($page->getContent(), 'class="note-stamp"'));
     }
 
     public function test_タスクを別のリストへ動かせる(): void

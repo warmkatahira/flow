@@ -202,31 +202,76 @@ html[data-sidebar-moving] .sidebar-wave {
 }
 .note-card {
     background-color: var(--lc-paper);
+    /* 下の端が少し反って浮いているように、下の方をわずかに暗くする（影は .note-lift） */
+    background-image: linear-gradient(to bottom, transparent 60%, rgb(15 23 42 / 0.045));
     border-radius: 2px 2px 14px 2px;
     box-shadow:
         0 1px 1px rgb(15 23 42 / 0.08),
-        0 6px 10px -6px rgb(15 23 42 / 0.25);
+        0 3px 5px -3px rgb(15 23 42 / 0.16);
     transition:
         translate 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
         box-shadow 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
         background-color 0.15s;
 }
-/* テープ */
+/* テープ。角度・左右のずれ・長さは付箋ごとに番号から決める（App\Models\Task::tapeStyle） */
 .note-card::before {
     content: '';
     position: absolute;
     left: 50%;
     top: -6px;
-    width: 44px;
+    width: var(--tape-w, 44px);
     height: 13px;
-    translate: -50% 0;
-    rotate: -2deg;
+    translate: calc(-50% + var(--tape-x, 0px)) 0;
+    rotate: var(--tape-r, -2deg);
     background: rgb(255 255 255 / 0.7);
     box-shadow: 0 0 0 1px rgb(100 116 139 / 0.18);
     pointer-events: none;
 }
 .note-card .note-num {
     color: var(--lc-ink);
+}
+/*
+ * 下の端の反り。付箋のすぐ下に、両角だけ濃い影を落とす（resources/views/projects/partials/note-card-paper.blade.php）
+ * 付箋の外に描くので、重なり順（z-index）に頼らない。角めくれ・めくれ上がり・ドラッグ中は、それぞれの影に任せて消す
+ */
+.note-lift {
+    --lift: rgb(15 23 42 / 0.26);
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    top: calc(100% - 2px);
+    height: 9px;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 24% 85% at 8% 0, var(--lift), transparent),
+        radial-gradient(ellipse 24% 85% at 92% 0, var(--lift-r, var(--lift)), transparent);
+    filter: blur(2px);
+}
+.note-card.note-peel .note-lift,
+.note-card.sortable-fallback .note-lift {
+    display: none;
+}
+/*
+ * 完了のハンコ。右下に「済」の赤いハンコを押す。少し傾け、文字に重なっても読めるよう乗算で重ねる
+ * いちばん低いカードでも ⋯ ボタンには重ならない大きさにしている。乗せたときの角めくれでは、めくれた角の下に隠れる
+ */
+.note-stamp {
+    position: absolute;
+    right: 5px;
+    bottom: 3px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--color-red-600);
+    border-radius: 9999px;
+    color: var(--color-red-600);
+    font-size: 11px;
+    line-height: 1;
+    rotate: -14deg;
+    opacity: 0.85;
+    mix-blend-mode: multiply;
+    pointer-events: none;
 }
 /*
  * 付箋の上のタグ。明るい色のタグ（以前の色や自分で選んだ色）は明るさに上限をかけ、付箋に埋もれないようにする
@@ -286,6 +331,10 @@ html[data-sidebar-moving] .sidebar-wave {
     .note-card.task-card:hover:not(.sortable-chosen, .sortable-ghost, .task-selected)::after {
         width: 22px;
         height: 22px;
+    }
+    /* めくれた角の下には反りの影を落とさない */
+    .note-card.task-card:hover:not(.sortable-chosen, .sortable-ghost, .task-selected) .note-lift {
+        --lift-r: transparent;
     }
 }
 
@@ -367,6 +416,9 @@ html[data-sidebar-moving] .sidebar-wave {
 .note-board:has(.sortable-fallback) .note-card.task-card:hover::after {
     width: 0;
     height: 0;
+}
+.note-board:has(.sortable-fallback) .note-card.task-card:hover .note-lift {
+    --lift-r: var(--lift);
 }
 
 /* 置いたとき。傾きが戻って小さく弾む */

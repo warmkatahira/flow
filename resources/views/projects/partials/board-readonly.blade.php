@@ -23,7 +23,9 @@
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
                              data-followed="{{ $followedTaskIds->contains($task->id) ? '1' : '' }}"
+                             style="{{ $task->tapeStyle() }}"
                              class="note-card relative flex items-start gap-2 p-2.5">
+                        @include('projects.partials.note-card-paper')
                         <div class="flex shrink-0 flex-col items-center gap-1">
                             <span class="note-num text-[10px] font-medium leading-4">#{{ $task->number }}</span>
                             <x-task-status-icon :status="$task->status" class="h-4 w-4" />

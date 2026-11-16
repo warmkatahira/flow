@@ -285,6 +285,16 @@ class Task extends Model
     }
 
     /**
+     * 付箋のテープの貼り方（角度・左右のずれ・長さ）。番号から決めるので、いつ見ても同じ形になる（resources/css/app.css の .note-card::before）
+     */
+    public function tapeStyle(): string
+    {
+        $number = (int) $this->number;
+
+        return sprintf('--tape-r: %ddeg; --tape-x: %dpx; --tape-w: %dpx', $number * 37 % 9 - 4, $number * 53 % 19 - 9, 38 + $number * 29 % 13);
+    }
+
+    /**
      * 参加しているプロジェクトのボードに出ているタスクだけに絞る
      *
      * アーカイブしたタスク・リストと、アーカイブ中のプロジェクトのものは除く（タスク一覧と検索で使う）。
