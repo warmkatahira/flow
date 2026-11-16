@@ -241,7 +241,7 @@ html[data-sidebar-moving] .sidebar-wave {
 }
 
 /*
- * ⋯ メニューを開いている間は、乗せたときの浮き上がりを外す。
+ * ⋯ メニューを開いている間は、カードに translate を付けない（今は乗せても動かないが、元の .task-card の浮き上がりが残らないよう念のため）。
  * メニューは画面に対して固定（position: fixed）で出すが、translate や rotate の付いた要素の中では
  * カードを基準にした位置になってしまい、リストの外へ押し出されて見えなくなるため
  */
@@ -249,14 +249,49 @@ html[data-sidebar-moving] .sidebar-wave {
     translate: none !important;
 }
 
+/*
+ * 乗せると右下の角がめくれる。カードは動かさず、色も付箋のまま（青い枠と水色の背景、浮き上がりは付けない）
+ * めくれは 22px。いちばん低いカードでも ⋯ ボタンの下端は 26px 上にあり、中身は右端から 38px 内側で終わるので重ならない。
+ * 念のため押した合図は通す（pointer-events: none）
+ */
+.note-card::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border-top-left-radius: 4px;
+    /* 右下の半分はボードの色（めくれて見えた下地）、左上の半分は付箋の裏 */
+    background: linear-gradient(
+        315deg,
+        var(--color-slate-100) 0 50%,
+        color-mix(in oklab, var(--lc-paper) 72%, var(--color-slate-900)) 50% 52%,
+        color-mix(in oklab, var(--lc-paper) 88%, white) 54%
+    );
+    box-shadow: -3px -3px 6px -2px rgb(15 23 42 / 0.22);
+    pointer-events: none;
+    transition:
+        width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+        height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 @media (hover: hover) {
-    /* 乗せると少し浮く。色は付箋のまま（青い枠と水色の背景は付けない） */
     .note-card.task-card:hover:not(.sortable-chosen, .sortable-ghost, .task-selected) {
+        translate: none;
         background-color: var(--lc-paper);
         --tw-ring-color: transparent;
-        box-shadow:
-            0 2px 3px rgb(15 23 42 / 0.08),
-            0 16px 22px -12px rgb(15 23 42 / 0.35);
+        border-bottom-right-radius: 0;
+    }
+    .note-card.task-card:hover:not(.sortable-chosen, .sortable-ghost, .task-selected)::after {
+        width: 22px;
+        height: 22px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .note-card::after {
+        transition: none;
     }
 }
 
