@@ -329,6 +329,35 @@ html[data-sidebar-moving] .sidebar-wave {
     }
 }
 
+/*
+ * タスクの詳細の見出し。ボードの付箋と同じ色・形の付箋を、白い紙（ダイアログ）にテープで貼った形にする
+ * 期間から下は白い紙のまま（書き込む場所が分かるように）。傾きは付けない（ボードの付箋でやめたのに合わせる）
+ */
+.note-sheet {
+    position: relative;
+    background-color: var(--lc-paper);
+    border-radius: 2px 2px 18px 2px;
+    box-shadow:
+        0 1px 1px rgb(15 23 42 / 0.08),
+        0 10px 14px -10px rgb(15 23 42 / 0.35);
+}
+.note-sheet::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -9px;
+    width: 70px;
+    height: 18px;
+    translate: -50% 0;
+    rotate: 2deg;
+    background: rgb(255 255 255 / 0.62);
+    box-shadow: 0 0 0 1px rgb(100 116 139 / 0.16);
+    pointer-events: none;
+}
+.note-sheet-ink {
+    color: var(--lc-ink);
+}
+
 /* カンバンで複数選択したタスク。Sortable に渡せるクラスは1つだけなのでまとめておく */
 .task-selected {
     @apply bg-sky-50 ring-2 ring-sky-500;

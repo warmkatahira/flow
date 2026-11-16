@@ -9,16 +9,16 @@
     $cancelClass = 'text-xs text-slate-600 hover:text-slate-900';
 @endphp
 
-{{-- 見出し --}}
-<div class="border-b border-slate-200 px-6 pb-4 pt-5">
+{{-- 見出し。リストの色の付箋にして、白い紙（ダイアログ）にテープで貼る（resources/css/app.css の .note-sheet） --}}
+<div style="--lc: {{ $task->list->color }}" class="note-sheet mx-4 mt-6 px-5 pb-4 pt-4 sm:mx-5">
     <div class="flex items-start justify-between gap-4">
-        <p class="min-w-0 truncate pt-1.5 text-xs text-slate-500">#{{ $task->number }} {{ $task->list->name }}</p>
+        <p class="note-sheet-ink min-w-0 truncate pt-1.5 text-xs">#{{ $task->number }} {{ $task->list->name }}</p>
 
         <div class="flex shrink-0 items-center gap-1">
             {{-- ステータス --}}
             <div x-data="{ statusOpen: false }" class="relative" @click.outside="statusOpen = false">
                 <button type="button" @click="statusOpen = ! statusOpen" aria-haspopup="menu" :aria-expanded="statusOpen ? 'true' : 'false'"
-                        class="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm transition hover:bg-slate-50 {{ $task->status->textClass() }}">
+                        class="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition hover:bg-slate-50 {{ $task->status->textClass() }}">
                     <x-task-status-icon :status="$task->status" class="h-4 w-4" />
                     {{ $task->status->label() }}
                     <svg class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -46,7 +46,7 @@
                 @csrf
                 <button type="submit" aria-pressed="{{ $following ? 'true' : 'false' }}"
                         title="{{ $following ? 'フォローをやめる' : 'フォローすると、このタスクに動きがあったときに通知が届きます' }}"
-                        class="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition hover:bg-slate-100 {{ $following ? 'text-sky-600' : 'text-slate-500' }}">
+                        class="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition hover:bg-white/60 {{ $following ? 'text-sky-600' : 'text-slate-600' }}">
                     <x-follow-icon :solid="$following" class="h-5 w-5" />
                     {{ $following ? 'フォロー中' : 'フォロー' }}
                 </button>
@@ -56,8 +56,8 @@
             <button type="button" x-data="{ copied: false }" aria-label="リンクをコピー"
                     :title="copied ? 'コピーしました' : 'リンクをコピー'"
                     @click="navigator.clipboard?.writeText(@js(route('projects.show', [$task->project_id, 'task' => $task->id]))); copied = true; setTimeout(() => copied = false, 1500)"
-                    :class="copied ? 'text-emerald-500' : 'text-slate-500'"
-                    class="rounded-lg p-1.5 transition hover:bg-slate-100">
+                    :class="copied ? 'text-emerald-600' : 'text-slate-600'"
+                    class="rounded-lg p-1.5 transition hover:bg-white/60">
                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
                     <path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
@@ -65,7 +65,7 @@
             </button>
 
             <button type="button" @click="close()" aria-label="閉じる"
-                    class="rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-100">
+                    class="rounded-lg p-1.5 text-slate-600 transition hover:bg-white/60">
                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                 </svg>
@@ -83,7 +83,7 @@
             @method('PUT')
             <input autocomplete="off" type="text" name="title" x-ref="title" value="{{ $task->title }}" required maxlength="255" aria-label="タイトル"
                    @blur="finish($el)" @keydown.enter.prevent="$el.blur()" @keydown.escape.prevent.stop="cancel($el)"
-                   class="{{ $inputClass }}">
+                   class="{{ $inputClass }} bg-white">
         </form>
     </div>
 
@@ -91,7 +91,7 @@
     <div x-data="richDescription(@js($task->description ?? ''))" @focusout="focusout($event)" class="mt-2">
         <div x-show="! editing" role="button" tabindex="0" aria-label="説明を編集"
              @click="start()" @keydown.enter.prevent="start()"
-             class="block w-full cursor-text break-words rounded-md text-left text-sm {{ $task->description ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600' }}">
+             class="block w-full cursor-text break-words rounded-md text-left text-sm {{ $task->description ? 'text-slate-700' : 'text-slate-500 hover:text-slate-700' }}">
             @if ($task->description)
                 <div class="rich-text">{{ $task->descriptionHtml() }}</div>
             @else
@@ -100,7 +100,7 @@
         </div>
 
         <form data-task-form autocomplete="off" method="POST" action="{{ route('tasks.update', $task) }}" x-show="editing" x-cloak
-              class="rounded-lg border border-slate-300 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
+              class="rounded-lg border border-slate-300 bg-white focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30">
             @csrf
             @method('PUT')
             <input type="hidden" name="description" x-ref="input">
