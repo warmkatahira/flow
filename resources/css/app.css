@@ -331,6 +331,8 @@ html[data-sidebar-moving] .sidebar-wave {
 .note-card.sortable-fallback {
     opacity: 1 !important;
     cursor: grabbing;
+    /* 付箋の transform のトランジション（.note-peel から戻す用）が残ると、マウスに 0.35 秒遅れて付いてくる */
+    transition: none !important;
     animation: note-lift 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 .note-card.sortable-fallback::after {
