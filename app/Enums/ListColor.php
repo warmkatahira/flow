@@ -8,8 +8,10 @@ namespace App\Enums;
  * リストには好きな色も付けられるので、task_lists.color はカラーコードで持つ。
  * ここにあるのは選択肢だけで、この中の値とは限らない。
  *
- * タグには値（はっきりした色）をそのまま、リストには pale()（淡い色）を使う。
- * ボードのカードはリストの色の付箋になるので、リストは淡い色を並べ、タグのバーが付箋の上で埋もれないようにする。
+ * タグには値（濃い色）をそのまま、リストには pale()（淡い色）を使う。
+ * ボードのカードはリストの色の付箋になるので、リストは淡い色を並べ、タグは付箋のどの色の上でも
+ * 明るさの差が 3:1 以上になる濃さにしてある（同じ色相のリストとタグでも埋もれない）。
+ * そのため「黄」「黄緑」は、名前より暗い、黄土色・オリーブ寄りの色になっている。
  */
 enum ListColor: string
 {
@@ -17,18 +19,18 @@ enum ListColor: string
     public const PATTERN = '/^#[0-9a-fA-F]{6}$/';
 
     // 選ぶボタンはこの順に並ぶ。先頭が新しいリストの初期値
-    case Sky = '#00a6f4';
+    case Sky = '#0069a8';
     case Indigo = '#625fff';
     case Violet = '#7f22fe';
-    case Pink = '#fb64b6';
-    case Rose = '#ff2056';
-    case Orange = '#ff6900';
-    case Amber = '#ffba00';
-    case Lime = '#7ccf00';
-    case Emerald = '#00bc7d';
-    case Teal = '#00bba7';
+    case Pink = '#e60076';
+    case Rose = '#ec003f';
+    case Orange = '#ca3500';
+    case Amber = '#bb4d00';
+    case Lime = '#497d00';
+    case Emerald = '#007a55';
+    case Teal = '#00786f';
     case Brown = '#973c00';
-    case Slate = '#90a1b9';
+    case Slate = '#62748e';
 
     /**
      * リストに使う淡い色。並びと名前は値と同じ

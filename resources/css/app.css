@@ -230,6 +230,28 @@ html[data-sidebar-moving] .sidebar-wave {
 .note-card .note-num {
     color: var(--lc-ink);
 }
+/*
+ * 付箋の上のタグ。明るい色のタグ（以前の色や自分で選んだ色）は明るさに上限をかけ、付箋に埋もれないようにする
+ * 選択肢の色（App\Enums\ListColor）はもともとこれより暗いので変わらない。「拡張する」で出す札の背景はタグの色をうっすら敷くだけなのでそのまま
+ */
+.note-card .card-tag {
+    --tag-ink: oklch(from var(--tag) min(l, 0.6) c h);
+    background-color: var(--tag-ink);
+}
+.note-card .card-tag::before {
+    background-color: var(--tag-ink);
+}
+
+/*
+ * ⋯ メニューを開いている間は、傾きも浮き上がりも外す。
+ * メニューは画面に対して固定（position: fixed）で出すが、rotate や translate の付いた要素の中では
+ * カードを基準にした位置になってしまい、リストの外へ押し出されて見えなくなるため
+ */
+.note-card:has([data-menu-open]) {
+    rotate: none !important;
+    translate: none !important;
+}
+
 /* つかんでいるとき・選んだときはまっすぐにする */
 .note-card.sortable-chosen,
 .note-card.sortable-ghost,
