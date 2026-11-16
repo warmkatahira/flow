@@ -146,12 +146,33 @@ Alpine.directive('board', (element, { expression }, { evaluate, cleanup }) => {
     cleanup(() => sortables.forEach((sortable) => sortable.destroy()));
 
     // カードを押したら開く。Ctrl（Mac は Cmd）は複数選択なので開かない
+    // 付箋は下からめくれ上がってから開く（resources/css/app.css の .note-peel）。開いたあとは裏で元に戻す
+    const peelOpensAt = 260;
+    const peelSettlesAt = 700;
+
     element.addEventListener('click', (event) => {
         const card = event.target.closest('[data-task-id]');
 
-        if (card && ! event.ctrlKey && ! event.metaKey && ! event.target.closest('button, a, form, [role=menu]')) {
-            window.dispatchEvent(new CustomEvent('open-task', { detail: { url: card.dataset.taskUrl } }));
+        if (! card || event.ctrlKey || event.metaKey || event.target.closest('button, a, form, [role=menu]')) {
+            return;
         }
+
+        const open = () => window.dispatchEvent(new CustomEvent('open-task', { detail: { url: card.dataset.taskUrl } }));
+
+        if (! card.classList.contains('note-card') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            open();
+
+            return;
+        }
+
+        // めくれている途中にもう一度押しても、二重には開かない
+        if (card.classList.contains('note-peel')) {
+            return;
+        }
+
+        card.classList.add('note-peel');
+        setTimeout(open, peelOpensAt);
+        setTimeout(() => card.classList.remove('note-peel'), peelSettlesAt);
     });
 
     // リストの並べ替え

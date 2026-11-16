@@ -289,6 +289,40 @@ html[data-sidebar-moving] .sidebar-wave {
     }
 }
 
+/*
+ * 押したとき。テープで留まった上の端を支点に、下の端がこちらへめくれ上がり、右下の角も大きく反る。
+ * めくれ切る少し前に詳細を開き（resources/js/app.js の x-board）、開いたあとはクラスを外して裏で元に戻す。
+ * 戻すときも動かしたいので、keyframes ではなく transition で動かす
+ * 押すときはマウスが乗っているので、乗せたときの指定（角めくれ 22px・.task-card の影）より強くする（!important）
+ */
+.note-card {
+    transform-origin: 50% 0;
+}
+.note-card.note-peel {
+    z-index: 10;
+    transform: perspective(600px) rotateX(34deg);
+    box-shadow:
+        0 2px 3px rgb(15 23 42 / 0.08),
+        0 26px 26px -16px rgb(15 23 42 / 0.45) !important;
+    transition:
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.note-card.note-peel::after {
+    width: 46px !important;
+    height: 46px !important;
+    transition:
+        width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.note-card:not(.note-peel) {
+    transition:
+        transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+        translate 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+        background-color 0.15s;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .note-card::after {
         transition: none;
