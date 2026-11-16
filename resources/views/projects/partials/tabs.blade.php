@@ -9,7 +9,7 @@
 
     $active ??= null;
     // カプセル（x-project-header）の中に並べる。選んでいるタブは水色で塗る
-    $tabClass = 'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-semibold transition';
+    $tabClass = 'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm transition';
     $idleClass = 'text-slate-500 hover:bg-slate-100 hover:text-slate-800';
     $activeClass = 'bg-sky-600 text-white shadow-[0_4px_12px_-4px_rgb(2_132_199/0.6)]';
     $tabs = [
