@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Js;
 use Tests\TestCase;
 
 /**
@@ -81,6 +82,29 @@ class ProjectBrowseTest extends TestCase
             ->assertSee('山田の作業')
             ->assertSee('資料です')
             ->assertSee(route('admin.projects.attachment', $this->attachment()));
+    }
+
+    public function test_タスクの詳細はボードの上のポップアップで開く(): void
+    {
+        $taskUrl = route('admin.projects.task', [$this->owner, $this->project, $this->task]);
+        // 画面には @js() で JS の文字列として埋め込まれる
+        $inJs = (string) Js::from($taskUrl);
+
+        // ボードのカードは詳細のページへ飛ばず、ポップアップに中身を読み込む
+        $this->actingAs($this->admin)->get(route('admin.projects.show', [$this->owner, $this->project]))
+            ->assertOk()
+            ->assertSee("open-task', { url: {$inJs} })", false);
+
+        // ?task= 付きで開くと、最初からそのタスクのポップアップを開く
+        $this->actingAs($this->admin)->get(route('admin.projects.show', [$this->owner, $this->project, 'task' => $this->task->id]))
+            ->assertOk()
+            ->assertSee("taskDialog({$inJs})", false);
+
+        // 詳細はポップアップに入れる中身だけを返す（画面の枠は付けない）
+        $this->actingAs($this->admin)->get($taskUrl)
+            ->assertOk()
+            ->assertSee('閲覧専用')
+            ->assertDontSee('<html', false);
     }
 
     public function test_アーカイブ済みのプロジェクトも見られる(): void

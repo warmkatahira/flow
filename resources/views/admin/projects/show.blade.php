@@ -37,6 +37,13 @@
             </nav>
         </div>
 
+        {{-- タスクの詳細はボードと同じくポップアップで開く。?task= 付きで開いたらそのタスクを開く（アーカイブ済みのタスクも見られる） --}}
+        @include('projects.partials.task-dialog', [
+            'openUrl' => ($opened = $project->tasks()->find(request()->integer('task')))
+                ? route('admin.projects.task', [$user, $project, $opened])
+                : null,
+        ])
+
         <div class="flex min-h-0 flex-1 flex-col pl-4 pt-4 sm:pl-6 lg:pl-8">
             <div x-show="tab === 'board'" class="flex min-h-0 flex-1 flex-col">
                 @include('projects.partials.board-readonly', [

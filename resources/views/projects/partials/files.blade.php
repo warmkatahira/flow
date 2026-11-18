@@ -2,7 +2,7 @@
     プロジェクトのファイル（コメントに添付されたもの）の一覧。新しい順
     他の人の変更で差し替えるので、絞り込みの文字（fileQuery）は外側に持つ
     タスク名を押すと詳細を開く（ボードに出ていないタスクと、アーカイブ中のプロジェクトでは開けない）
-    システム管理者の閲覧画面では $fileUrl（ファイルの URL）と $taskUrl（タスクの詳細のページ）を渡す
+    システム管理者の閲覧画面では $fileUrl（ファイルの URL）と $taskUrl（タスクの詳細。ポップアップで開く）を渡す
 --}}
 @php
     $fileUrl ??= fn ($file) => route('attachments.show', $file);
@@ -58,9 +58,10 @@
                         </td>
                         <td class="hidden px-4 py-2.5 md:table-cell">
                             @if ($taskUrl)
-                                <a href="{{ $taskUrl($task) }}" class="block truncate text-sky-700 hover:underline" title="{{ $task->title }}">
+                                <button type="button" @click="$dispatch('open-task', { url: @js($taskUrl($task)) })"
+                                        class="block w-full truncate text-left text-sky-700 hover:underline" title="{{ $task->title }}">
                                     <span class="text-xs text-slate-400">#{{ $task->number }}</span> {{ $task->title }}
-                                </a>
+                                </button>
                                 @unless ($task->isOnBoard())
                                     <span class="text-[11px] text-amber-600">アーカイブ中</span>
                                 @endunless

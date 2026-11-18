@@ -1,6 +1,6 @@
 {{--
     アーカイブ中のプロジェクトのボード。見るだけなので操作の UI は持たない
-    （システム管理者の My Project の閲覧でも使う。$taskUrl を渡すとカードを押して詳細を見られる）
+    （システム管理者のプロジェクト管理の閲覧でも使う。$taskUrl を渡すと、カードを押して詳細をポップアップで見られる）
 --}}
 @php
     $taskUrl ??= null;
@@ -18,7 +18,11 @@
 
             <div class="min-h-8 flex-1 space-y-3.5 overflow-y-auto px-2 pb-2 pt-4 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]">
                 @foreach ($list->tasks as $task)
-                    @if ($taskUrl)<a href="{{ $taskUrl($task) }}" class="block transition hover:-translate-y-0.5">@endif
+                    @if ($taskUrl)
+                        <div role="button" tabindex="0" class="block cursor-pointer transition hover:-translate-y-0.5"
+                             @click="$dispatch('open-task', { url: @js($taskUrl($task)) })"
+                             @keydown.enter.prevent="$dispatch('open-task', { url: @js($taskUrl($task)) })">
+                    @endif
                     <article data-status="{{ $task->status->value }}" data-due="{{ $task->ended_on?->format('Y-m-d') }}"
                              data-assignees="{{ $task->assignees->pluck('id')->join(',') }}"
                              data-labels="{{ $task->labels->pluck('id')->join(',') }}"
@@ -39,7 +43,7 @@
                             <x-due-chip :task="$task" />
                         </div>
                     </article>
-                    @if ($taskUrl)</a>@endif
+                    @if ($taskUrl)</div>@endif
                 @endforeach
             </div>
         </section>
