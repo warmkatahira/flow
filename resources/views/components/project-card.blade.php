@@ -19,8 +19,9 @@
     <x-project-icon :project="$project" />
 
     <div class="min-w-0 flex-1">
+        {{-- Kosugi Maru は太さが 400 しかなく、太字にするとブラウザが無理に太らせて重く見えるので、素の太さで出す --}}
         <a href="{{ route('projects.show', $project) }}"
-           class="block truncate font-semibold text-slate-800 after:absolute after:inset-0 hover:text-sky-700">
+           class="block truncate text-slate-800 after:absolute after:inset-0 hover:text-sky-700">
             {{ $project->name }}
         </a>
 
