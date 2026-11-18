@@ -16,7 +16,8 @@
             </button>
 
             <p class="mt-8 break-words text-center text-sm text-slate-700">
-                <span x-text="kind"></span><strong x-text="name"></strong>をアーカイブします。<br>
+                {{-- 対象の名前（件数）は太字にせず、アーカイブのボタンと同じ赤で目立たせる --}}
+                <span x-text="kind"></span><span class="text-rose-500" x-text="name"></span>をアーカイブします。<br>
                 <span x-show="note" x-text="note"></span><span x-show="note"><br></span>
                 よろしいですか？
             </p>
