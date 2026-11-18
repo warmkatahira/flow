@@ -15,9 +15,13 @@
                 </svg>
             </button>
 
-            <p class="mt-8 break-words text-center text-sm text-slate-700">
-                {{-- 対象の名前（件数）は太字にせず、アーカイブのボタンと同じ赤で目立たせる --}}
-                <span x-text="kind"></span><span class="text-rose-500" x-text="name"></span>をアーカイブします。<br>
+            {{-- 何が消えるのかを一目で分かるよう、対象（名前や件数）だけを淡い赤の枠に入れて独立させる。色はアーカイブのボタンに揃える --}}
+            <div class="mt-7 flex items-baseline justify-center gap-3 rounded-xl bg-rose-50 px-5 py-3.5 ring-1 ring-rose-100">
+                <span class="shrink-0 text-xs text-slate-500" x-text="kind"></span>
+                <span class="min-w-0 break-words text-base text-rose-600" x-text="name"></span>
+            </div>
+
+            <p class="mt-5 break-words text-center text-sm text-slate-700">
                 <span x-show="note" x-text="note"></span><span x-show="note"><br></span>
                 よろしいですか？
             </p>
