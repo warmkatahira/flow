@@ -28,12 +28,22 @@ class DashboardController extends Controller
         $projects = $projects->values();
 
         $groups = $user->projectGroups()->ordered()->get();
+        $sections = $user->projectSections($projects, $groups);
+
+        // ドラッグで「グループなし」へ戻せるよう、グループがあるときは空でも受け皿を置いておく
+        // （空のあいだは画面側でドラッグ中だけ出す）
+        if ($groups->isNotEmpty() && ! $sections->has('')) {
+            $sections->put('', collect());
+        }
 
         return view('dashboard', [
             'personalProject' => $personal->first(),
             'projects' => $projects,
-            'sections' => $user->projectSections($projects, $groups),
+            'sections' => $sections,
             'groups' => $groups,
+            'groupIds' => $groups->pluck('id', 'name'),
+            // カードの ⋯ のチェックの初期状態。以降は画面側の store が持つ
+            'assignedGroups' => $projects->mapWithKeys(fn (Project $project) => [$project->id => $project->pivot->group_id]),
             // 星の初期状態。以降の付け外しは画面側の store が持つ
             'favoriteIds' => $projects
                 ->filter(fn (Project $project) => (bool) $project->pivot->is_favorite)

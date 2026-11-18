@@ -103,6 +103,26 @@ html[data-sidebar-moving] .sidebar-wave {
     }
 }
 
+/*
+ * ダッシュボードでグループへドラッグ中のプロジェクト。元の場所は点線の枠だけ残し、掴んだ複製は少し傾けて浮かせる。
+ * 複製（.sortable-fallback）は Sortable が transform で動かすので、トランジションがあるとマウスに遅れて付いてくる
+ */
+.project-drag-ghost > .project-card {
+    opacity: 0.35;
+    outline: 2px dashed var(--color-sky-400);
+    outline-offset: -2px;
+}
+
+.sortable-fallback[data-project-id] {
+    transition: none !important;
+}
+
+.sortable-fallback[data-project-id] > .project-card {
+    rotate: 2deg;
+    box-shadow: 0 12px 24px -8px rgb(15 23 42 / 0.3);
+    opacity: 1;
+}
+
 /* 動きを控える設定では、水を満たすだけにして波は止める */
 @media (prefers-reduced-motion: reduce) {
     .project-card-water,

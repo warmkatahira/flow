@@ -64,16 +64,19 @@
                         @csrf
                         @method('PUT')
 
+                        {{-- チェックはドラッグで動かしたあとも合うよう store から出す（メニューは x-cloak で隠れているので、初期化前の見た目は気にしない） --}}
                         <button type="submit" name="group_id" value=""
-                                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-100 {{ $currentGroupId === null ? 'font-semibold text-sky-700' : 'text-slate-700' }}">
-                            <span class="w-3 text-xs">{{ $currentGroupId === null ? '✓' : '' }}</span>
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-100"
+                                :class="$store.projectGroups.of({{ $project->id }}) === null ? 'font-semibold text-sky-700' : 'text-slate-700'">
+                            <span class="w-3 text-xs" x-text="$store.projectGroups.of({{ $project->id }}) === null ? '✓' : ''">{{ $currentGroupId === null ? '✓' : '' }}</span>
                             グループなし
                         </button>
 
                         @foreach ($groups as $group)
                             <button type="submit" name="group_id" value="{{ $group->id }}"
-                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-100 {{ $currentGroupId === $group->id ? 'font-semibold text-sky-700' : 'text-slate-700' }}">
-                                <span class="w-3 text-xs">{{ $currentGroupId === $group->id ? '✓' : '' }}</span>
+                                    class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-100"
+                                :class="$store.projectGroups.of({{ $project->id }}) === {{ $group->id }} ? 'font-semibold text-sky-700' : 'text-slate-700'">
+                                <span class="w-3 text-xs" x-text="$store.projectGroups.of({{ $project->id }}) === {{ $group->id }} ? '✓' : ''">{{ $currentGroupId === $group->id ? '✓' : '' }}</span>
                                 <span class="min-w-0 truncate">{{ $group->name }}</span>
                             </button>
                         @endforeach

@@ -68,7 +68,7 @@
                         return this.all.filter((project) => this.$store.favorites.has(project.id) && this.matches(project.name)).length;
                     },
                  }"
-                 x-init="$store.favorites.ids = @js($favoriteIds)">
+                 x-init="$store.favorites.ids = @js($favoriteIds); $store.projectGroups.assigned = @js((object) $assignedGroups->all())">
                 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <h2 class="text-sm font-bold text-slate-500">
                         参加しているプロジェクト
@@ -132,18 +132,39 @@
                     </div>
                 </div>
 
-                {{-- グループどうしは隙間なく積む。見出しのバーが区切りになる --}}
+                {{--
+                    グループどうしは隙間なく積む。見出しのバーが区切りになる。
+                    カードはドラッグで別のグループ（グループなしを含む）へ動かせる。グループがないときは動かす先がないので付けない
+                --}}
                 <div class="overflow-hidden rounded-xl border border-slate-200" x-show="hitCount > 0">
                     @foreach ($sections as $groupName => $groupProjects)
+                        @php($groupId = $groupName === '' ? null : $groupIds[$groupName])
                         {{--
                             絞り込みで中身が全部消えたグループは見出しごと隠す。件数も絞り込みに連動させる。
                             開閉状態は localStorage に覚えておく。検索中は畳んでいても中身を出す
                             （畳んだグループの中にヒットがあると見つけられなくなるため）。
+                            中身はドラッグで出入りするので、件数はサーバーの値ではなく items から数える。
+                            「グループなし」は空になってもドラッグ中だけ出して、戻す先にする。
+                            畳んだグループは、ドラッグしたまま見出しに少し留まると開く。
                         --}}
                         <section x-data="{
-                                    groupNames: @js($groupProjects->pluck('name')->values()),
+                                    groupId: @js($groupId),
+                                    items: @js($groupProjects->map(fn ($project) => ['id' => $project->id, 'name' => $project->name])->values()),
                                     storageKey: @js('flow.dashboard.group.'.($groupName === '' ? '__none__' : $groupName)),
                                     open: true,
+                                    hoverTimer: null,
+                                    get groupNames() {
+                                        return this.items.map((item) => item.name);
+                                    },
+                                    get visible() {
+                                        const dragging = this.$store.projectGroups.dragging;
+
+                                        if (this.groupId === null && this.items.length === 0 && ! dragging) {
+                                            return false;
+                                        }
+
+                                        return this.normalized() === '' || this.hitsIn(this.groupNames) > 0 || (this.groupId === null && dragging);
+                                    },
                                     init() {
                                         const saved = localStorage.getItem(this.storageKey);
                                         if (saved !== null) {
@@ -154,9 +175,26 @@
                                         this.open = ! this.open;
                                         localStorage.setItem(this.storageKey, this.open ? '1' : '0');
                                     },
+                                    moved({ id, name, from, to }) {
+                                        if (from === this.groupId) {
+                                            this.items = this.items.filter((item) => item.id !== id);
+                                        }
+                                        if (to === this.groupId) {
+                                            this.items = [...this.items, { id, name }];
+                                        }
+                                    },
+                                    dragEnter() {
+                                        if (this.$store.projectGroups.dragging && ! this.open) {
+                                            this.hoverTimer = setTimeout(() => this.open = true, 400);
+                                        }
+                                    },
+                                    dragLeave() {
+                                        clearTimeout(this.hoverTimer);
+                                    },
                                  }"
-                                 x-show="normalized() === '' || hitsIn(groupNames) > 0">
-                            <button type="button" @click="toggle()"
+                                 @dashboard-project-moved.window="moved($event.detail)"
+                                 x-show="visible">
+                            <button type="button" @click="toggle()" @mouseenter="dragEnter()" @mouseleave="dragLeave()"
                                     :aria-expanded="(open || normalized() !== '') ? 'true' : 'false'"
                                     class="flex w-full items-center gap-2 border-b border-slate-300/70 bg-slate-200/70 px-4 py-2.5 text-left text-sm font-bold transition hover:bg-slate-200 {{ $groupName === '' ? 'text-slate-500' : 'text-slate-700' }}">
                                 <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300"
@@ -178,19 +216,28 @@
                             {{-- x-collapse は高さを 0 まで畳むので、余白は内側の要素に持たせる --}}
                             <div x-show="open || normalized() !== ''" x-collapse.duration.300ms>
                                 <div class="bg-slate-50 px-4 py-4">
-                                    @if ($groupProjects->isEmpty())
-                                        <p class="text-xs text-slate-400">
-                                            このグループにプロジェクトはありません。カードの ⋯ から入れられます。
+                                    {{-- 空のグループにも落とせるよう、入れ物はいつも置いておく（案内はその中に置き、ドラッグの対象にはしない） --}}
+                                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                                         data-group-id="{{ $groupId ?? '' }}"
+                                         @if ($groups->isNotEmpty()) x-project-group-drop @endif>
+                                        <p x-show="items.length === 0" @if ($groupProjects->isNotEmpty()) x-cloak @endif
+                                           class="col-span-full py-2 text-xs text-slate-400">
+                                            @if ($groupName === '')
+                                                ここに置くとグループから外れます。
+                                            @else
+                                                このグループにプロジェクトはありません。カードをドラッグするか、⋯ から入れられます。
+                                            @endif
                                         </p>
-                                    @else
-                                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                            @foreach ($groupProjects as $project)
-                                                <div x-show="matches(@js($project->name))">
-                                                    <x-project-card :project="$project" :groups="$groups" class="h-full" />
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @endif
+
+                                        @foreach ($groupProjects as $project)
+                                            <div x-show="matches(@js($project->name))"
+                                                 data-project-id="{{ $project->id }}"
+                                                 data-project-name="{{ $project->name }}"
+                                                 data-group-url="{{ route('projects.group.update', $project) }}">
+                                                <x-project-card :project="$project" :groups="$groups" class="h-full" />
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
                         </section>

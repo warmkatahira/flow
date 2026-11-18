@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -13,10 +14,12 @@ use Illuminate\Support\Facades\Gate;
  *
  * グループは個人のものなので、変えるのは自分のダッシュボードでの分類だけ。
  * 他の参加者の見え方には影響しない。
+ *
+ * ダッシュボードのドラッグ＆ドロップからは JSON で来るので、そのときは中身なしで返す。
  */
 class ProjectGroupAssignmentController extends Controller
 {
-    public function __invoke(Request $request, Project $project): RedirectResponse
+    public function __invoke(Request $request, Project $project): RedirectResponse|Response
     {
         Gate::authorize('view', $project);
 
@@ -35,6 +38,6 @@ class ProjectGroupAssignmentController extends Controller
 
         $project->users()->updateExistingPivot($user, ['group_id' => $groupId]);
 
-        return back();
+        return $request->expectsJson() ? response()->noContent() : back();
     }
 }

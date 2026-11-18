@@ -132,6 +132,26 @@ class ProjectGroupTest extends TestCase
         $this->assertNull($this->assignedGroupId($project, $user));
     }
 
+    public function test_ドラッグからは画面を読み込み直さずに割り当てを変えられる(): void
+    {
+        $user = User::factory()->create();
+        $group = $this->groupFor($user, '受託');
+        $project = Project::factory()->ownedBy($user)->create();
+
+        // 画面からは POST に _method を載せて送る
+        $this->actingAs($user)
+            ->postJson(route('projects.group.update', $project), ['_method' => 'PUT', 'group_id' => $group->id])
+            ->assertNoContent();
+
+        $this->assertSame($group->id, $this->assignedGroupId($project, $user));
+
+        $this->actingAs($user)
+            ->putJson(route('projects.group.update', $project), ['group_id' => null])
+            ->assertNoContent();
+
+        $this->assertNull($this->assignedGroupId($project, $user));
+    }
+
     public function test_他人のグループには入れられない(): void
     {
         $user = User::factory()->create();
@@ -220,7 +240,18 @@ class ProjectGroupTest extends TestCase
 
         $sections = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('sections');
 
-        $this->assertSame(['いグループ', 'あグループ'], $sections->keys()->all());
+        // 全部グループに入っていても、ドラッグで戻す先の「グループなし」（キーは ''）は最後に置く
+        $this->assertSame(['いグループ', 'あグループ', ''], $sections->keys()->all());
+        $this->assertTrue($sections->get('')->isEmpty());
+    }
+
+    public function test_グループがなければグループなしの受け皿も置かない(): void
+    {
+        $user = User::factory()->create();
+
+        $sections = $this->actingAs($user)->get(route('dashboard'))->assertOk()->viewData('sections');
+
+        $this->assertTrue($sections->isEmpty());
     }
 
     public function test_プロジェクトが入っていないグループもダッシュボードに出る(): void

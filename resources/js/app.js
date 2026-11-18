@@ -378,6 +378,98 @@ Alpine.directive('project-live', (element, { expression }, { evaluate, cleanup }
 });
 
 /**
+ * ダッシュボードのグループの割り当て
+ *
+ * assigned はプロジェクト ID → グループ ID（グループなしは null）。カードの ⋯ のチェックをこれで出すので、
+ * ドラッグで動かしたあとも読み込み直さずに合う。dragging はドラッグ中だけ「グループなし」の受け皿を出すのに使う。
+ */
+Alpine.store('projectGroups', {
+    assigned: {},
+    dragging: false,
+
+    of(projectId) {
+        return this.assigned[projectId] ?? null;
+    },
+});
+
+/**
+ * ダッシュボードのプロジェクトをドラッグしてグループへ入れる（グループの入れ物ごとに付ける）
+ *
+ * グループの中はプロジェクト名順なので、置いた場所ではなく名前順の位置へ収める。
+ * 同じグループの中で動かしただけのときは元の位置へ戻るだけで、何も送らない。
+ */
+Alpine.directive('project-group-drop', (element, _, { cleanup }) => {
+    const store = Alpine.store('projectGroups');
+    const groupIdOf = (container) => (container.dataset.groupId === '' ? null : Number(container.dataset.groupId));
+    let justDropped = false;
+
+    const placeByName = (item, container) => {
+        const name = item.dataset.projectName;
+        const next = [...container.querySelectorAll(':scope > [data-project-id]')]
+            .find((sibling) => sibling !== item && sibling.dataset.projectName.localeCompare(name, 'ja') > 0);
+
+        container.insertBefore(item, next ?? null);
+    };
+
+    // カードの中のリンクをブラウザが掴んでしまうと Sortable のドラッグにならない
+    const preventNativeDrag = (event) => event.preventDefault();
+    // 置いたときの mouseup がカードのリンクのクリックになって、ボードへ飛ばないようにする
+    const swallowClick = (event) => {
+        if (justDropped) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    };
+
+    element.addEventListener('dragstart', preventNativeDrag);
+    element.addEventListener('click', swallowClick, true);
+
+    const sortable = Sortable.create(element, {
+        group: 'dashboard-projects',
+        draggable: '[data-project-id]',
+        animation: 150,
+        forceFallback: true,
+        fallbackTolerance: 3,
+        // スマホでは長押しで掴む（そのままなぞるとスクロール）
+        delay: 200,
+        delayOnTouchOnly: true,
+        ghostClass: 'project-drag-ghost',
+        onStart: () => {
+            store.dragging = true;
+        },
+        onEnd: ({ item, from, to }) => {
+            store.dragging = false;
+            justDropped = true;
+            setTimeout(() => {
+                justDropped = false;
+            });
+
+            placeByName(item, to);
+
+            if (from === to) {
+                return;
+            }
+
+            const projectId = Number(item.dataset.projectId);
+            const groupId = groupIdOf(to);
+
+            store.assigned = { ...store.assigned, [projectId]: groupId };
+            window.dispatchEvent(new CustomEvent('dashboard-project-moved', {
+                detail: { id: projectId, name: item.dataset.projectName, from: groupIdOf(from), to: groupId },
+            }));
+
+            post(item.dataset.groupUrl, { _method: 'PUT', group_id: groupId }).catch(() => location.reload());
+        },
+    });
+
+    cleanup(() => {
+        sortable.destroy();
+        element.removeEventListener('dragstart', preventNativeDrag);
+        element.removeEventListener('click', swallowClick, true);
+    });
+});
+
+/**
  * プロジェクトのお気に入り
  *
  * いいねと同じで、押した瞬間に画面へ反映して通信は裏で走らせる。
